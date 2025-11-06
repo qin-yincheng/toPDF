@@ -65,11 +65,8 @@ dmypy.json
 
 # Project specific
 *.pdf
-docs/*.pdf
 *.xlsx
 *.xls
-docs/*.xlsx
-docs/*.xls
 
 # Temporary files
 *.tmp
@@ -87,12 +84,8 @@ reports/
 *.png
 *.jpg
 *.jpeg
-docs/*.png
-docs/*.jpg
-docs/*.jpeg
 
-# 确保docs文件夹及其所有内容不被忽略
+# Documentation
 docs/
-docs/**
-docs/**/*
+
 
