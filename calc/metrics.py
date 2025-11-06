@@ -1,0 +1,1209 @@
+from typing import List, Dict, Any, Tuple
+from datetime import datetime, timedelta
+import numpy as np
+
+
+def calculate_nav(
+    daily_positions: List[Dict[str, Any]], initial_capital: float = 1000.0
+) -> List[Dict[str, Any]]:
+    """
+    计算每日净值
+
+    参数:
+        daily_positions: 每日持仓列表 [{date, total_assets, ...}, ...]
+        initial_capital: 初始资金（万元），默认1000.0
+
+    返回:
+        List[Dict]: 净值数据列表 [{date, nav, total_assets}, ...]
+
+    计算公式:
+        单位净值 = total_assets / initial_capital
+    """
+    nav_data = []
+
+    for daily_data in daily_positions:
+        total_assets = daily_data["total_assets"]
+        nav = total_assets / initial_capital
+
+        nav_data.append(
+            {
+                "date": daily_data["date"],
+                "nav": round(nav, 4),
+                "total_assets": total_assets,
+            }
+        )
+
+    return nav_data
+
+
+def get_nav_on_date(nav_data: List[Dict[str, Any]], target_date: str) -> float:
+    """
+    获取指定日期的净值
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+        target_date: 目标日期（YYYY-MM-DD）
+
+    返回:
+        float: 净值，如果找不到返回None
+    """
+    for data in nav_data:
+        if data["date"] == target_date:
+            return data["nav"]
+    return None
+
+
+def calculate_returns(nav_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    计算期间收益率和年化收益率
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        Dict: {
+            'period_return': float,      # 期间收益率（%）
+            'annualized_return': float,  # 年化收益率（%）
+            'start_date': str,
+            'end_date': str,
+            'days': int
+        }
+
+    计算公式:
+        1. 期间收益率 = (期末净值 - 期初净值) / 期初净值 × 100%
+        2. 年化收益率 = ((1 + 期间收益率/100) ^ (365 / 实际天数)) - 1 × 100%
+    """
+    if not nav_data or len(nav_data) < 2:
+        return {
+            "period_return": 0.0,
+            "annualized_return": 0.0,
+            "start_date": "",
+            "end_date": "",
+            "days": 0,
+        }
+
+    start_nav = nav_data[0]["nav"]
+    end_nav = nav_data[-1]["nav"]
+    start_date = nav_data[0]["date"]
+    end_date = nav_data[-1]["date"]
+
+    # 计算实际天数
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+    days = (end_dt - start_dt).days + 1
+
+    # 计算期间收益率
+    period_return = ((end_nav - start_nav) / start_nav) * 100
+
+    # 计算年化收益率
+    if days > 0:
+        annualized_return = ((1 + period_return / 100) ** (365 / days) - 1) * 100
+    else:
+        annualized_return = 0.0
+
+    return {
+        "period_return": round(period_return, 2),
+        "annualized_return": round(annualized_return, 2),
+        "start_date": start_date,
+        "end_date": end_date,
+        "days": days,
+    }
+
+
+def calculate_daily_returns(nav_data: List[Dict[str, Any]]) -> List[float]:
+    """
+    计算日收益率序列
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        List[float]: 日收益率列表（小数形式，如0.01表示1%）
+
+    计算公式:
+        日收益率 = (当日净值 - 前一日净值) / 前一日净值
+    """
+    daily_returns = []
+
+    for i in range(1, len(nav_data)):
+        nav_today = nav_data[i]["nav"]
+        nav_yesterday = nav_data[i - 1]["nav"]
+
+        if nav_yesterday > 0:
+            daily_return = (nav_today - nav_yesterday) / nav_yesterday
+            daily_returns.append(daily_return)
+        else:
+            daily_returns.append(0.0)
+
+    return daily_returns
+
+
+def calculate_max_drawdown(nav_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    计算最大回撤
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        Dict: {
+            'max_drawdown': float,      # 最大回撤（%）
+            'max_dd_start_date': str,   # 最大回撤开始日期
+            'max_dd_end_date': str,     # 最大回撤结束日期
+            'peak_date': str,            # 峰值日期
+            'peak_nav': float           # 峰值净值
+        }
+    """
+    if not nav_data or len(nav_data) < 2:
+        return {
+            "max_drawdown": 0.0,
+            "max_dd_start_date": "",
+            "max_dd_end_date": "",
+            "peak_date": "",
+            "peak_nav": 0.0,
+        }
+
+    max_drawdown = 0.0
+    peak_nav = nav_data[0]["nav"]
+    peak_date = nav_data[0]["date"]
+    max_dd_start_date = ""
+    max_dd_end_date = ""
+    dd_start_date = ""
+
+    for data in nav_data:
+        date = data["date"]
+        nav = data["nav"]
+
+        # 更新峰值
+        if nav > peak_nav:
+            peak_nav = nav
+            peak_date = date
+            dd_start_date = ""  # 重置回撤开始日期
+
+        # 计算回撤
+        if peak_nav > 0:
+            drawdown = ((peak_nav - nav) / peak_nav) * 100
+
+            # 记录回撤开始日期
+            if drawdown > 0 and not dd_start_date:
+                dd_start_date = peak_date
+
+            # 更新最大回撤
+            if drawdown > max_drawdown:
+                max_drawdown = drawdown
+                max_dd_start_date = dd_start_date if dd_start_date else peak_date
+                max_dd_end_date = date
+
+    return {
+        "max_drawdown": round(max_drawdown, 2),
+        "max_dd_start_date": max_dd_start_date,
+        "max_dd_end_date": max_dd_end_date,
+        "peak_date": peak_date,
+        "peak_nav": peak_nav,
+    }
+
+
+def calculate_daily_drawdowns(nav_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    计算每日回撤序列
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        List[Dict]: [{date, drawdown, peak_nav}, ...]
+        回撤值（%），正值表示回撤
+    """
+    drawdowns = []
+    peak_nav = nav_data[0]["nav"] if nav_data else 1.0
+
+    for data in nav_data:
+        date = data["date"]
+        nav = data["nav"]
+
+        # 更新峰值
+        if nav > peak_nav:
+            peak_nav = nav
+
+        # 计算回撤
+        if peak_nav > 0:
+            drawdown = ((peak_nav - nav) / peak_nav) * 100
+        else:
+            drawdown = 0.0
+
+        drawdowns.append(
+            {
+                "date": date,
+                "drawdown": round(drawdown, 2),
+                "peak_nav": peak_nav,
+            }
+        )
+
+    return drawdowns
+
+
+def calculate_volatility(nav_data: List[Dict[str, Any]]) -> float:
+    """
+    计算年化波动率
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        float: 年化波动率（%）
+    """
+    daily_returns = calculate_daily_returns(nav_data)
+
+    if len(daily_returns) < 2:
+        return 0.0
+
+    # 计算标准差
+    std_returns = np.std(daily_returns)
+
+    # 年化波动率
+    annualized_volatility = std_returns * np.sqrt(252) * 100
+
+    return round(annualized_volatility, 2)
+
+
+def calculate_sharpe_ratio(
+    annualized_return: float, volatility: float, risk_free_rate: float = 0.03
+) -> float:
+    """
+    计算夏普比率
+
+    参数:
+        annualized_return: 年化收益率（%）
+        volatility: 年化波动率（%）
+        risk_free_rate: 无风险收益率（小数形式，默认0.03即3%）
+
+    返回:
+        float: 夏普比率
+    """
+    if volatility == 0:
+        return 0.0
+
+    # 转换为小数形式
+    annualized_return_decimal = annualized_return / 100
+    volatility_decimal = volatility / 100
+
+    sharpe_ratio = (annualized_return_decimal - risk_free_rate) / volatility_decimal
+
+    return round(sharpe_ratio, 2)
+
+
+def calculate_calmar_ratio(annualized_return: float, max_drawdown: float) -> float:
+    """
+    计算卡玛比率
+
+    参数:
+        annualized_return: 年化收益率（%）
+        max_drawdown: 最大回撤（%）
+
+    返回:
+        float: 卡玛比率
+    """
+    if max_drawdown == 0:
+        return 0.0
+
+    # 转换为小数形式
+    annualized_return_decimal = annualized_return / 100
+    max_drawdown_abs = abs(max_drawdown) / 100
+
+    calmar_ratio = annualized_return_decimal / max_drawdown_abs
+
+    return round(calmar_ratio, 2)
+
+
+def calculate_daily_return_stats(nav_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    计算日收益率统计
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        Dict: {
+            'max_daily_return': float,      # 单日最大收益（%）
+            'max_daily_loss': float,        # 单日最大亏损（%）
+            'max_return_date': str,         # 最大收益日期
+            'max_loss_date': str           # 最大亏损日期
+        }
+    """
+    daily_returns = calculate_daily_returns(nav_data)
+
+    if not daily_returns:
+        return {
+            "max_daily_return": 0.0,
+            "max_daily_loss": 0.0,
+            "max_return_date": "",
+            "max_loss_date": "",
+        }
+
+    # 转换为百分比
+    daily_returns_pct = [r * 100 for r in daily_returns]
+
+    max_return = max(daily_returns_pct)
+    max_loss = min(daily_returns_pct)
+
+    # 找到对应日期（注意索引+1，因为第一个交易日没有日收益率）
+    max_return_idx = daily_returns_pct.index(max_return)
+    max_loss_idx = daily_returns_pct.index(max_loss)
+
+    max_return_date = nav_data[max_return_idx + 1]["date"]
+    max_loss_date = nav_data[max_loss_idx + 1]["date"]
+
+    return {
+        "max_daily_return": round(max_return, 2),
+        "max_daily_loss": round(max_loss, 2),
+        "max_return_date": max_return_date,
+        "max_loss_date": max_loss_date,
+    }
+
+
+def calculate_cumulative_returns(
+    nav_data: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    计算累计收益率序列
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        List[Dict]: [{date, nav, cumulative_return}, ...]
+        累计收益率（%）
+    """
+    cumulative_data = []
+
+    for data in nav_data:
+        nav = data["nav"]
+        cumulative_return = (nav - 1.0) * 100
+
+        cumulative_data.append(
+            {
+                "date": data["date"],
+                "nav": nav,
+                "cumulative_return": round(cumulative_return, 2),
+            }
+        )
+
+    return cumulative_data
+
+
+def calculate_weekly_win_rate(nav_data: List[Dict[str, Any]]) -> float:
+    """
+    计算周胜率
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        float: 周胜率（%）
+    """
+    if len(nav_data) < 2:
+        return 0.0
+
+    # 按周聚合
+    weekly_data = {}
+    for data in nav_data:
+        date = datetime.strptime(data["date"], "%Y-%m-%d")
+        week_start = date - timedelta(days=date.weekday())
+        week_key = week_start.strftime("%Y-%m-%d")
+        if week_key not in weekly_data:
+            weekly_data[week_key] = []
+        weekly_data[week_key].append(data)
+
+    # 按周键排序
+    sorted_weeks = sorted(weekly_data.keys())
+    winning_weeks = 0
+    total_weeks = 0
+
+    for week_key in sorted_weeks:
+        week_data = sorted(weekly_data[week_key], key=lambda x: x["date"])
+        week_start_nav = week_data[0]["nav"]  # 该周最早交易日的净值
+        week_end_nav = week_data[-1]["nav"]  # 该周最后交易日的净值
+
+        # 计算周内收益率：本周最后NAV - 本周最早NAV
+        if week_start_nav > 0:
+            week_return = (week_end_nav - week_start_nav) / week_start_nav
+            if week_return > 0:
+                winning_weeks += 1
+            total_weeks += 1
+
+    win_rate = (winning_weeks / total_weeks * 100) if total_weeks > 0 else 0.0
+    return round(win_rate, 2)
+
+
+def calculate_monthly_win_rate(nav_data: List[Dict[str, Any]]) -> float:
+    """
+    计算月胜率
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        float: 月胜率（%）
+    """
+    if len(nav_data) < 2:
+        return 0.0
+
+    # 按月聚合
+    monthly_data = {}
+    for data in nav_data:
+        date = datetime.strptime(data["date"], "%Y-%m-%d")
+        month_key = date.strftime("%Y-%m")
+
+        if month_key not in monthly_data:
+            monthly_data[month_key] = []
+        monthly_data[month_key].append(data)
+
+    # 计算每月收益率
+    winning_months = 0
+    total_months = 0
+
+    for month_key, month_data in monthly_data.items():
+        if len(month_data) < 2:
+            continue
+
+        month_data_sorted = sorted(month_data, key=lambda x: x["date"])
+        start_nav = month_data_sorted[0]["nav"]
+        end_nav = month_data_sorted[-1]["nav"]
+
+        if start_nav > 0:
+            month_return = (end_nav - start_nav) / start_nav
+            if month_return > 0:
+                winning_months += 1
+            total_months += 1
+
+    win_rate = (winning_months / total_months * 100) if total_months > 0 else 0.0
+
+    return round(win_rate, 2)
+
+
+def calculate_monthly_returns(nav_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    计算月度收益率和月度累计收益率
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+
+    返回:
+        List[Dict]: [{month, start_nav, end_nav, monthly_return, cumulative_return}, ...]
+    """
+    if not nav_data:
+        return []
+
+    initial_nav = nav_data[0]["nav"]
+
+    # 按月聚合
+    monthly_data = {}
+    for data in nav_data:
+        date = datetime.strptime(data["date"], "%Y-%m-%d")
+        month_key = date.strftime("%Y-%m")
+
+        if month_key not in monthly_data:
+            monthly_data[month_key] = []
+        monthly_data[month_key].append(data)
+
+    monthly_returns = []
+
+    for month_key in sorted(monthly_data.keys()):
+        month_data = sorted(monthly_data[month_key], key=lambda x: x["date"])
+
+        if len(month_data) < 2:
+            continue
+
+        start_nav = month_data[0]["nav"]
+        end_nav = month_data[-1]["nav"]
+
+        # 月度收益率
+        monthly_return = (
+            ((end_nav - start_nav) / start_nav * 100) if start_nav > 0 else 0.0
+        )
+
+        # 月度累计收益率
+        cumulative_return = (
+            ((end_nav - initial_nav) / initial_nav * 100) if initial_nav > 0 else 0.0
+        )
+
+        monthly_returns.append(
+            {
+                "month": month_key,
+                "start_nav": start_nav,
+                "end_nav": end_nav,
+                "monthly_return": round(monthly_return, 2),
+                "cumulative_return": round(cumulative_return, 2),
+            }
+        )
+
+    return monthly_returns
+
+
+def calculate_beta(
+    nav_data: List[Dict[str, Any]], benchmark_returns: List[float]
+) -> float:
+    """
+    注意：
+      假设 benchmark_returns 与产品收益率序列的日期已对齐
+      如果日期不对齐，计算结果可能不准确
+
+    计算β值（Beta）
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+        benchmark_returns: 基准指数每日收益率序列（小数形式）
+
+    返回:
+        float: β值
+
+    计算公式:
+        β = Cov(产品收益率, 基准收益率) / Var(基准收益率)
+    """
+    # 获取产品每日收益率序列
+    product_returns = calculate_daily_returns(nav_data)
+
+    # 确保长度一致（取最小长度）
+    min_len = min(len(product_returns), len(benchmark_returns))
+    if min_len < 2:
+        return 1.0  # 数据不足，返回中性值
+
+    product_returns = product_returns[:min_len]
+    benchmark_returns = benchmark_returns[:min_len]
+
+    # 计算协方差和方差
+    cov = np.cov(product_returns, benchmark_returns)[0][1]
+    var = np.var(benchmark_returns)
+
+    # 计算β值
+    if var > 0:
+        beta = cov / var
+    else:
+        beta = 1.0  # 基准方差为0，返回中性值
+
+    return round(beta, 4)
+
+
+def calculate_active_return(
+    product_period_return: float,
+    benchmark_period_return: float,
+    days: int,
+) -> Dict[str, float]:
+    """
+    计算主动收益和年化主动收益
+
+    参数:
+        product_period_return: 产品期间收益率（%）
+        benchmark_period_return: 基准期间收益率（%）
+        days: 实际天数
+
+    返回:
+        Dict: {
+            'active_return': float,          # 主动收益（%）
+            'annualized_active_return': float # 年化主动收益（%）
+        }
+
+    计算公式:
+        主动收益 = 产品收益率 - 基准收益率
+        年化主动收益 = 产品年化收益率 - 基准年化收益率
+        其中：
+        产品年化收益率 = ((1 + 产品期间收益率/100) ^ (365 / 实际天数)) - 1 × 100%
+        基准年化收益率 = ((1 + 基准期间收益率/100) ^ (365 / 实际天数)) - 1 × 100%
+    """
+    # 主动收益
+    active_return = product_period_return - benchmark_period_return
+
+    # 年化主动收益（分别年化后相减）
+    if days > 0:
+        # 分别计算产品和基准的年化收益率
+        product_annualized = (
+            (1 + product_period_return / 100) ** (365 / days) - 1
+        ) * 100
+        benchmark_annualized = (
+            (1 + benchmark_period_return / 100) ** (365 / days) - 1
+        ) * 100
+        # 年化主动收益 = 年化产品收益 - 年化基准收益
+        annualized_active_return = product_annualized - benchmark_annualized
+    else:
+        annualized_active_return = 0.0
+
+    return {
+        "active_return": round(active_return, 2),
+        "annualized_active_return": round(annualized_active_return, 2),
+    }
+
+
+def calculate_tracking_error(
+    nav_data: List[Dict[str, Any]], benchmark_returns: List[float]
+) -> float:
+    """
+    注意：
+      假设 benchmark_returns 与产品收益率序列的日期已对齐
+      如果日期不对齐，计算结果可能不准确
+
+    计算跟踪误差（年化）
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+        benchmark_returns: 基准指数每日收益率序列（小数形式）
+
+    返回:
+        float: 跟踪误差（年化，%）
+
+    计算公式:
+        跟踪误差 = std(产品收益率 - 基准收益率) × sqrt(252) × 100%
+    """
+    # 获取产品每日收益率序列
+    product_returns = calculate_daily_returns(nav_data)
+
+    # 确保长度一致（取最小长度）
+    min_len = min(len(product_returns), len(benchmark_returns))
+    if min_len < 2:
+        return 0.0
+
+    product_returns = product_returns[:min_len]
+    benchmark_returns = benchmark_returns[:min_len]
+
+    # 计算超额收益率
+    excess_returns = [p - b for p, b in zip(product_returns, benchmark_returns)]
+
+    # 计算跟踪误差
+    tracking_error = np.std(excess_returns) * np.sqrt(252) * 100
+
+    return round(tracking_error, 2)
+
+
+def calculate_downside_volatility(
+    nav_data: List[Dict[str, Any]], target: float = 0.0
+) -> float:
+    """
+    计算下行波动率（年化）
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+        target: 目标收益率（小数形式，默认0.0即0%）
+
+    返回:
+        float: 下行波动率（年化，%）
+
+    计算公式（标准公式）:
+        1. 计算 min(0, R_t - target) 对每个收益率
+        2. 对结果求平方
+        3. 求平均
+        4. 开根号
+        5. 年化：× sqrt(252) × 100%
+    """
+    # 获取每日收益率序列
+    daily_returns = calculate_daily_returns(nav_data)
+
+    if len(daily_returns) < 2:
+        return 0.0
+
+    # 计算下行偏差：min(0, R_t - target)
+    downside_deviations = [min(0.0, r - target) for r in daily_returns]
+
+    # 计算下行方差的平均值
+    downside_variance = np.mean([d**2 for d in downside_deviations])
+
+    # 开根号得到下行波动率，然后年化
+    downside_volatility = np.sqrt(downside_variance) * np.sqrt(252) * 100
+
+    return round(downside_volatility, 2)
+
+
+def calculate_sortino_ratio(
+    annualized_return: float,
+    downside_volatility: float,
+    risk_free_rate: float = 0.03,
+) -> float:
+    """
+    计算索提诺比率
+
+    参数:
+        annualized_return: 年化收益率（%）
+        downside_volatility: 下行波动率（%）
+        risk_free_rate: 无风险收益率（小数形式，默认0.03即3%）
+
+    返回:
+        float: 索提诺比率
+
+    计算公式:
+        索提诺比率 = (年化收益率 - 无风险收益率) / 下行波动率
+    """
+    if downside_volatility == 0:
+        return 0.0
+
+    # 转换为小数形式
+    annualized_return_decimal = annualized_return / 100
+    downside_volatility_decimal = downside_volatility / 100
+
+    # 计算索提诺比率
+    sortino_ratio = (
+        annualized_return_decimal - risk_free_rate
+    ) / downside_volatility_decimal
+
+    return round(sortino_ratio, 2)
+
+
+def calculate_information_ratio(
+    annualized_active_return: float, tracking_error: float
+) -> float:
+    """
+    计算信息比率
+
+    参数:
+        annualized_active_return: 年化主动收益（%）
+        tracking_error: 跟踪误差（%）
+
+    返回:
+        float: 信息比率
+
+    计算公式:
+        信息比率 = 年化主动收益 / 跟踪误差
+    """
+    if tracking_error == 0:
+        return 0.0
+
+    # 转换为小数形式
+    annualized_active_return_decimal = annualized_active_return / 100
+    tracking_error_decimal = tracking_error / 100
+
+    # 计算信息比率
+    information_ratio = annualized_active_return_decimal / tracking_error_decimal
+
+    return round(information_ratio, 2)
+
+
+def calculate_drawdown_recovery_period(
+    nav_data: List[Dict[str, Any]],
+    max_dd_start_date: str,
+    max_dd_end_date: str,
+) -> Dict[str, Any]:
+    """
+    计算最大回撤修复期
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+        max_dd_start_date: 最大回撤开始日期
+        max_dd_end_date: 最大回撤结束日期
+
+    返回:
+        Dict: {
+            'recovery_period': int,        # 修复期天数（如果已恢复，否则None）
+            'recovery_date': str,          # 恢复日期（如果已恢复，否则None）
+            'is_recovered': bool,          # 是否已恢复
+            'peak_before_dd': float        # 回撤前峰值
+        }
+    """
+    # 找到回撤开始前的峰值
+    peak_before_dd = 0.0
+    for data in nav_data:
+        date = data["date"]
+        nav = data["nav"]
+        if date < max_dd_start_date:
+            if nav > peak_before_dd:
+                peak_before_dd = nav
+        else:
+            break
+
+    # 找到回撤结束时的净值
+    dd_end_nav = None
+    for data in nav_data:
+        if data["date"] == max_dd_end_date:
+            dd_end_nav = data["nav"]
+            break
+
+    if dd_end_nav is None or peak_before_dd == 0:
+        return {
+            "recovery_period": None,
+            "recovery_date": None,
+            "is_recovered": False,
+            "peak_before_dd": peak_before_dd,
+        }
+
+    # 查找净值恢复到峰值的日期
+    recovery_date = None
+    for data in nav_data:
+        date = data["date"]
+        nav = data["nav"]
+        if date > max_dd_end_date and nav >= peak_before_dd:
+            recovery_date = date
+            break
+
+    if recovery_date:
+        # 计算修复期
+        end_dt = datetime.strptime(max_dd_end_date, "%Y-%m-%d")
+        recovery_dt = datetime.strptime(recovery_date, "%Y-%m-%d")
+        recovery_period = (recovery_dt - end_dt).days
+
+        return {
+            "recovery_period": recovery_period,
+            "recovery_date": recovery_date,
+            "is_recovered": True,
+            "peak_before_dd": peak_before_dd,
+        }
+    else:
+        return {
+            "recovery_period": None,
+            "recovery_date": None,
+            "is_recovered": False,
+            "peak_before_dd": peak_before_dd,
+        }
+
+
+def judge_risk_characteristic(annualized_return: float, volatility: float) -> str:
+    """
+    判断收益风险特征
+
+    参数:
+        annualized_return: 年化收益率（%）
+        volatility: 年化波动率（%）
+
+    返回:
+        str: 收益风险特征描述
+    """
+    if annualized_return > 20 and volatility > 30:
+        return "绝对收益风险类型属于 高收益高风险"
+    elif annualized_return > 10 and volatility < 20:
+        return "绝对收益风险类型属于 中等收益中等风险"
+    else:
+        return "绝对收益风险类型属于 低收益低风险"
+
+
+def calculate_period_returns(
+    nav_data: List[Dict[str, Any]],
+    periods: Dict[str, Tuple[str, str]],
+    benchmark_data: List[Dict[str, Any]] = None,
+) -> Dict[str, Dict[str, float]]:
+    """
+    计算多时间段收益率
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+        periods: 时间段字典 {'统计期间': (start_date, end_date), ...}
+        benchmark_data: 基准指数净值数据列表（可选）
+
+    返回:
+        Dict: {
+            '统计期间': {
+                'product_return': float,      # 产品期间收益率（%）
+                'annualized_return': float,   # 产品年化收益率（%）
+                'benchmark_return': float,    # 基准期间收益率（%）
+                'excess_return': float        # 超额收益率（%）
+            },
+            ...
+        }
+    """
+    period_returns = {}
+
+    for period_name, (start_date, end_date) in periods.items():
+        # 筛选该时间段的净值数据
+        period_nav_data = [
+            data for data in nav_data if start_date <= data["date"] <= end_date
+        ]
+
+        if len(period_nav_data) < 2:
+            period_returns[period_name] = {
+                "product_return": 0.0,
+                "annualized_return": 0.0,
+                "benchmark_return": 0.0,
+                "excess_return": 0.0,
+            }
+            continue
+
+        # 计算产品期间收益率
+        start_nav = period_nav_data[0]["nav"]
+        end_nav = period_nav_data[-1]["nav"]
+        product_return = ((end_nav - start_nav) / start_nav) * 100
+
+        # 计算实际天数
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        days = (end_dt - start_dt).days + 1
+
+        # 计算年化收益率
+        if days > 0:
+            annualized_return = ((1 + product_return / 100) ** (365 / days) - 1) * 100
+        else:
+            annualized_return = 0.0
+
+        # 计算基准收益率（如果有基准数据）
+        benchmark_return = 0.0
+        if benchmark_data:
+            period_benchmark_data = [
+                data
+                for data in benchmark_data
+                if start_date <= data["date"] <= end_date
+            ]
+            if len(period_benchmark_data) >= 2:
+                bench_start_nav = period_benchmark_data[0]["nav"]
+                bench_end_nav = period_benchmark_data[-1]["nav"]
+                if bench_start_nav > 0:
+                    benchmark_return = (
+                        (bench_end_nav - bench_start_nav) / bench_start_nav
+                    ) * 100
+
+        # 计算超额收益率
+        excess_return = product_return - benchmark_return
+
+        period_returns[period_name] = {
+            "product_return": round(product_return, 2),
+            "annualized_return": round(annualized_return, 2),
+            "benchmark_return": round(benchmark_return, 2),
+            "excess_return": round(excess_return, 2),
+        }
+
+    return period_returns
+
+
+def calculate_period_metrics(
+    nav_data: List[Dict[str, Any]],
+    periods: Dict[str, Tuple[str, str]],
+    risk_free_rate: float = 0.03,
+    benchmark_returns: List[float] = None,
+    benchmark_period_returns: Dict[str, float] = None,
+) -> Dict[str, Dict[str, Any]]:
+    """
+    计算多时间段的所有指标
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+        periods: 时间段字典
+        risk_free_rate: 无风险收益率（默认0.03）
+        benchmark_returns: 基准收益率序列（可选）
+        benchmark_period_returns: 基准各时间段收益率（可选）
+
+    返回:
+        Dict: {
+            '统计期间': {
+                'period_return': float,
+                'annualized_return': float,
+                'volatility': float,
+                'max_drawdown': float,
+                'sharpe_ratio': float,
+                'calmar_ratio': float,
+                'tracking_error': float,
+                'downside_volatility': float,
+                'sortino_ratio': float,
+                'information_ratio': float,
+                'beta': float,
+                'active_return': float,
+                'annualized_active_return': float
+            },
+            ...
+        }
+    """
+    period_metrics = {}
+
+    for period_name, (start_date, end_date) in periods.items():
+        # 筛选该时间段的净值数据
+        period_nav_data = [
+            data for data in nav_data if start_date <= data["date"] <= end_date
+        ]
+
+        if len(period_nav_data) < 2:
+            period_metrics[period_name] = {
+                "period_return": 0.0,
+                "annualized_return": 0.0,
+                "volatility": 0.0,
+                "max_drawdown": 0.0,
+                "sharpe_ratio": 0.0,
+                "calmar_ratio": 0.0,
+                "tracking_error": 0.0,
+                "downside_volatility": 0.0,
+                "sortino_ratio": 0.0,
+                "information_ratio": 0.0,
+                "beta": 1.0,
+                "active_return": 0.0,
+                "annualized_active_return": 0.0,
+            }
+            continue
+
+        # 计算所有指标
+        returns_info = calculate_returns(period_nav_data)
+        drawdown_info = calculate_max_drawdown(period_nav_data)
+        volatility = calculate_volatility(period_nav_data)
+        sharpe_ratio = calculate_sharpe_ratio(
+            returns_info["annualized_return"], volatility, risk_free_rate
+        )
+        calmar_ratio = calculate_calmar_ratio(
+            returns_info["annualized_return"], drawdown_info["max_drawdown"]
+        )
+
+        # 计算下行波动率
+        downside_volatility = calculate_downside_volatility(period_nav_data)
+
+        # 计算索提诺比率
+        sortino_ratio = calculate_sortino_ratio(
+            returns_info["annualized_return"],
+            downside_volatility,
+            risk_free_rate,
+        )
+
+        # 计算跟踪误差、β值、主动收益（如果有基准数据）
+        tracking_error = 0.0
+        beta = 1.0
+        active_return_info = {"active_return": 0.0, "annualized_active_return": 0.0}
+
+        if benchmark_returns:
+            # 筛选对应时间段的基准收益率（简化：假设已对齐）
+            tracking_error = calculate_tracking_error(
+                period_nav_data, benchmark_returns
+            )
+            beta = calculate_beta(period_nav_data, benchmark_returns)
+
+        if benchmark_period_returns and period_name in benchmark_period_returns:
+            benchmark_ret = benchmark_period_returns[period_name]
+            active_return_info = calculate_active_return(
+                returns_info["period_return"],
+                benchmark_ret,
+                returns_info["days"],
+            )
+
+        # 计算信息比率
+        information_ratio = 0.0
+        if tracking_error > 0:
+            information_ratio = calculate_information_ratio(
+                active_return_info["annualized_active_return"], tracking_error
+            )
+
+        period_metrics[period_name] = {
+            "period_return": returns_info["period_return"],
+            "annualized_return": returns_info["annualized_return"],
+            "volatility": volatility,
+            "max_drawdown": drawdown_info["max_drawdown"],
+            "sharpe_ratio": sharpe_ratio,
+            "calmar_ratio": calmar_ratio,
+            "tracking_error": tracking_error,
+            "downside_volatility": downside_volatility,
+            "sortino_ratio": sortino_ratio,
+            "information_ratio": information_ratio,
+            "beta": beta,
+            "active_return": active_return_info["active_return"],
+            "annualized_active_return": active_return_info["annualized_active_return"],
+        }
+
+    return period_metrics
+
+
+def calculate_all_metrics(
+    nav_data: List[Dict[str, Any]],
+    risk_free_rate: float = 0.03,
+    benchmark_returns: List[float] = None,
+    benchmark_period_return: float = None,
+) -> Dict[str, Any]:
+    """
+    计算所有指标
+
+    参数:
+        nav_data: 净值数据列表 [{date, nav, ...}, ...]
+        risk_free_rate: 无风险收益率（默认0.03）
+        benchmark_returns: 基准收益率序列（可选）
+        benchmark_period_return: 基准期间收益率（%，可选）
+
+    返回:
+        Dict: 包含所有指标的字典
+    """
+    # 计算收益率
+    returns = calculate_returns(nav_data)
+
+    # 计算最大回撤
+    drawdown_info = calculate_max_drawdown(nav_data)
+
+    # 计算波动率
+    volatility = calculate_volatility(nav_data)
+
+    # 计算夏普比率
+    sharpe_ratio = calculate_sharpe_ratio(
+        returns["annualized_return"], volatility, risk_free_rate
+    )
+
+    # 计算卡玛比率
+    calmar_ratio = calculate_calmar_ratio(
+        returns["annualized_return"], drawdown_info["max_drawdown"]
+    )
+
+    # 计算日收益率统计
+    daily_stats = calculate_daily_return_stats(nav_data)
+
+    # 计算周胜率和月胜率
+    weekly_win_rate = calculate_weekly_win_rate(nav_data)
+    monthly_win_rate = calculate_monthly_win_rate(nav_data)
+
+    # 新增指标计算
+    beta = 1.0
+    if benchmark_returns:
+        beta = calculate_beta(nav_data, benchmark_returns)
+
+    active_return_info = {"active_return": 0.0, "annualized_active_return": 0.0}
+    if benchmark_period_return is not None:
+        active_return_info = calculate_active_return(
+            returns["period_return"],
+            benchmark_period_return,
+            returns["days"],
+        )
+
+    tracking_error = 0.0
+    if benchmark_returns:
+        tracking_error = calculate_tracking_error(nav_data, benchmark_returns)
+
+    downside_volatility = calculate_downside_volatility(nav_data)
+
+    sortino_ratio = calculate_sortino_ratio(
+        returns["annualized_return"], downside_volatility, risk_free_rate
+    )
+
+    information_ratio = 0.0
+    if tracking_error > 0:
+        information_ratio = calculate_information_ratio(
+            active_return_info["annualized_active_return"], tracking_error
+        )
+
+    # 计算最大回撤修复期
+    recovery_info = calculate_drawdown_recovery_period(
+        nav_data,
+        drawdown_info["max_dd_start_date"],
+        drawdown_info["max_dd_end_date"],
+    )
+
+    # 判断收益风险特征
+    risk_characteristic = judge_risk_characteristic(
+        returns["annualized_return"], volatility
+    )
+
+    return {
+        # 原有指标
+        "period_return": returns["period_return"],
+        "annualized_return": returns["annualized_return"],
+        "max_drawdown": drawdown_info["max_drawdown"],
+        "volatility": volatility,
+        "sharpe_ratio": sharpe_ratio,
+        "calmar_ratio": calmar_ratio,
+        "max_daily_return": daily_stats["max_daily_return"],
+        "max_daily_loss": daily_stats["max_daily_loss"],
+        "max_return_date": daily_stats["max_return_date"],
+        "max_loss_date": daily_stats["max_loss_date"],
+        "weekly_win_rate": weekly_win_rate,
+        "monthly_win_rate": monthly_win_rate,
+        # 新增指标
+        "beta": beta,
+        "active_return": active_return_info["active_return"],
+        "annualized_active_return": active_return_info["annualized_active_return"],
+        "tracking_error": tracking_error,
+        "downside_volatility": downside_volatility,
+        "sortino_ratio": sortino_ratio,
+        "information_ratio": information_ratio,
+        "recovery_period": recovery_info["recovery_period"],
+        "recovery_date": recovery_info["recovery_date"],
+        "is_recovered": recovery_info["is_recovered"],
+        "risk_characteristic": risk_characteristic,
+        # 日期信息
+        "start_date": returns["start_date"],
+        "end_date": returns["end_date"],
+        "days": returns["days"],
+        # 最大回撤相关信息
+        "max_dd_start_date": drawdown_info["max_dd_start_date"],
+        "max_dd_end_date": drawdown_info["max_dd_end_date"],
+        "peak_date": drawdown_info["peak_date"],
+        "peak_nav": drawdown_info["peak_nav"],
+    }
