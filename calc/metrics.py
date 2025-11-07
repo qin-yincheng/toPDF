@@ -2,6 +2,64 @@ from typing import List, Dict, Any, Tuple
 from datetime import datetime, timedelta
 import numpy as np
 
+from calc.utils import generate_date_range, is_trading_day
+
+
+def generate_trading_date_range(start_date: str, end_date: str) -> List[str]:
+    """生成交易日期列表。"""
+
+    return [
+        date
+        for date in generate_date_range(start_date, end_date)
+        if is_trading_day(date)
+    ]
+
+
+def validate_nav_data(nav_data: List[Dict[str, Any]]) -> bool:
+    """校验净值数据是否有效。"""
+
+    if not nav_data:
+        return False
+
+    for item in nav_data:
+        nav = item.get("nav")
+        date = item.get("date")
+        if nav is None or nav <= 0:
+            return False
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except (TypeError, ValueError):
+            return False
+
+    return True
+
+
+def calculate_period_profit(
+    nav_data: List[Dict[str, Any]], initial_capital: float = 1000.0
+) -> Dict[str, float]:
+    """计算期间收益额及年化收益额。"""
+
+    if not nav_data:
+        return {"period_profit": 0.0, "annualized_profit": 0.0}
+
+    start_assets = nav_data[0].get("total_assets", initial_capital)
+    end_assets = nav_data[-1].get("total_assets", start_assets)
+    period_profit = end_assets - start_assets
+
+    try:
+        start_dt = datetime.strptime(nav_data[0]["date"], "%Y-%m-%d")
+        end_dt = datetime.strptime(nav_data[-1]["date"], "%Y-%m-%d")
+        days = (end_dt - start_dt).days + 1
+    except (KeyError, TypeError, ValueError):
+        days = 0
+
+    annualized_profit = period_profit * (365 / days) if days > 0 else 0.0
+
+    return {
+        "period_profit": round(period_profit, 2),
+        "annualized_profit": round(annualized_profit, 2),
+    }
+
 
 def calculate_nav(
     daily_positions: List[Dict[str, Any]], initial_capital: float = 1000.0
