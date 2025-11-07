@@ -1,0 +1,354 @@
+"""
+动态回撤图表生成
+使用 matplotlib 生成动态回撤折线图和汇总表格
+"""
+
+from typing import List, Dict, Any, Optional
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from datetime import datetime, timedelta
+import numpy as np
+
+
+def setup_chinese_font() -> None:
+    """
+    配置matplotlib中文字体
+    """
+    font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
+    plt.rcParams['font.sans-serif'] = font_list
+    plt.rcParams['axes.unicode_minus'] = False
+    plt.rcParams['font.size'] = 10
+    plt.rcParams['axes.titlesize'] = 14
+    plt.rcParams['axes.labelsize'] = 10
+    plt.rcParams['xtick.labelsize'] = 9
+    plt.rcParams['ytick.labelsize'] = 9
+    plt.rcParams['legend.fontsize'] = 9
+
+
+def plot_dynamic_drawdown_chart(
+    data: Optional[List[Dict[str, Any]]] = None,
+    save_path: Optional[str] = None,
+    figsize: tuple = (12, 6),
+    return_figure: bool = False,
+    show_title: bool = True
+):
+    """
+    绘制动态回撤折线图
+    
+    参数:
+        data: 数据列表，格式为：
+            [
+                {
+                    'date': '2024-08-01',
+                    'product_drawdown': 0.0,      # 产品回撤（%）
+                    'benchmark_drawdown': 0.0     # 基准回撤（%）
+                },
+                ...
+            ]
+            如果为None，则使用假数据
+        save_path: 保存路径
+        figsize: 图表大小（宽，高）
+        return_figure: 是否返回 figure 对象
+        show_title: 是否显示标题
+    
+    返回:
+        figure 对象或保存的文件路径
+    """
+    # 配置中文字体
+    setup_chinese_font()
+    
+    # 如果没有提供数据，生成假数据
+    if data is None:
+        data = _generate_mock_drawdown_data()
+    
+    # 解析数据
+    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    product_drawdown = [d['product_drawdown'] for d in data]
+    benchmark_drawdown = [d.get('benchmark_drawdown', 0) for d in data]
+    
+    # 创建图表
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # 绘制产品回撤线（蓝色）
+    color1 = '#1f77b4'  # 深蓝色
+    line1 = ax.plot(dates, product_drawdown, color=color1, marker='o', 
+                     markersize=4, linewidth=2, label='阳光安盛多禾一号私募证券投资基金',
+                     markerfacecolor=color1, markeredgecolor=color1)
+    
+    # 绘制基准回撤线（绿色）
+    color2 = '#2ca02c'  # 绿色
+    line2 = ax.plot(dates, benchmark_drawdown, color=color2, marker='o', 
+                     markersize=4, linewidth=2, label='沪深300',
+                     markerfacecolor=color2, markeredgecolor=color2)
+    
+    # 设置Y轴（回撤从0%到最大回撤）
+    max_drawdown = max(max(product_drawdown), max(benchmark_drawdown))
+    y_min = min(-25, max_drawdown - 2)  # 留出一些空间
+    ax.set_ylim(y_min, 1)
+    ax.set_ylabel('回撤(%)', color='black')
+    ax.tick_params(axis='y', labelcolor='black')
+    ax.grid(True, alpha=0.3, linestyle='--')
+    
+    # 设置X轴日期格式
+    ax.set_xlabel('日期')
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_locator(mdates.DayLocator(interval=15))  # 每15天一个刻度
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    
+    # 设置标题（如果启用）
+    if show_title:
+        ax.set_title('动态回撤', fontsize=14, fontweight='bold', pad=20, loc='left')
+    
+    # 添加图例（增加与图表的间隔）
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.12), ncol=2, frameon=True)
+    
+    # 调整布局，为图例留出更多空间
+    plt.tight_layout(rect=[0, 0, 1, 0.96])  # 顶部留出4%的空间给图例
+    
+    # 如果只需要返回 figure 对象，不保存
+    if return_figure:
+        return fig
+    
+    # 如果提供了保存路径，保存图表为 PDF（矢量格式，高清）
+    if save_path:
+        plt.savefig(save_path, format='pdf', bbox_inches='tight', dpi=300)
+        plt.close()
+        return save_path
+    else:
+        # 不保存，返回 figure 对象
+        return fig
+
+
+def plot_dynamic_drawdown_table(
+    data: Optional[Dict[str, Any]] = None,
+    save_path: Optional[str] = None,
+    figsize: tuple = (6, 6),
+    return_figure: bool = False,
+    show_title: bool = True,
+    table_fontsize: int = 12
+):
+    """
+    绘制动态回撤汇总表格
+    
+    参数:
+        data: 数据字典，格式为：
+            {
+                'product_max_drawdown': -23.43,           # 产品最大回撤（%）
+                'benchmark_max_drawdown': -12.54,        # 基准最大回撤（%）
+                'product_dd_start': '2024-12-12',         # 产品最大回撤开始日期
+                'product_dd_end': '2025-01-10',          # 产品最大回撤结束日期
+                'benchmark_dd_start': '2024-10-08',      # 基准最大回撤开始日期
+                'benchmark_dd_end': '2025-01-13',        # 基准最大回撤结束日期
+                'product_recovery_period': '-',          # 产品回撤修复期
+                'benchmark_recovery_period': '-'          # 基准回撤修复期
+            }
+            如果为None，则使用假数据
+        save_path: 保存路径
+        figsize: 图表大小（宽，高）
+        return_figure: 是否返回 figure 对象
+        show_title: 是否显示标题
+        table_fontsize: 表格字体大小
+    
+    返回:
+        figure 对象或保存的文件路径
+    """
+    # 配置中文字体
+    setup_chinese_font()
+    
+    # 如果没有提供数据，生成假数据
+    if data is None:
+        data = _generate_mock_drawdown_table_data()
+    
+    # 创建图表
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.axis('off')
+    
+    # 准备表格数据
+    table_data = [
+        ['产品期间最大回撤', f"{data.get('product_max_drawdown', 0):.2f}%"],
+        ['比较基准的最大回撤', f"{data.get('benchmark_max_drawdown', 0):.2f}%"],
+        ['产品最大回撤区间', f"自{data.get('product_dd_start', '')} 至{data.get('product_dd_end', '')}"],
+        ['比较基准的最大回撤区间', f"自{data.get('benchmark_dd_start', '')} 至{data.get('benchmark_dd_end', '')}"],
+        ['产品最大回撤修复期', data.get('product_recovery_period', '-')],
+        ['比较基准的最大回撤修复期', data.get('benchmark_recovery_period', '-')],
+    ]
+    
+    # 创建表格
+    table = ax.table(
+        cellText=table_data,
+        colLabels=['指标', '数值'],
+        cellLoc='left',
+        loc='center',
+        bbox=[0.05, 0.05, 0.9, 0.9]
+    )
+    
+    # 设置表格样式
+    table.auto_set_font_size(False)
+    table.set_fontsize(table_fontsize)
+    table.scale(1, 2.0)
+    
+    # 设置表头样式
+    for i in range(2):
+        cell = table[(0, i)]
+        cell.set_facecolor('#e8e8e8')  # 浅灰色背景
+        cell.set_text_props(weight='bold', ha='center')
+        cell.set_edgecolor('black')
+        cell.set_linewidth(1)
+    
+    # 设置数据行样式
+    for i in range(1, len(table_data) + 1):
+        for j in range(2):
+            cell = table[(i, j)]
+            # 第一列（指标列）左对齐，第二列（数值列）左对齐
+            if j == 0:
+                cell.set_text_props(ha='left')
+            else:
+                cell.set_text_props(ha='left')
+            
+            # 交替行颜色
+            if i % 2 == 0:
+                cell.set_facecolor('#ffffff')  # 白色
+            else:
+                cell.set_facecolor('#f8f8f8')  # 浅灰色
+            
+            cell.set_edgecolor('black')
+            cell.set_linewidth(1)
+    
+    # 添加标题（如果启用，但这里不显示，由 pages1.py 统一绘制）
+    # plt.title('动态回撤', fontsize=16, fontweight='bold', pad=20, loc='left')
+    
+    # 调整布局
+    plt.tight_layout()
+    
+    # 如果只需要返回 figure 对象，不保存
+    if return_figure:
+        return fig
+    
+    # 如果提供了保存路径，保存图表为 PDF（矢量格式，高清）
+    if save_path:
+        plt.savefig(save_path, format='pdf', bbox_inches='tight', dpi=300)
+        plt.close()
+        return save_path
+    else:
+        # 不保存，返回 figure 对象
+        return fig
+
+
+def _generate_mock_drawdown_data() -> List[Dict[str, Any]]:
+    """
+    生成假数据用于测试动态回撤图
+    返回:
+        List[Dict]: 假数据列表
+    """
+    # 生成日期范围：2024-08-01 到 2025-01-14
+    start_date = datetime(2024, 8, 1)
+    end_date = datetime(2025, 1, 14)
+    dates = []
+    current_date = start_date
+    while current_date <= end_date:
+        dates.append(current_date)
+        current_date += timedelta(days=1)
+    
+    n = len(dates)
+    
+    # 生成产品回撤数据
+    # 从0%开始，9月底开始有回撤，10月中旬达到-15%，12月中旬开始大幅下降，1月初达到-23.43%最低点
+    product_drawdown = []
+    peak_value = 0.0  # 峰值（回撤为0）
+    
+    sep_30_index = (datetime(2024, 9, 30) - start_date).days
+    oct_11_index = (datetime(2024, 10, 11) - start_date).days
+    dec_12_index = (datetime(2024, 12, 12) - start_date).days
+    jan_10_index = (datetime(2025, 1, 10) - start_date).days
+    
+    for i in range(n):
+        date = dates[i]
+        if i <= sep_30_index:
+            # 8月到9月底：相对平缓，接近0%
+            value = np.random.normal(0, 1)
+            value = max(-2, min(2, value))
+        elif i <= oct_11_index:
+            # 9月底到10月中旬：快速下降到-15%
+            progress = (i - sep_30_index) / (oct_11_index - sep_30_index)
+            value = 0 - 15 * progress
+            value += np.random.normal(0, 1)
+        elif i <= dec_12_index:
+            # 10月中旬到12月中旬：略有恢复，然后保持
+            progress = (i - oct_11_index) / (dec_12_index - oct_11_index)
+            value = -15 + 5 * progress  # 恢复到-10%
+            value += np.random.normal(0, 1.5)
+        elif i <= jan_10_index:
+            # 12月中旬到1月10日：大幅下降到-23.43%
+            progress = (i - dec_12_index) / (jan_10_index - dec_12_index)
+            value = -10 - 13.43 * progress
+            value += np.random.normal(0, 1)
+        else:
+            # 1月10日后：略有恢复
+            progress = (i - jan_10_index) / (n - 1 - jan_10_index)
+            value = -23.43 + 2 * progress
+            value += np.random.normal(0, 0.5)
+        
+        value = max(-25, min(2, value))
+        product_drawdown.append(value)
+    
+    # 生成基准（沪深300）回撤数据
+    # 相对稳定，在0%到-12%之间波动
+    benchmark_drawdown = []
+    for i in range(n):
+        date = dates[i]
+        # 整体趋势：从0%开始，10月初有下降，12月有较大下降
+        progress = i / (n - 1)
+        base_value = 0
+        if i > (datetime(2024, 10, 8) - start_date).days:
+            # 10月8日后开始下降
+            decline_progress = (i - (datetime(2024, 10, 8) - start_date).days) / (n - 1 - (datetime(2024, 10, 8) - start_date).days)
+            base_value = -12.54 * decline_progress * 0.8
+        if i > (datetime(2024, 12, 12) - start_date).days:
+            # 12月12日后进一步下降
+            base_value = -12.54
+        
+        value = base_value + np.random.normal(0, 1.5)
+        value = max(-15, min(2, value))
+        benchmark_drawdown.append(value)
+    
+    # 组装数据
+    data = []
+    for i, date in enumerate(dates):
+        data.append({
+            'date': date.strftime('%Y-%m-%d'),
+            'product_drawdown': round(product_drawdown[i], 2),
+            'benchmark_drawdown': round(benchmark_drawdown[i], 2)
+        })
+    
+    return data
+
+
+def _generate_mock_drawdown_table_data() -> Dict[str, Any]:
+    """
+    生成假数据用于测试动态回撤表格
+    返回:
+        Dict: 假数据字典
+    """
+    return {
+        'product_max_drawdown': -23.43,
+        'benchmark_max_drawdown': -12.54,
+        'product_dd_start': '2024-12-12',
+        'product_dd_end': '2025-01-10',
+        'benchmark_dd_start': '2024-10-08',
+        'benchmark_dd_end': '2025-01-13',
+        'product_recovery_period': '-',
+        'benchmark_recovery_period': '-'
+    }
+
+
+if __name__ == '__main__':
+    # 测试图表生成
+    print("正在生成动态回撤图表...")
+    output_path = plot_dynamic_drawdown_chart()
+    print(f"图表已保存到: {output_path}")
+    
+    # 测试表格生成
+    print("正在生成动态回撤表格...")
+    table_path = plot_dynamic_drawdown_table()
+    print(f"表格已保存到: {table_path}")
+
