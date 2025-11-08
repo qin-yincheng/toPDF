@@ -17,12 +17,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_dynamic_drawdown_chart(
@@ -70,16 +70,18 @@ def plot_dynamic_drawdown_chart(
     fig, ax = plt.subplots(figsize=figsize)
     
     # 绘制产品回撤线（蓝色）
-    color1 = '#1f77b4'  # 深蓝色
+    color1 = '#5470c6'  # 深蓝色
     line1 = ax.plot(dates, product_drawdown, color=color1, marker='o', 
                      markersize=4, linewidth=2, label='阳光安盛多禾一号私募证券投资基金',
-                     markerfacecolor=color1, markeredgecolor=color1)
+                     markerfacecolor='white', markeredgecolor=color1,
+                     markeredgewidth=1.5)
     
     # 绘制基准回撤线（绿色）
-    color2 = '#2ca02c'  # 绿色
+    color2 = '#91cc75'  # 绿色
     line2 = ax.plot(dates, benchmark_drawdown, color=color2, marker='o', 
                      markersize=4, linewidth=2, label='沪深300',
-                     markerfacecolor=color2, markeredgecolor=color2)
+                     markerfacecolor='white', markeredgecolor=color2,
+                     markeredgewidth=1.5)
     
     # 设置Y轴（回撤从0%到最大回撤）
     max_drawdown = max(max(product_drawdown), max(benchmark_drawdown))
@@ -99,6 +101,11 @@ def plot_dynamic_drawdown_chart(
     if show_title:
         ax.set_title('动态回撤', fontsize=14, fontweight='bold', pad=20, loc='left')
     
+
+    # 设置边框：只保留左边框，删除其他边框
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+
     # 添加图例（增加与图表的间隔）
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.12), ncol=2, frameon=True)
     
@@ -179,7 +186,7 @@ def plot_dynamic_drawdown_table(
         colLabels=['指标', '数值'],
         cellLoc='left',
         loc='center',
-        bbox=[0.05, 0.05, 0.9, 0.9]
+        bbox=[0.1, 0.1, 0.8, 0.8]
     )
     
     # 设置表格样式
@@ -190,9 +197,9 @@ def plot_dynamic_drawdown_table(
     # 设置表头样式
     for i in range(2):
         cell = table[(0, i)]
-        cell.set_facecolor('#e8e8e8')  # 浅灰色背景
+        cell.set_facecolor('#f0f0f0')  # 浅灰色背景
         cell.set_text_props(weight='bold', ha='center')
-        cell.set_edgecolor('black')
+        cell.set_edgecolor('#f0f0f0')
         cell.set_linewidth(1)
     
     # 设置数据行样式
@@ -201,17 +208,17 @@ def plot_dynamic_drawdown_table(
             cell = table[(i, j)]
             # 第一列（指标列）左对齐，第二列（数值列）左对齐
             if j == 0:
-                cell.set_text_props(ha='left')
+                cell.set_text_props(ha='center')
             else:
-                cell.set_text_props(ha='left')
+                cell.set_text_props(ha='center')
             
             # 交替行颜色
             if i % 2 == 0:
                 cell.set_facecolor('#ffffff')  # 白色
             else:
-                cell.set_facecolor('#f8f8f8')  # 浅灰色
+                cell.set_facecolor('#ffffff')  # 浅灰色
             
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(1)
     
     # 添加标题（如果启用，但这里不显示，由 pages1.py 统一绘制）

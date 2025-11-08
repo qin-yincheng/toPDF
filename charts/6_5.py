@@ -16,12 +16,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_period_transaction_table(
@@ -109,7 +109,7 @@ def plot_period_transaction_table(
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')  # 浅灰色背景
+                cell.set_facecolor('#f0f0f0')  # 浅灰色背景
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 # 所有数据行都是白色背景
@@ -117,11 +117,11 @@ def plot_period_transaction_table(
                 
                 # 第一列（资产分类）左对齐，数值列右对齐
                 if j == 0:
-                    cell.set_text_props(ha='left')
+                    cell.set_text_props(ha='center')
                 else:
-                    cell.set_text_props(ha='right')  # 数值列右对齐
+                    cell.set_text_props(ha='center')  # 数值列右对齐
             
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
     
     # 调整布局
@@ -186,7 +186,7 @@ def plot_period_transaction_chart(
     
     # 绘制柱状图（买入，深蓝色）
     bars1 = ax.bar(x - (width + gap)/2, buy_amounts, width=width, 
-                   color='#1f77b4', alpha=0.9, label='买入')
+                   color='#082868', alpha=0.9, label='买入')
     
     # 绘制柱状图（卖出，浅灰色）
     bars2 = ax.bar(x + (width + gap)/2, sell_amounts, width=width, 

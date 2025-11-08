@@ -16,12 +16,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_stock_profit_table(
@@ -88,16 +88,18 @@ def plot_stock_profit_table(
     headers = ['股票代码', '股票名称', '权重占净值比(%)', '贡献度(%)', '收益额(万元)']
     
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 0.7   # 表格宽度为图形宽度的70%
+    table_width = 1   # 表格宽度为图形宽度的100%
     table_total_height = 0.7  # 表格总高度
     table_fontsize = 12  # 字体大小统一为12
     
-    # 计算位置（居中，但为标题留出空间）
-    table_x = (1 - table_width) / 2
+    # 计算位置（左对齐，但为标题留出空间）
+    table_x = 0  # 左边距0，使表格左对齐
     if show_title:
-        ax.text(0.5, 0.98, '盈利前十', transform=ax.transAxes,
-                ha='center', va='top', fontsize=12, fontweight='bold')
-        table_y = 0.10  # 顶部留出空间给标题
+        ax.text(0, 0.92, '盈利前十', transform=ax.transAxes,
+                ha='left', va='top', fontsize=12, fontweight='bold')
+        # table_y 是表格底部位置，表格高度是 table_total_height
+        # 如果希望表格顶部在 0.85，则底部 = 0.85 - table_total_height
+        table_y = 0.85 - table_total_height  # 表格顶部在85%，与标题保持合理距离
     else:
         table_y = (1 - table_total_height) / 2
     
@@ -111,14 +113,14 @@ def plot_stock_profit_table(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1, 1.5)  # 调整行高
+    # table.scale(1, 1.5)  # 调整行高
     
     # 设置表格样式
     for i in range(len(table_data) + 1):
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')
+                cell.set_facecolor('#f0f0f0')
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 # 交替行颜色
@@ -128,11 +130,11 @@ def plot_stock_profit_table(
                     cell.set_facecolor('#f8f8f8')
                 # 第一列和第二列左对齐，其他列居中
                 if j in [0, 1]:
-                    cell.set_text_props(ha='left')
+                    cell.set_text_props(ha='center')
                 else:
                     cell.set_text_props(ha='center')
             
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
     
     # 调整布局
@@ -186,6 +188,12 @@ def plot_stock_profit_chart(
     fig, ax1 = plt.subplots(figsize=figsize)
     ax2 = ax1.twinx()
     
+    # 设置 axes 的 zorder，确保 ax2（折线图）在上层
+    ax1.set_zorder(1)
+    ax2.set_zorder(2)
+    # 设置 ax2 的背景透明，这样不会遮挡 ax1 的内容
+    ax2.patch.set_visible(False)
+    
     # 提取数据用于绘图
     stock_names = [item['stock_name'] for item in profit_data]
     profit_amounts = [item['profit_amount'] for item in profit_data]
@@ -194,20 +202,20 @@ def plot_stock_profit_chart(
     # 设置X轴位置
     x = np.arange(len(stock_names))
     
-    # 绘制柱状图（收益额，左Y轴，蓝色）
-    ax1.bar(x, profit_amounts, width=0.6, color='#1f77b4', alpha=0.7, label='收益额')
-    ax1.set_ylabel('收益额(万元)', fontsize=11, color='#1f77b4')
-    ax1.tick_params(axis='y', labelcolor='#1f77b4')
+    # 绘制柱状图（收益额，左Y轴，蓝色）- 先绘制，确保在底层
+    ax1.bar(x, profit_amounts, width=0.6, color='#5470c6', alpha=1, label='收益额', zorder=1)
+    ax1.set_ylabel('收益额(万元)', fontsize=11, color='black')
+    ax1.tick_params(axis='y', labelcolor='black')
     
     # 设置左Y轴范围
     max_profit = max(profit_amounts) if profit_amounts else 12
     ax1.set_ylim(0, max_profit * 1.1)
     
-    # 绘制折线图（权重，右Y轴，绿色）
-    ax2.plot(x, weights, color='#2ca02c', marker='o', 
-             markersize=5, linewidth=2, label='权重')
-    ax2.set_ylabel('权重(%)', fontsize=11, color='#2ca02c')
-    ax2.tick_params(axis='y', labelcolor='#2ca02c')
+    # 绘制折线图（权重，右Y轴，绿色）- 后绘制，确保在上层
+    ax2.plot(x, weights, color='#91cc75', marker='o', 
+             markersize=5, linewidth=2, label='权重', zorder=10)
+    ax2.set_ylabel('权重(%)', fontsize=11, color='black')
+    ax2.tick_params(axis='y', labelcolor='black')
     
     # 设置右Y轴范围
     max_weight = max(weights) if weights else 7
@@ -312,16 +320,18 @@ def plot_stock_loss_table(
     headers = ['股票代码', '股票名称', '权重占净值比(%)', '贡献度(%)', '收益额(万元)']
     
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 0.7   # 表格宽度为图形宽度的70%
+    table_width = 1   # 表格宽度为图形宽度的100%
     table_total_height = 0.7  # 表格总高度
     table_fontsize = 12  # 字体大小统一为12
     
-    # 计算位置（居中，但为标题留出空间）
-    table_x = (1 - table_width) / 2
+    # 计算位置（左对齐，但为标题留出空间）
+    table_x = 0  # 左边距0，使表格左对齐
     if show_title:
-        ax.text(0.5, 0.98, '亏损前十', transform=ax.transAxes,
-                ha='center', va='top', fontsize=12, fontweight='bold')
-        table_y = 0.10  # 顶部留出空间给标题
+        ax.text(0, 0.92, '亏损前十', transform=ax.transAxes,
+                ha='left', va='top', fontsize=12, fontweight='bold')
+        # table_y 是表格底部位置，表格高度是 table_total_height
+        # 如果希望表格顶部在 0.85，则底部 = 0.85 - table_total_height
+        table_y = 0.85 - table_total_height  # 表格顶部在85%，与标题保持合理距离
     else:
         table_y = (1 - table_total_height) / 2
     
@@ -335,14 +345,14 @@ def plot_stock_loss_table(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1, 1.5)  # 调整行高
+    # table.scale(1, 1.5)  # 调整行高
     
     # 设置表格样式
     for i in range(len(table_data) + 1):
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')
+                cell.set_facecolor('#f0f0f0')
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 # 交替行颜色
@@ -352,11 +362,11 @@ def plot_stock_loss_table(
                     cell.set_facecolor('#f8f8f8')
                 # 第一列和第二列左对齐，其他列居中
                 if j in [0, 1]:
-                    cell.set_text_props(ha='left')
+                    cell.set_text_props(ha='center')
                 else:
                     cell.set_text_props(ha='center')
             
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
     
     # 调整布局
@@ -410,6 +420,12 @@ def plot_stock_loss_chart(
     fig, ax1 = plt.subplots(figsize=figsize)
     ax2 = ax1.twinx()
     
+    # 设置 axes 的 zorder，确保 ax2（折线图）在上层
+    ax1.set_zorder(1)
+    ax2.set_zorder(2)
+    # 设置 ax2 的背景透明，这样不会遮挡 ax1 的内容
+    ax2.patch.set_visible(False)
+    
     # 提取数据用于绘图
     stock_names = [item['stock_name'] for item in loss_data]
     profit_amounts = [item['profit_amount'] for item in loss_data]  # 负数表示亏损
@@ -418,21 +434,21 @@ def plot_stock_loss_chart(
     # 设置X轴位置
     x = np.arange(len(stock_names))
     
-    # 绘制柱状图（收益额，左Y轴，蓝色，负数向下）
-    ax1.bar(x, profit_amounts, width=0.6, color='#1f77b4', alpha=0.7, label='收益额')
-    ax1.set_ylabel('收益额(万元)', fontsize=11, color='#1f77b4')
-    ax1.tick_params(axis='y', labelcolor='#1f77b4')
+    # 绘制柱状图（收益额，左Y轴，蓝色，负数向下）- 先绘制，确保在底层
+    ax1.bar(x, profit_amounts, width=0.6, color='#5470c6', alpha=1, label='收益额', zorder=1)
+    ax1.set_ylabel('收益额(万元)', fontsize=11, color='black')
+    ax1.tick_params(axis='y', labelcolor='black')
     
     # 设置左Y轴范围（负数范围）
     min_profit = min(profit_amounts) if profit_amounts else -5
     max_profit = max(profit_amounts) if profit_amounts else 0
     ax1.set_ylim(min_profit * 1.1, max_profit * 1.1)
     
-    # 绘制折线图（权重，右Y轴，绿色）
-    ax2.plot(x, weights, color='#2ca02c', marker='o', 
-             markersize=5, linewidth=2, label='权重')
-    ax2.set_ylabel('权重(%)', fontsize=11, color='#2ca02c')
-    ax2.tick_params(axis='y', labelcolor='#2ca02c')
+    # 绘制折线图（权重，右Y轴，绿色）- 后绘制，确保在上层
+    ax2.plot(x, weights, color='#91cc75', marker='o', 
+             markersize=5, linewidth=2, label='权重', zorder=10)
+    ax2.set_ylabel('权重(%)', fontsize=11, color='black')
+    ax2.tick_params(axis='y', labelcolor='black')
     
     # 设置右Y轴范围
     max_weight = max(weights) if weights else 3

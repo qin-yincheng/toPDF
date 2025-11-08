@@ -17,12 +17,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 import matplotlib.pyplot as plt
@@ -73,15 +73,15 @@ def plot_market_value_pie_chart(
     
     # 定义颜色映射（根据你的图片调整）
     color_map = {
-        '食品饮料': '#1F497D',
-        '建筑装饰': '#BFBFBF', 
-        '轻工制造': '#C00000',
-        '基础化工': '#FFC000',
-        '商贸零售': '#70AD47',
-        '电力设备': '#4472C4',
-        '建筑材料': '#00B0F0',
-        '纺织服饰': '#0070C0',
-        '其他行业': '#7030A0'
+        '食品饮料': '#082868',
+        '建筑装饰': '#afb0b2', 
+        '轻工制造': '#c12e34',
+        '基础化工': '#fac858',
+        '商贸零售': '#3ba272',
+        '电力设备': '#339ca8',
+        '建筑材料': '#0098d9',
+        '纺织服饰': '#d87939',
+        '其他行业': '#b093c0'
     }
     
     colors = [color_map.get(ind, '#808080') for ind in industries]
@@ -94,17 +94,14 @@ def plot_market_value_pie_chart(
         startangle=90,
         colors=colors,
         pctdistance=0.75,  # 百分比距离圆心的距离
-        wedgeprops=dict(edgecolor='white', linewidth=1),
+        wedgeprops=dict(edgecolor='white', linewidth=0),
         textprops={'fontsize': 9, 'fontweight': 'bold'}
     )
     
     # 设置百分比文字颜色
     for i, autotext in enumerate(autotexts):
         # 根据背景颜色调整文字颜色
-        if industries[i] in ['食品饮料', '电力设备', '纺织服饰', '其他行业']:
-            autotext.set_color('white')
-        else:
-            autotext.set_color('black')
+        autotext.set_color('black')
     
     ax.axis('equal')
     
@@ -175,7 +172,7 @@ def plot_average_market_value_bar_chart(
     
     # 绘制横向柱状图
     y_pos = np.arange(len(industries))
-    bars = ax.barh(y_pos, proportions, color='#1f77b4', alpha=0.7)
+    bars = ax.barh(y_pos, proportions, color='#082868', alpha=1)
     
     # 设置Y轴标签
     ax.set_yticks(y_pos)
@@ -199,12 +196,17 @@ def plot_average_market_value_bar_chart(
     # 设置标题（左对齐）
     if show_title:
         ax.set_title('期间平均市值占产品净资产比', fontsize=12, fontweight='bold', pad=15, loc='center')
-        # 添加副标题（在标题下方，避免重叠）
-        ax.text(0.5, 1.02, '前十大行业占比', transform=ax.transAxes,
-                ha='center', va='bottom', fontsize=9, style='italic')
     
-    # 调整布局，为标题和副标题留出空间
-    plt.tight_layout(rect=[0, 0, 1, 0.92])
+    # 添加图例（替代副标题，位置在标题下方，避免重叠）
+    from matplotlib.patches import Patch
+    legend_elements = [Patch(facecolor='#082868', label='前十大行业占比')]
+    ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 1.07), ncol=1, frameon=True)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
+    # 调整布局，为标题和图例留出空间
+    plt.tight_layout(rect=[0, 0, 1, 0.9])
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
@@ -289,12 +291,12 @@ def plot_industry_holding_table(
     
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
     table_width = 0.7   # 表格宽度为图形宽度的70%
-    table_total_height = 0.7  # 表格总高度
+    table_total_height = 0.8  # 表格总高度
     table_fontsize = 12  # 字体大小统一为12
     
     # 计算位置（居中，但为标题和脚注留出空间）
     table_x = (1 - table_width) / 2
-    table_y = 0.15  # 底部留15%给脚注，顶部留15%给标题
+    table_y = 0.1  # 底部留15%给脚注，顶部留15%给标题
     
     # 绘制表格
     table = ax.table(
@@ -302,7 +304,7 @@ def plot_industry_holding_table(
         colLabels=headers,
         cellLoc='center',
         loc='center',
-        bbox=[table_x, table_y, table_width, table_total_height]
+        bbox=[0, table_y, 1, table_total_height]
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
@@ -313,7 +315,7 @@ def plot_industry_holding_table(
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')
+                cell.set_facecolor('#f0f0f0')
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 # 交替行颜色
@@ -322,16 +324,16 @@ def plot_industry_holding_table(
                 else:
                     cell.set_facecolor('#f8f8f8')
                 cell.set_text_props(ha='center')
-            cell.set_edgecolor('black')
-            cell.set_linewidth(0.8)
+            cell.set_edgecolor('#f0f0f0')
+            cell.set_linewidth(1)
     
     # 设置标题（在顶部，左对齐）
     if show_title:
-        ax.text(0, 0.98, '期末持股行业风格', transform=ax.transAxes,
-                ha='left', va='top', fontsize=12, fontweight='bold')
+        ax.text(0, 0.99, '期末持股行业风格', transform=ax.transAxes,
+                ha='left', va='top', fontsize=14, fontweight='bold')
     
     # 添加脚注（在底部，左对齐）
-    ax.text(0, 0.02, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,
+    ax.text(0, 0.01, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,
             ha='left', va='bottom', fontsize=8, style='italic')
     
     # 调整布局

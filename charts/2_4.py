@@ -17,12 +17,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_stock_position_chart(
@@ -73,7 +73,7 @@ def plot_stock_position_chart(
     ax2 = ax1.twinx()
     
     # 绘制股票仓位面积图（左Y轴，深灰色填充）
-    ax1.fill_between(dates, stock_positions, 0, alpha=0.7, color='#4A4A4A', label='股票仓位')
+    ax1.fill_between(dates, stock_positions, 0, alpha=1, color='#929aa8', label='股票仓位')
     ax1.set_ylabel('占比', fontsize=11)
     ax1.set_ylim(0, 100)
     ax1.set_yticks([0, 20, 40, 60, 80, 100])
@@ -84,11 +84,11 @@ def plot_stock_position_chart(
     
     # 绘制TOP10折线图（左Y轴，灰色，带圆形标记）
     if any(top10_values):
-        ax1.plot(dates, top10_values, color='#808080', marker='o', 
+        ax1.plot(dates, top10_values, color='#808080', marker='', 
                 markersize=4, linewidth=1.5, label='TOP10', alpha=0.7)
     
     # 绘制沪深300折线图（右Y轴，红色，带圆形标记）
-    ax2.plot(dates, csi300_values, color='#FF0000', marker='o', 
+    ax2.plot(dates, csi300_values, color='#c12e34', marker='', 
              markersize=4, linewidth=1.5, label='沪深300')
     ax2.set_ylabel('沪深300', fontsize=11)
     ax2.set_ylim(0.9178, 1.2365)

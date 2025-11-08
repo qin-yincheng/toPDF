@@ -22,12 +22,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_scale_overview(
@@ -86,12 +86,13 @@ def plot_scale_overview(
         fig, ax1 = plt.subplots(figsize=figsize)
     
     # 左Y轴：资产规模和份额
-    color1 = '#1f77b4'  # 深蓝色
-    color2 = '#d3d3d3'  # 浅灰色
+    color1 = '#082868'  # 深蓝色
+    color2 = '#afb0b2'  # 浅灰色
     
     line1 = ax1.plot(dates, asset_scale, color=color1, marker='o', 
                      markersize=4, linewidth=2, label='资产规模', 
-                     markerfacecolor=color1, markeredgecolor=color1)
+                     markerfacecolor='white', markeredgecolor=color1,
+                     markeredgewidth=1.5)
     line2 = ax1.plot(dates, shares, color=color2, marker='o', 
                      markersize=4, linewidth=2, label='份额', 
                      markerfacecolor='white', markeredgecolor=color2, 
@@ -106,9 +107,9 @@ def plot_scale_overview(
     # 右Y轴：净申购额
     ax2 = ax1.twinx()
     color3 = '#2ca02c'  # 绿色（虽然图例显示绿色，但实际可能是深蓝色）
-    line3 = ax2.plot(dates, net_subscription, color=color1, marker='o', 
-                     markersize=4, linewidth=2, label='净申购额',
-                     markerfacecolor=color1, markeredgecolor=color1)
+    # line3 = ax2.plot(dates, net_subscription, color=color1, marker='o', 
+    #                  markersize=4, linewidth=2, label='净申购额',
+    #                  markerfacecolor=color1, markeredgecolor=color1)
     
     ax2.set_ylabel('申购/赎回/净申购赎回(万元)', color='black')
     ax2.tick_params(axis='y', labelcolor='black')
@@ -118,6 +119,11 @@ def plot_scale_overview(
     if show_title:
         ax1.set_title('产品规模总览', fontsize=14, fontweight='bold', pad=20)
     
+
+
+    ax1.spines['top'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+
     # 设置日期格式
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     ax1.xaxis.set_major_locator(mdates.DayLocator(interval=15))  # 每15天一个刻度
@@ -132,7 +138,8 @@ def plot_scale_overview(
     from matplotlib.lines import Line2D
     legend_elements = [
         Line2D([0], [0], color=color1, marker='o', markersize=6, 
-               linewidth=2, label='资产规模', markerfacecolor=color1),
+               linewidth=2, label='资产规模', markerfacecolor='white',
+               markeredgecolor=color1, markeredgewidth=1.5),
         Line2D([0], [0], color=color2, marker='o', markersize=6, 
                linewidth=2, label='份额', markerfacecolor='white', 
                markeredgecolor=color2, markeredgewidth=1.5),
@@ -188,9 +195,9 @@ def plot_scale_overview(
         # 表头样式
         for j in range(2):
             header_cell = tbl[(0, j)]
-            header_cell.set_facecolor('#e8e8e8')
+            header_cell.set_facecolor('#f0f0f0')
             header_cell.set_text_props(weight='bold', ha='center')
-            header_cell.set_edgecolor('black')
+            header_cell.set_edgecolor('#f0f0f0')
             header_cell.set_linewidth(1)
         # 数据行样式
         n_rows = len(table_data) + 1
@@ -198,15 +205,15 @@ def plot_scale_overview(
             for j in range(2):
                 cell = tbl[(i, j)]
                 if j == 0:
-                    cell.set_text_props(ha='left')
+                    cell.set_text_props(ha='center')
                 else:
-                    cell.set_text_props(ha='right')
-                cell.set_edgecolor('black')
+                    cell.set_text_props(ha='center')
+                cell.set_edgecolor('#f0f0f0')
                 cell.set_linewidth(1)
                 if i % 2 == 1:
                     cell.set_facecolor('#ffffff')
                 else:
-                    cell.set_facecolor('#f8f8f8')
+                    cell.set_facecolor('#ffffff')
 
     # 调整布局
     if include_right_table:
