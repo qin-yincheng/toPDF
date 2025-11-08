@@ -23,12 +23,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def _generate_mock_return_data() -> Dict[str, Dict[str, float]]:
@@ -104,7 +104,7 @@ def plot_return_analysis_table(
         colLabels=table_data[0],  # 表头
         cellLoc='left',
         loc='upper left',
-        bbox=[0, 0.1, 0.9, 0.8]
+        bbox=[0, 0.15, 1, 0.9]
     )
     
     # 设置表格样式
@@ -115,27 +115,27 @@ def plot_return_analysis_table(
     # 设置表头样式
     for i in range(4):
         cell = table[(0, i)]
-        cell.set_facecolor('#d3d3d3')  # 浅灰色背景
+        cell.set_facecolor('#f0f0f0')  # 浅灰色背景
         cell.set_text_props(weight='bold', fontsize=12)
-        cell.set_edgecolor('black')
-        cell.set_linewidth(1.5)
+        cell.set_edgecolor('#f0f0f0')
+        cell.set_linewidth(1)
     
     # 设置数据行样式
     for i in range(1, len(table_data)):
         for j in range(4):
             cell = table[(i, j)]
-            if j == 0:  # 第一列（时间段）
-                cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-                cell.set_text_props(weight='bold', ha='center', fontsize=12)
-            else:  # 数据列
-                # 交替行颜色
-                if i % 2 == 0:
-                    cell.set_facecolor('#ffffff')  # 白色
-                else:
-                    cell.set_facecolor('#f8f8f8')  # 浅灰色
-                cell.set_text_props(ha='center', fontsize=12)
+            # if j == 0:  # 第一列（时间段）
+            #     cell.set_facecolor('#ffffff')  # 浅灰色背景
+            #     cell.set_text_props(weight='bold', ha='center', fontsize=12)
+            # else:  # 数据列
+            # 交替行颜色
+            if i % 2 == 0:
+                cell.set_facecolor('#ffffff')  # 白色
+            else:
+                cell.set_facecolor('#f8f8f8')  # 浅灰色
+            cell.set_text_props(ha='center', fontsize=12)
             
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(1)
             
     
@@ -159,20 +159,12 @@ def plot_return_analysis_table(
 def plot_return_comparison_chart(
     data: Optional[Dict[str, Dict[str, float]]] = None,
     save_path: Optional[str] = None,
-    figsize: tuple = (16, 8),
+    figsize: tuple = (10, 6),
     return_figure: bool = False,
     show_title: bool = True
 ):
     """
     绘制产品收益率对比柱状图（matplotlib版本）
-    
-    参数:
-        data: 数据字典，格式与 plot_return_analysis_table 相同
-        save_path: 保存路径
-        figsize: 图表大小（宽，高）
-    
-    返回:
-        str: 保存的文件路径
     """
     # 配置中文字体
     setup_chinese_font()
@@ -191,21 +183,21 @@ def plot_return_comparison_chart(
     
     # 设置柱状图位置
     x = np.arange(len(periods))
-    width = 0.35  # 柱状图宽度
+    width = 0.38
+    gap = 0.06  # 两个柱子之间的间隔
     
     # 绘制柱状图
-    color_product = '#1f77b4'  # 深蓝色
-    color_benchmark = '#d3d3d3'  # 浅灰色
+    color_product = '#082867'
+    color_benchmark = '#aeafb1'
     
-    bars1 = ax.bar(x - width/2, product_returns, width, label='产品收益率', 
-                   color=color_product, edgecolor='black', linewidth=0.5)
-    bars2 = ax.bar(x + width/2, benchmark_returns, width, label='沪深300', 
-                   color=color_benchmark, edgecolor='black', linewidth=0.5)
+    bars1 = ax.bar(x - (width + gap)/2, product_returns, width, label='产品收益率', 
+                   color=color_product, edgecolor='none', linewidth=0)
+    bars2 = ax.bar(x + (width + gap)/2, benchmark_returns, width, label='沪深300', 
+                   color=color_benchmark, edgecolor='none', linewidth=0)
     
     # 设置坐标轴
     ax.set_xlabel('时间段')
     ax.set_ylabel('收益率(%)', color='black')
-    # 设置标题（如果启用）
     if show_title:
         ax.set_title('产品收益率对比', fontsize=14, fontweight='bold', pad=20)
     ax.set_xticks(x)
@@ -213,27 +205,37 @@ def plot_return_comparison_chart(
     ax.set_ylim(-20, 50)
     ax.set_yticks([-20, -10, 0, 10, 20, 30, 40, 50])
     ax.grid(True, alpha=0.3, linestyle='--', axis='y')
-    ax.axhline(y=0, color='black', linestyle='-', linewidth=0.8)
     
-    # 设置图例（增加与图表的间隔）
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.12), ncol=2, frameon=True)
+    # 设置边框：只保留左边框，删除其他边框
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
     
-    # 调整布局，为图例留出更多空间
-    plt.tight_layout(rect=[0, 0, 1, 0.96])  # 顶部留出4%的空间给图例
+    # 在零轴位置画一条明显的线
+    ax.axhline(y=0, color='black', linestyle='-', linewidth=1.5, zorder=2)
     
-    # 如果只需要返回 figure 对象，不保存
+    # 关键修改：隐藏x轴刻度，显示y轴零刻度
+    ax.tick_params(axis='x', which='both', bottom=False)  # 隐藏x轴刻度线
+    ax.tick_params(axis='y', which='both', left=True)     # 显示y轴刻度线
+    
+    # 特别强调零刻度
+    ax.tick_params(axis='y', which='major', length=6, width=1.5, colors='black')
+    
+    # 设置图例
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=2, frameon=True)
+    
+    # 调整布局
+    plt.tight_layout(rect=[0.05, 0.1, 0.95, 0.96])
+    
     if return_figure:
         return fig
     
-    # 如果提供了保存路径，保存图表为 PDF（矢量格式，高清）
     if save_path:
         plt.savefig(save_path, format='pdf', bbox_inches='tight', dpi=300)
         plt.close()
         return save_path
     else:
-        # 不保存，返回 figure 对象
         return fig
-
 
 def plot_return_analysis_all(
     data: Optional[Dict[str, Dict[str, float]]] = None,

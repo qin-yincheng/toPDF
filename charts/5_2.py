@@ -16,12 +16,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_stock_holding_nodes_table(
@@ -114,20 +114,20 @@ def plot_stock_holding_nodes_table(
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')  # 浅灰色背景
+                cell.set_facecolor('#f0f0f0')  # 浅灰色背景
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 # 所有数据行都是白色背景
                 cell.set_facecolor('#ffffff')
                 # 第一列左对齐，其他列居中
                 if j == 0:
-                    cell.set_text_props(ha='left')
+                    cell.set_text_props(ha='center')
                 else:
                     cell.set_text_props(ha='center')
             
             # 细灰色边框
-            cell.set_edgecolor('#808080')
-            cell.set_linewidth(0.5)
+            cell.set_edgecolor('#f0f0f0')
+            cell.set_linewidth(0.8)
     
     # 调整布局
     plt.tight_layout()
@@ -191,9 +191,9 @@ def plot_stock_holding_nodes_chart(
     gap = 0.05  # 两个柱子之间的间隔
     
     # 绘制柱状图（市值，左Y轴，蓝色）
-    bars1 = ax1.bar(x - (width + gap)/2, market_values, width=width, color='#1f77b4', alpha=0.7, label='市值')
-    ax1.set_ylabel('市值(万元)', fontsize=11, color='#1f77b4')
-    ax1.tick_params(axis='y', labelcolor='#1f77b4')
+    bars1 = ax1.bar(x - (width + gap)/2, market_values, width=width, color='#5470c6', alpha=0.7, label='市值')
+    ax1.set_ylabel('市值(万元)', fontsize=11, color='black')
+    ax1.tick_params(axis='y', labelcolor='black')
     
     # 设置左Y轴范围
     max_market_value = max(market_values) if market_values else 180
@@ -202,9 +202,9 @@ def plot_stock_holding_nodes_chart(
     ax1.set_yticks(np.arange(0, max_market_value * 1.1 + 30, 30))
     
     # 绘制柱状图（占比，右Y轴，浅绿色）
-    bars2 = ax2.bar(x + (width + gap)/2, proportions, width=width, color='#90EE90', alpha=0.7, label='占比')
-    ax2.set_ylabel('占比(%)', fontsize=11, color='#2ca02c')
-    ax2.tick_params(axis='y', labelcolor='#2ca02c')
+    bars2 = ax2.bar(x + (width + gap)/2, proportions, width=width, color='#91cc75', alpha=0.7, label='占比')
+    ax2.set_ylabel('占比(%)', fontsize=11, color='black')
+    ax2.tick_params(axis='y', labelcolor='black')
     
     # 设置右Y轴范围（0%到100%）
     ax2.set_ylim(0, 100)

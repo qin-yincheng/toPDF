@@ -17,12 +17,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_industry_attribution_profit_table(
@@ -92,16 +92,18 @@ def plot_industry_attribution_profit_table(
                '选择收益(%)', '配置收益(%)']
     
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 0.7   # 表格宽度为图形宽度的70%
+    table_width = 1   # 表格宽度为图形宽度的70%
     table_total_height = 0.7  # 表格总高度
     table_fontsize = 12  # 字体大小统一为12
     
-    # 计算位置（居中，但为标题留出空间）
-    table_x = (1 - table_width) / 2
+    # 计算位置（左对齐，但为标题留出空间）
+    table_x = 0  # 左边距0，使表格左对齐
     if show_title:
-        ax.text(0.5, 0.98, '按照收益额排名前十', transform=ax.transAxes,
-                ha='center', va='top', fontsize=12, fontweight='bold')
-        table_y = 0.10  # 顶部留出空间给标题
+        ax.text(0, 0.92, '按照收益额排名前十', transform=ax.transAxes,
+                ha='left', va='top', fontsize=12, fontweight='bold')
+        # table_y 是表格底部位置，表格高度是 table_total_height
+        # 如果希望表格顶部在 0.85，则底部 = 0.85 - table_total_height
+        table_y = 0.85 - table_total_height  # 表格顶部在85%，与标题保持合理距离
     else:
         table_y = (1 - table_total_height) / 2
     
@@ -115,14 +117,14 @@ def plot_industry_attribution_profit_table(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1, 1.5)  # 调整行高
+    # table.scale(1, 1.5)  # 调整行高
     
     # 设置表格样式
     for i in range(len(table_data) + 1):
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')
+                cell.set_facecolor('#f0f0f0')
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 # 交替行颜色
@@ -132,11 +134,11 @@ def plot_industry_attribution_profit_table(
                     cell.set_facecolor('#f8f8f8')
                 # 第一列左对齐，其他列居中
                 if j == 0:
-                    cell.set_text_props(ha='left')
+                    cell.set_text_props(ha='center')
                 else:
                     cell.set_text_props(ha='center')
             
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
     
     # 调整布局
@@ -190,6 +192,12 @@ def plot_industry_attribution_profit_chart(
     fig, ax1 = plt.subplots(figsize=figsize)
     ax2 = ax1.twinx()
     
+    # 设置 axes 的 zorder，确保 ax1（折线图）在上层
+    ax1.set_zorder(2)
+    ax2.set_zorder(1)
+    # 设置 ax1 的背景透明，这样不会遮挡 ax2 的内容
+    ax1.patch.set_visible(False)
+    
     # 提取所有10个行业的数据用于绘图
     industries = [item['industry'] for item in profit_data]
     contributions = [item['contribution'] for item in profit_data]
@@ -198,24 +206,24 @@ def plot_industry_attribution_profit_chart(
     # 设置X轴位置（10个柱子）
     x = np.arange(len(industries))
     
-    # 绘制折线图（贡献度%，左Y轴，蓝色）- 显示所有10个行业
-    ax1.plot(x, contributions, color='#1f77b4', marker='o', 
-             markersize=5, linewidth=2, label='贡献度')
-    ax1.set_ylabel('贡献度(%)', fontsize=11, color='#1f77b4')
-    ax1.tick_params(axis='y', labelcolor='#1f77b4')
+    # 绘制柱状图（权重%，右Y轴，灰色）- 先绘制，确保在底层
+    ax2.bar(x, weights, width=0.65, color='#808080', alpha=1, label='权重', zorder=1)
     
-    # 设置左Y轴范围
+    # 绘制折线图（贡献度%，左Y轴，蓝色）- 后绘制，确保在上层
+    ax1.plot(x, contributions, color='#082868', marker='o', 
+            markersize=5, linewidth=2, label='贡献度',markerfacecolor='white', markeredgecolor='#082868',
+            markeredgewidth=1.5, zorder=10)
+    ax1.set_ylabel('贡献度(%)', fontsize=11, color='black')
+    ax1.tick_params(axis='y', labelcolor='black')
+    ax2.set_ylabel('权重(%)', fontsize=11, color='black')
+    ax2.tick_params(axis='y', labelcolor='black')
+    
+    # 统一两个Y轴的范围，使折线图能正确显示在柱状图上方
     max_contrib = max(contributions) if contributions else 10
-    ax1.set_ylim(0, max_contrib * 1.1)
-    
-    # 绘制柱状图（权重%，右Y轴，灰色）- 显示所有10个柱子
-    ax2.bar(x, weights, width=0.6, color='#808080', alpha=0.7, label='权重')
-    ax2.set_ylabel('权重(%)', fontsize=11, color='#808080')
-    ax2.tick_params(axis='y', labelcolor='#808080')
-    
-    # 设置右Y轴范围
     max_weight = max(weights) if weights else 8
-    ax2.set_ylim(0, max_weight * 1.2)
+    y_max = max(max_contrib, max_weight) * 1.1  # 取两者最大值
+    ax1.set_ylim(0, y_max)
+    ax2.set_ylim(0, y_max)
     
     # 设置X轴：显示所有10个位置，但只显示5个标签（机械设备、石油石化、医药生物、国防军工、社会服务）
     # 这5个行业在原始数据中的索引是：0, 2, 4, 6, 8
@@ -239,7 +247,8 @@ def plot_industry_attribution_profit_chart(
     # 不显示标题（根据用户要求，标题只在表格上方显示）
     # if show_title:
     #     ax1.set_title('按照收益额排名前十', fontsize=12, fontweight='bold', pad=15, loc='left')
-    
+    ax1.spines['top'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
     # 调整布局
     plt.tight_layout()
     
@@ -324,16 +333,18 @@ def plot_industry_attribution_loss_table(
                '选择收益(%)', '配置收益(%)']
     
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 0.7   # 表格宽度为图形宽度的70%
+    table_width = 1   # 表格宽度为图形宽度的70%
     table_total_height = 0.7  # 表格总高度
     table_fontsize = 12  # 字体大小统一为12
     
-    # 计算位置（居中，但为标题留出空间）
-    table_x = (1 - table_width) / 2
+    # 计算位置（左对齐，但为标题留出空间）
+    table_x = 0  # 左边距0，使表格左对齐
     if show_title:
-        ax.text(0.5, 0.98, '按照亏损额排名前十', transform=ax.transAxes,
-                ha='center', va='top', fontsize=12, fontweight='bold')
-        table_y = 0.10  # 顶部留出空间给标题
+        ax.text(0, 0.92, '按照亏损额排名前十', transform=ax.transAxes,
+                ha='left', va='top', fontsize=12, fontweight='bold')
+        # table_y 是表格底部位置，表格高度是 table_total_height
+        # 如果希望表格顶部在 0.85，则底部 = 0.85 - table_total_height
+        table_y = 0.85 - table_total_height  # 表格顶部在85%，与标题保持合理距离
     else:
         table_y = (1 - table_total_height) / 2
     
@@ -347,14 +358,14 @@ def plot_industry_attribution_loss_table(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1, 1.5)  # 调整行高
+    # table.scale(1, 1.5)  # 调整行高
     
     # 设置表格样式
     for i in range(len(table_data) + 1):
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')
+                cell.set_facecolor('#f0f0f0')
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 # 交替行颜色
@@ -364,11 +375,11 @@ def plot_industry_attribution_loss_table(
                     cell.set_facecolor('#f8f8f8')
                 # 第一列左对齐，其他列居中
                 if j == 0:
-                    cell.set_text_props(ha='left')
+                    cell.set_text_props(ha='center')
                 else:
                     cell.set_text_props(ha='center')
             
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
     
     # 调整布局
@@ -422,6 +433,12 @@ def plot_industry_attribution_loss_chart(
     fig, ax1 = plt.subplots(figsize=figsize)
     ax2 = ax1.twinx()
     
+    # 设置 axes 的 zorder，确保 ax1（折线图）在上层
+    ax1.set_zorder(2)
+    ax2.set_zorder(1)
+    # 设置 ax1 的背景透明，这样不会遮挡 ax2 的内容
+    ax1.patch.set_visible(False)
+    
     # 提取数据用于绘图
     industries = [item['industry'] for item in loss_data]
     contributions = [item['contribution'] for item in loss_data]
@@ -430,27 +447,29 @@ def plot_industry_attribution_loss_chart(
     # 设置X轴位置
     x = np.arange(len(industries))
     
-    # 绘制折线图（贡献度%，左Y轴，蓝色）
-    ax1.plot(x, contributions, color='#1f77b4', marker='o', 
-             markersize=5, linewidth=2, label='贡献度')
-    ax1.set_ylabel('贡献度(%)', fontsize=11, color='#1f77b4')
-    ax1.tick_params(axis='y', labelcolor='#1f77b4')
+    # 绘制柱状图（权重%，右Y轴，灰色）- 先绘制，确保在底层
+    ax2.bar(x, weights, width=0.65, color='#808080', alpha=1, label='权重', zorder=1)
     
-    # 设置左Y轴范围（负数范围）
+    # 绘制折线图（贡献度%，左Y轴，蓝色）- 后绘制，确保在上层
+    ax1.plot(x, contributions, color='#082868', marker='o', 
+            markersize=5, linewidth=2, label='贡献度', markerfacecolor='white', markeredgecolor='#082868',
+            markeredgewidth=1.5, zorder=10)
+    ax1.set_ylabel('贡献度(%)', fontsize=11, color='black')
+    ax1.tick_params(axis='y', labelcolor='black')
+    ax2.set_ylabel('权重(%)', fontsize=11, color='black')
+    ax2.tick_params(axis='y', labelcolor='black')
+    
+    # 统一两个Y轴的范围，使折线图能正确显示在柱状图上方
     min_contrib = min(contributions) if contributions else -2
     max_contrib = max(contributions) if contributions else 0
-    ax1.set_ylim(min_contrib * 1.1, max_contrib * 1.1)
-    
-    # 绘制柱状图（权重%，右Y轴，灰色）
-    ax2.bar(x, weights, width=0.6, color='#808080', alpha=0.7, label='权重')
-    ax2.set_ylabel('权重(%)', fontsize=11, color='#808080')
-    ax2.tick_params(axis='y', labelcolor='#808080')
-    
-    # 设置右Y轴范围
     max_weight = max(weights) if weights else 8
-    ax2.set_ylim(0, max_weight * 1.2)
+    # 对于负数范围，需要同时考虑贡献度的最小值和权重的最大值
+    y_min = min_contrib * 1.1
+    y_max = max(max_contrib, max_weight) * 1.1
+    ax1.set_ylim(y_min, y_max)
+    ax2.set_ylim(0, y_max)  # 权重始终为正数
     
-    # 设置X轴
+    # 设置X轴  
     ax1.set_xticks(x)
     ax1.set_xticklabels(industries, rotation=45, ha='right')
     ax1.set_xlabel('行业', fontsize=11)
@@ -467,7 +486,8 @@ def plot_industry_attribution_loss_chart(
     # 不显示标题（根据用户要求，标题只在表格上方显示）
     # if show_title:
     #     ax1.set_title('按照亏损额排名前十', fontsize=12, fontweight='bold', pad=15, loc='left')
-    
+    ax1.spines['top'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
     # 调整布局
     plt.tight_layout()
     

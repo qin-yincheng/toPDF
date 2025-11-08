@@ -17,12 +17,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_end_period_holdings_table(
@@ -133,7 +133,7 @@ def plot_end_period_holdings_table(
     net_value_text = f"资产净值: {summary.get('asset_net_value', 0):.2f}(万元)"
     # 使用矩形背景，与表格对齐，底部与标题矩形无缝连接
     net_value_rect = Rectangle((net_value_x, y_top - net_value_height), total_table_width, net_value_height, 
-                               facecolor='#e8e8e8', edgecolor='black', linewidth=0.8)
+                               facecolor='#f0f0f0', edgecolor='#f0f0f0', linewidth=1)
     ax.add_patch(net_value_rect)
     ax.text(net_value_x + total_table_width / 2, y_top - net_value_height / 2, 
             net_value_text,
@@ -148,7 +148,7 @@ def plot_end_period_holdings_table(
     # 矩形宽度与表格对齐
     asset_title_text = f"资产总值: {summary.get('total_assets', 0):.2f}(万元)"
     asset_title_rect = Rectangle((asset_x, asset_title_y - asset_title_height), asset_width, asset_title_height,
-                                 facecolor='#e8e8e8', edgecolor='black', linewidth=0.8)
+                                 facecolor='#f0f0f0', edgecolor='#f0f0f0', linewidth=1)
     ax.add_patch(asset_title_rect)
     ax.text(asset_x + asset_width / 2, asset_title_y - asset_title_height / 2,
             asset_title_text,
@@ -173,23 +173,23 @@ def plot_end_period_holdings_table(
         for j in range(3):
             cell = asset_table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')
+                cell.set_facecolor('#f0f0f0')
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 if j == 0:
                     # 资产名称列背景浅灰（所有行）
-                    cell.set_facecolor('#e8e8e8')
-                    cell.set_text_props(ha='left')
+                    cell.set_facecolor('#f0f0f0')
+                    cell.set_text_props(ha='center')
                 else:
-                    cell.set_text_props(ha='right')
+                    cell.set_text_props(ha='center')
                     # 交替行颜色：第一行数据（i=1）白色，第二行（i=2）浅灰，以此类推
                     # i=1 是奇数，应该是白色；i=2 是偶数，应该是浅灰
                     if (i - 1) % 2 == 0:  # 第一行数据（i=1）白色
                         cell.set_facecolor('#ffffff')
                     else:  # 第二行数据（i=2）浅灰
                         cell.set_facecolor('#f8f8f8')
-            cell.set_edgecolor('black')
-            cell.set_linewidth(0.8)
+            cell.set_edgecolor('#f0f0f0')
+            cell.set_linewidth(1)
     
     # 绘制右侧负债明细表格（带标题）
     liability_title_y = table_y_start + asset_title_height  # 标题矩形顶部位置，与资产总值对齐
@@ -200,7 +200,7 @@ def plot_end_period_holdings_table(
     # 矩形宽度与表格对齐，与资产总值矩形无缝连接
     liability_title_text = f"负债合计: {summary.get('total_liabilities', 0):.2f}(万元)"
     liability_title_rect = Rectangle((liability_x, liability_title_y - asset_title_height), liability_width, asset_title_height,
-                                     facecolor='#e8e8e8', edgecolor='black', linewidth=0.8)
+                                     facecolor='#f0f0f0', edgecolor='#f0f0f0', linewidth=1)
     ax.add_patch(liability_title_rect)
     ax.text(liability_x + liability_width / 2, liability_title_y - asset_title_height / 2,
             liability_title_text,
@@ -223,21 +223,21 @@ def plot_end_period_holdings_table(
         for j in range(3):
             cell = liability_table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')
+                cell.set_facecolor('#f0f0f0')
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 if j == 0:
-                    cell.set_text_props(ha='left')
+                    cell.set_text_props(ha='center')
                 else:
-                    cell.set_text_props(ha='right')
+                    cell.set_text_props(ha='center')
                 # 交替行颜色：第一行数据（i=1）白色，第二行（i=2）浅灰，以此类推
                 # i=1 是奇数，应该是白色；i=2 是偶数，应该是浅灰
                 if (i - 1) % 2 == 0:  # 第一行数据（i=1）白色
                     cell.set_facecolor('#ffffff')
                 else:  # 第二行数据（i=2）浅灰
                     cell.set_facecolor('#f8f8f8')
-            cell.set_edgecolor('black')
-            cell.set_linewidth(0.8)
+            cell.set_edgecolor('#f0f0f0')
+            cell.set_linewidth(1)
     
     # 添加标题（如果启用，但这里不显示，由 pages1.py 统一绘制）
     # plt.title('期末持仓', fontsize=16, fontweight='bold', pad=20, loc='left')

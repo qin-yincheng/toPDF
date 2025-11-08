@@ -16,12 +16,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_asset_performance_attribution_table(
@@ -91,8 +91,8 @@ def plot_asset_performance_attribution_table(
     ax.axis('off')
     
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 0.7   # 表格宽度为图形宽度的70%
-    table_total_height = 0.7  # 表格总高度
+    table_width = 1   # 表格宽度为图形宽度的70%
+    table_total_height = 0.5  # 表格总高度
     table_fontsize = 12  # 字体大小统一为12
     
     # 计算位置（居中）
@@ -116,22 +116,20 @@ def plot_asset_performance_attribution_table(
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#e8e8e8')  # 浅灰色背景
+                cell.set_facecolor('#f0f0f0')  # 浅灰色背景
                 cell.set_text_props(weight='bold', ha='center')
             else:
                 # 交替行颜色：第一行数据（i=1）白色，第二行（i=2）浅灰，第三行（i=3）白色
                 if (i - 1) % 2 == 0:  # 第一行数据（i=1）白色
                     cell.set_facecolor('#ffffff')
                 else:  # 第二行数据（i=2）浅灰
-                    cell.set_facecolor('#f8f8f8')
+                    cell.set_facecolor('#ffffff')
                 
                 # 第一列（资产类别）左对齐，其他列居中对齐
-                if j == 0:
-                    cell.set_text_props(ha='left')
-                else:
-                    cell.set_text_props(ha='center')
+
+                cell.set_text_props(ha='center')
             
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
     
     # 不显示标题（根据用户要求）

@@ -17,12 +17,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_asset_allocation_chart(
@@ -76,11 +76,11 @@ def plot_asset_allocation_chart(
     fig, ax = plt.subplots(figsize=figsize)
     
     # 定义颜色
-    color_stocks = '#1f77b4'  # 蓝色
-    color_funds = '#2ca02c'   # 绿色
-    color_reverse_repurchase = '#ffbb00'  # 黄色
-    color_cash = '#d62728'    # 红色
-    color_other = '#81d4fa'   # 浅蓝色
+    color_stocks = '#5470c6'  # 蓝色
+    color_funds = '#91cc75'   # 绿色
+    color_reverse_repurchase = '#fac858'  # 黄色
+    color_cash = '#ee6666'    # 红色
+    color_other = '#73c0de'   # 浅蓝色
     
     # 计算堆叠位置
     bottom1 = np.array(stocks)
@@ -90,7 +90,7 @@ def plot_asset_allocation_chart(
     
     # 使用数值索引绘制柱状图，使所有柱子之间间隔相等（包括周五到周一）
     x_positions = np.arange(len(dates))
-    bar_width = 0.6  # 柱子宽度（数值单位）
+    bar_width = 0.7  # 柱子宽度（数值单位）
     
     # 绘制堆叠柱状图
     ax.bar(x_positions, stocks, width=bar_width, label='股票', color=color_stocks, edgecolor='white', linewidth=0.5)
@@ -130,6 +130,10 @@ def plot_asset_allocation_chart(
             tick_indices.append(len(dates) - 1)  # 确保最后一个日期显示
         ax.set_xticks([x_positions[i] for i in tick_indices])
         ax.set_xticklabels([dates[i].strftime('%Y-%m-%d') for i in tick_indices], rotation=45, ha='right')
+
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     
     # 设置标题（如果启用）
     if show_title:
