@@ -495,6 +495,7 @@ def build_industry_attribution_data(
     )
     loss_sorted = sorted(industry_attribution, key=lambda item: item["profit"])
 
+    # 所有行业数据（包含已清仓的，用于归因分析）
     industry_data = [
         {
             "industry": item.get("industry", ""),
@@ -504,9 +505,30 @@ def build_industry_attribution_data(
         }
         for item in industry_attribution
     ]
+    
+    # 只包含期末有持仓的行业数据（用于饼图等展示期末状态的图表）
+    # 对于这些图表，我们需要基于position_details中market_value>0的计算占比
+    end_holdings_by_industry = {}
+    for pos in position_details:
+        market_value = float(pos.get("market_value", 0) or 0)
+        if market_value > 0:
+            code = pos.get("code", "")
+            industry = industry_mapping.get(code, "未知行业")
+            end_holdings_by_industry[industry] = end_holdings_by_industry.get(industry, 0) + market_value
+    
+    end_total = sum(end_holdings_by_industry.values())
+    end_industry_data = [
+        {
+            "industry": industry,
+            "proportion": _round_value(value / end_total * 100 if end_total > 0 else 0),
+            "market_value": _round_value(value),
+        }
+        for industry, value in end_holdings_by_industry.items()
+    ] if end_total > 0 else []
 
     return {
-        "industry_distribution": {"industry_data": industry_data},
+        "industry_distribution": {"industry_data": industry_data},  # 全期间行业数据
+        "end_holdings_distribution": {"industry_data": end_industry_data},  # 期末持仓行业数据
         "industry_tables": formatter.format_industry_attribution_for_pdf(
             industry_attribution, top_n=top_n
         ),
@@ -590,7 +612,30 @@ def build_turnover_data(
         asset_classes=asset_classes,
     )
     table = formatter.format_turnover_rates_for_pdf(turnover_rates)
-    return {"turnover_rates": turnover_rates, "table": table}
+    
+    # 转换为图表期望的格式
+    turnover_data = []
+    for asset_class, period_values in turnover_rates.items():
+        data_dict = {'asset_class': asset_class}
+        for period, value in period_values.items():
+            # 将期间名映射到图表期望的键名
+            period_key_map = {
+                '统计期间': 'statistical_period',
+                '近一个月': 'last_month',
+                '近三个月': 'last_three_months',
+                '近六个月': 'last_six_months',
+                '今年以来': 'year_to_date',
+                '成立以来': 'since_inception',
+            }
+            key = period_key_map.get(period, period.lower().replace(' ', '_'))
+            data_dict[key] = value
+        turnover_data.append(data_dict)
+    
+    return {
+        "turnover_rates": turnover_rates, 
+        "table": table,
+        "turnover_data": turnover_data
+    }
 
 
 # chart6_5 期间交易（表格部分）
@@ -605,10 +650,21 @@ def build_period_transaction_data(
         asset_classes=asset_classes,
     )
     table = formatter.format_trading_statistics_for_pdf(trading_stats)
+    
+    # 转换为图表期望的格式
+    transaction_data = []
+    for asset_class, values in trading_stats.items():
+        transaction_data.append({
+            'asset_class': asset_class,
+            'buy_amount': values['buy_amount'],
+            'sell_amount': values['sell_amount'],
+        })
+    
     return {
         "trading_stats": trading_stats,
         "table": table,
         "series": [],
+        "transaction_data": transaction_data,
     }
 
 
@@ -639,9 +695,10 @@ def build_scale_overview_data(
         
         scale_series.append({
             'date': date,
-            'total_assets': _round_value(total_assets),
-            'nav': _round_value(nav),
+            'asset_scale': _round_value(total_assets),  # 图表期望的键名
             'shares': _round_value(shares),
+            'net_subscription': _round_value(0),  # TODO: 需要从申赎记录计算
+            'nav': _round_value(nav),
         })
     
     # 计算申赎统计（基于交易记录）
@@ -682,17 +739,36 @@ def build_asset_allocation_series(
         fund_value = float(pos.get('fund_value', 0) or 0)
         repo_value = float(pos.get('repo_value', 0) or 0)
         
+        # 计算占比
+        stock_ratio = stock_value / total * 100 if total > 0 else 0
+        cash_ratio = cash_value / total * 100 if total > 0 else 0
+        fund_ratio = fund_value / total * 100 if total > 0 else 0
+        repo_ratio = repo_value / total * 100 if total > 0 else 0
+        other_ratio = 100 - (stock_ratio + cash_ratio + fund_ratio + repo_ratio)
+        
+        # 流动性资产 = 现金 + 基金 + 逆回购
+        liquidity_ratio = cash_ratio + fund_ratio + repo_ratio
+        
         series.append({
             'date': date,
             'total_assets': _round_value(total),
-            'stock': _round_value(stock_value),
-            'cash': _round_value(cash_value),
-            'fund': _round_value(fund_value),
-            'repo': _round_value(repo_value),
-            'stock_ratio': _round_value(stock_value / total * 100 if total > 0 else 0),
-            'cash_ratio': _round_value(cash_value / total * 100 if total > 0 else 0),
-            'fund_ratio': _round_value(fund_value / total * 100 if total > 0 else 0),
-            'repo_ratio': _round_value(repo_value / total * 100 if total > 0 else 0),
+            # 图表期望的键名
+            'stocks': _round_value(stock_ratio),  # 注意是占比百分数
+            'cash': _round_value(cash_ratio),
+            'funds': _round_value(fund_ratio),
+            'reverse_repurchase': _round_value(repo_ratio),
+            'other_assets': _round_value(max(0, other_ratio)),
+            # 股票仓位时序图需要的字段
+            'stock_position': _round_value(stock_ratio),
+            'top10': _round_value(0),  # TODO: 需要从持仓明细中计算TOP10占比
+            'csi300': _round_value(1.0),  # TODO: 需要基准数据
+            # 流动性资产时序图需要的字段
+            'liquidity_ratio': _round_value(liquidity_ratio),
+            # 保留原始市值数据供其他用途
+            'stock_value': _round_value(stock_value),
+            'cash_value': _round_value(cash_value),
+            'fund_value': _round_value(fund_value),
+            'repo_value': _round_value(repo_value),
         })
     
     return series
@@ -755,17 +831,21 @@ def build_asset_class_attribution(
     for asset_class in sorted(class_assets.keys()):
         profit = class_profit[asset_class]
         assets = class_assets[asset_class]
+        weight_ratio = assets / total_assets * 100 if total_assets > 0 else 0
+        return_rate = profit / assets * 100 if assets > 0 else 0
+        profit_contribution = profit / total_profit * 100 if total_profit > 0 else 0
         
         attribution_data.append({
             'asset_class': asset_class,
-            'profit': _round_value(profit),
-            'market_value': _round_value(assets),
-            'return_rate': _round_value(profit / assets * 100 if assets > 0 else 0),
-            'profit_contribution': _round_value(profit / total_profit * 100 if total_profit > 0 else 0),
+            'weight_ratio': _round_value(weight_ratio),  # 权重占净值比
+            'nav_contribution': _round_value(profit_contribution),  # 净值增长贡献
+            'return_rate': _round_value(return_rate),  # 收益率
+            'return_amount': _round_value(profit),  # 收益额
+            'return_contribution': _round_value(profit_contribution),  # 收益额贡献率
         })
     
     return {
-        'attribution_table': attribution_data,
+        'asset_data': attribution_data,  # 图表期望的键名
         'total_profit': _round_value(total_profit),
         'total_assets': _round_value(total_assets),
     }

@@ -82,8 +82,16 @@ def plot_return_analysis_table(
     fig, ax = plt.subplots(figsize=figsize)
     ax.axis('off')
     
-    # 准备表格数据
-    periods = ['统计期间', '近一个月', '近三个月', '近六个月', '近一年', '今年以来', '成立以来']
+    # 准备表格数据 - 使用实际数据中的键而不是硬编码
+    # 定义期间的优先顺序（如果存在则按此顺序显示）
+    period_order = ['统计期间', '成立以来', '近一年', '近六个月', '近三个月', '近一个月', '今年以来']
+    
+    # 获取实际存在的期间（按优先顺序）
+    periods = [p for p in period_order if p in data]
+    # 如果还有其他期间不在优先列表中，也添加进来
+    for key in data.keys():
+        if key not in periods:
+            periods.append(key)
     
     table_data = []
     table_data.append([' ', '组合收益率(%)', '基准收益率(%)', '超额收益率(%)'])  # 表头
@@ -173,8 +181,13 @@ def plot_return_comparison_chart(
     if data is None:
         data = _generate_mock_return_data()
     
-    # 准备数据
-    periods = ['统计期间', '近一个月', '近三个月', '近六个月', '近一年', '今年以来', '成立以来']
+    # 准备数据 - 使用实际数据中的键而不是硬编码
+    period_order = ['统计期间', '成立以来', '近一年', '近六个月', '近三个月', '近一个月', '今年以来']
+    periods = [p for p in period_order if p in data]
+    for key in data.keys():
+        if key not in periods:
+            periods.append(key)
+    
     product_returns = [data[p]['product_return'] for p in periods]
     benchmark_returns = [data[p]['benchmark_return'] for p in periods]
     

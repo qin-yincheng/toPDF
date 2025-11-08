@@ -60,9 +60,39 @@ def plot_industry_deviation_timeseries(
     if data is None:
         data = _generate_mock_deviation_data()
     
+    # 如果没有数据或数据为空，返回空图表
+    if not data:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        if return_figure:
+            plt.close(fig)
+            return fig
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+            return save_path
+        plt.show()
+        return None
+    
     # 解析日期和数据
     dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
     deviations = [d['deviation'] for d in data]
+    
+    # 如果数据为空，返回空图表
+    if not dates or not deviations:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        if return_figure:
+            plt.close(fig)
+            return fig
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+            return save_path
+        plt.show()
+        return None
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)

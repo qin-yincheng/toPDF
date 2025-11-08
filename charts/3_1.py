@@ -51,6 +51,21 @@ def plot_market_value_pie_chart(
     # 获取行业数据
     industry_data = data.get('industry_data', [])
     
+    # 如果没有数据，返回空图表
+    if not industry_data:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        if return_figure:
+            plt.close(fig)
+            return fig
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+            return save_path
+        plt.show()
+        return None
+    
     # 提取数据
     industries = [item['industry'] for item in industry_data]
     proportions = [item['proportion'] for item in industry_data]
@@ -162,6 +177,21 @@ def plot_average_market_value_bar_chart(
     
     # 获取行业数据
     industry_data = data.get('industry_data', [])
+    
+    # 如果没有数据，返回空图表
+    if not industry_data:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        if return_figure:
+            plt.close(fig)
+            return fig
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+            return save_path
+        plt.show()
+        return None
     
     # 提取数据
     industries = [item['industry'] for item in industry_data]
@@ -281,6 +311,10 @@ def plot_industry_holding_table(
             f"{item.get('market_value', 0):.2f}",
             f"{item.get('proportion', 0):.2f}"
         ])
+    
+    # 如果没有数据，添加空行
+    if not table_data:
+        table_data = [['暂无数据', '-', '-', '-', '-', '-', '-']]
     
     # 表头
     headers = ['分类', '组合PE', '组合PB', '行业平均PE', '行业平均PB', '持仓市值(万元)', '占比(%)']
