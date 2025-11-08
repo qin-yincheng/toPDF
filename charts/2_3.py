@@ -99,6 +99,10 @@ def plot_end_period_holdings_table(
             f"{asset.get('proportion', 0):.2f}"
         ])
     
+    # 如果没有资产数据，添加一行占位数据
+    if len(asset_table_data) == 1:
+        asset_table_data.append(['无', '0.00', '0.00'])
+    
     # 准备负债明细数据（包含标题行）
     liability_table_data = [['负债名称', '负债市值(万元)', '负债占比(%)']]
     for liability in liabilities:
@@ -107,6 +111,10 @@ def plot_end_period_holdings_table(
             f"{liability.get('market_value', 0):.2f}",
             f"{liability.get('proportion', 0):.2f}"
         ])
+    
+    # 如果没有负债数据，添加一行占位数据
+    if len(liability_table_data) == 1:
+        liability_table_data.append(['无', '0.00', '0.00'])
     
     # 计算表格位置（左右并排布局）
     # 顶部显示资产净值

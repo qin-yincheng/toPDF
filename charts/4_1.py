@@ -63,10 +63,40 @@ def plot_brinson_attribution(
     if data is None:
         data = _generate_mock_brinson_data()
     
+    # 如果没有数据或数据为空，返回空图表
+    if not data:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        if return_figure:
+            plt.close(fig)
+            return fig
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+            return save_path
+        plt.show()
+        return None
+    
     # 解析日期和数据
     dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
     selection_returns = [d['selection_return'] for d in data]
     allocation_returns = [d['allocation_return'] for d in data]
+    
+    # 如果所有值都为空或相同，返回空图表
+    if not dates or not selection_returns or not allocation_returns:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        if return_figure:
+            plt.close(fig)
+            return fig
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+            return save_path
+        plt.show()
+        return None
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
@@ -85,10 +115,14 @@ def plot_brinson_attribution(
     ax.set_ylabel('累计收益率(%)', fontsize=11)
     # 根据数据范围设置Y轴
     all_values = selection_returns + allocation_returns
-    min_val = min(all_values)
-    max_val = max(all_values)
-    y_min = min(0, min_val - 1)
-    y_max = max_val + 2
+    if len(all_values) > 0:
+        min_val = min(all_values)
+        max_val = max(all_values)
+        y_min = min(0, min_val - 1)
+        y_max = max_val + 2
+    else:
+        y_min = -5
+        y_max = 5
     ax.set_ylim(y_min, y_max)
     
     # 设置Y轴刻度（0% 到约 40%）
@@ -309,11 +343,15 @@ def plot_brinson_industry_bar_chart(
     ax.set_ylabel('累计收益率(%)', fontsize=11)
     # 根据数据范围设置Y轴
     all_values = selection_returns + allocation_returns
-    min_val = min(all_values)
-    max_val = max(all_values)
-    # 确保Y轴范围包含0，并且是2%的倍数（根据图片：-4%到10%）
-    y_min = min(-4, int(np.floor(min_val / 2)) * 2)
-    y_max = max(10, int(np.ceil(max_val / 2)) * 2)
+    if len(all_values) > 0:
+        min_val = min(all_values)
+        max_val = max(all_values)
+        # 确保Y轴范围包含0，并且是2%的倍数（根据图片：-4%到10%）
+        y_min = min(-4, int(np.floor(min_val / 2)) * 2)
+        y_max = max(10, int(np.ceil(max_val / 2)) * 2)
+    else:
+        y_min = -4
+        y_max = 10
     ax.set_ylim(y_min, y_max)
     
     # 设置Y轴刻度（确保包含0，间隔为2%）

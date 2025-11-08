@@ -402,7 +402,8 @@ def generate_page1(
         h = row_heights['scale']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "产品规模总览")
-        fig2 = plot_scale_overview(data=safe_get('scale_overview'), return_figure=True, 
+        # scale_overview.scale_series 才是图表期望的列表数据
+        fig2 = plot_scale_overview(data=safe_get('scale_overview.scale_series'), return_figure=True, 
                                    figsize=(usable_width/72*2.54, h/72*2.54),
                                    show_title=False,
                                    include_right_table=True,
@@ -581,13 +582,13 @@ def generate_page1(
         chart_width = (usable_width - 10) / 2  # 两个图表并排，留10点间距
         
         # 左侧：饼图
-        fig15 = plot_market_value_pie_chart(data=safe_get('end_holdings'), return_figure=True, 
+        fig15 = plot_market_value_pie_chart(data=safe_get('industry_attribution.end_holdings_distribution'), return_figure=True, 
                                            figsize=(chart_width/72*2.54, h_charts/72*2.54),
                                            show_title=True)
         insert_figure(c, fig15, x_left, y_cursor - h_charts, chart_width, h_charts)
         
         # 右侧：柱状图
-        fig16 = plot_average_market_value_bar_chart(data=safe_get('end_holdings'), return_figure=True, 
+        fig16 = plot_average_market_value_bar_chart(data=safe_get('industry_attribution.end_holdings_distribution'), return_figure=True, 
                                                     figsize=(chart_width/72*2.54, h_charts/72*2.54),
                                                     show_title=True)
         insert_figure(c, fig16, x_left + chart_width + 10, y_cursor - h_charts, chart_width, h_charts)
@@ -597,14 +598,16 @@ def generate_page1(
         # 行13：持股行业分析 - 表格（整行）
         h_table = row_heights['industry_table']
         ensure_space(h_table + 10)
-        fig17 = plot_industry_holding_table(data=safe_get('end_holdings'), return_figure=True, 
+        fig17 = plot_industry_holding_table(data=safe_get('industry_attribution.industry_tables'), return_figure=True, 
                                            figsize=(usable_width/72*2.54, h_table/72*2.54),
                                            show_title=True,
                                            table_fontsize=12)
         insert_figure(c, fig17, x_left, y_cursor - h_table, usable_width, h_table)
         y_cursor -= (h_table + 10)
     except Exception as e:
+        import traceback
         print(f"  持股行业分析图表生成失败: {e}")
+        traceback.print_exc()
     
     # 持股行业占比时序部分
     try:
@@ -612,7 +615,8 @@ def generate_page1(
         h = row_heights['industry_timeseries']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "持股行业占比时序")
-        fig18 = plot_industry_proportion_timeseries(data=safe_get('industry_timeseries'), return_figure=True, 
+        # industry_timeseries.timeseries 才是图表期望的列表数据
+        fig18 = plot_industry_proportion_timeseries(data=safe_get('industry_timeseries.timeseries'), return_figure=True, 
                                                     figsize=(usable_width/72*2.54, h/72*2.54),
                                                     show_title=True)
         insert_figure(c, fig18, x_left, y_cursor - h, usable_width, h)
@@ -626,7 +630,8 @@ def generate_page1(
         h = row_heights['industry_deviation']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "持股行业偏离度时序")
-        fig19 = plot_industry_deviation_timeseries(data=safe_get('industry_timeseries'), return_figure=True, 
+        # industry_timeseries.deviation_series 用于偏离度图表
+        fig19 = plot_industry_deviation_timeseries(data=safe_get('industry_timeseries.deviation_series'), return_figure=True, 
                                                     figsize=(usable_width/72*2.54, h/72*2.54),
                                                     show_title=True)
         insert_figure(c, fig19, x_left, y_cursor - h, usable_width, h)
@@ -701,14 +706,14 @@ def generate_page1(
         
         # 第一行：收益额排名前十（表格在左，图表在右）
         # 左侧：收益额表格
-        fig24_table = plot_industry_attribution_profit_table(data=safe_get('industry_attribution'), return_figure=True, 
+        fig24_table = plot_industry_attribution_profit_table(data=safe_get('industry_attribution.industry_profit'), return_figure=True, 
                                                              figsize=(left_w/72*2.54, h/72*2.54),
                                                              show_title=True,
                                                              table_fontsize=12)
         insert_figure(c, fig24_table, x_left, y_cursor - h, left_w, h)
         
         # 右侧：收益额图表（不显示标题）
-        fig24_chart = plot_industry_attribution_profit_chart(data=safe_get('industry_attribution'), return_figure=True, 
+        fig24_chart = plot_industry_attribution_profit_chart(data=safe_get('industry_attribution.industry_profit'), return_figure=True, 
                                                               figsize=(right_w/72*2.54, h/72*2.54),
                                                               show_title=False)
         insert_figure(c, fig24_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
@@ -717,14 +722,14 @@ def generate_page1(
         # 第二行：亏损额排名前十（表格在左，图表在右）
         ensure_space(h + 10)
         # 左侧：亏损额表格
-        fig25_table = plot_industry_attribution_loss_table(data=safe_get('industry_attribution'), return_figure=True, 
+        fig25_table = plot_industry_attribution_loss_table(data=safe_get('industry_attribution.industry_profit'), return_figure=True, 
                                                             figsize=(left_w/72*2.54, h/72*2.54),
                                                             show_title=True,
                                                             table_fontsize=12)
         insert_figure(c, fig25_table, x_left, y_cursor - h, left_w, h)
         
         # 右侧：亏损额图表（不显示标题）
-        fig25_chart = plot_industry_attribution_loss_chart(data=safe_get('industry_attribution'), return_figure=True, 
+        fig25_chart = plot_industry_attribution_loss_chart(data=safe_get('industry_attribution.industry_profit'), return_figure=True, 
                                                             figsize=(right_w/72*2.54, h/72*2.54),
                                                             show_title=False)
         insert_figure(c, fig25_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
