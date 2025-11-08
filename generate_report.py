@@ -2,7 +2,11 @@
 生成完整的PDF报告
 
 使用真实数据从 data_provider 获取数据，然后生成PDF报告
+如果交割单.csv不存在，会自动从交割单.xlsx转换
 """
+
+import os
+from pathlib import Path
 
 from calc.data_provider import (
     get_daily_positions,
@@ -17,6 +21,7 @@ from calc.data_provider import (
 )
 from calc.report_bridge import build_page1_data
 from pdf.pages1 import generate_page1
+from config import DOCS_DIR
 
 
 def convert_daily_positions_to_nav(daily_positions):
@@ -85,6 +90,28 @@ def main():
     print("=" * 70)
     print("正在生成PDF报告...")
     print("=" * 70)
+    
+    # 0. 检查并转换Excel到CSV（如果需要）
+    csv_path = os.path.join(DOCS_DIR, "交割单.csv")
+    xlsx_path = os.path.join(DOCS_DIR, "交割单.xlsx")
+    
+    if not os.path.exists(csv_path):
+        if os.path.exists(xlsx_path):
+            print("\n0️⃣  交割单.csv 不存在，正在从 Excel 转换...")
+            try:
+                from data.reader import convert_excel_to_csv
+                convert_excel_to_csv(xlsx_path, csv_path, sheet="all")
+                print(f"   ✓ 已生成: {csv_path}")
+            except Exception as e:
+                print(f"   ❌ 转换失败: {e}")
+                print(f"   💡 请手动运行: python main.py")
+                return
+        else:
+            print(f"\n❌ 错误：找不到交割单数据文件")
+            print(f"   请确保以下文件存在：")
+            print(f"   - {xlsx_path}")
+            print(f"   - {csv_path}")
+            return
     
     # 1. 获取基础数据
     print("\n1️⃣  获取每日持仓数据...")
