@@ -261,6 +261,24 @@ def generate_page1(
     plot_period_transaction_table = chart6_5.plot_period_transaction_table
     plot_period_transaction_chart = chart6_5.plot_period_transaction_chart
     
+    # 数据提取辅助函数 - 安全地从 page1_data 提取子数据
+    def safe_get(path, default=None):
+        """从嵌套字典中安全提取数据
+        path: 'key' 或 'key.subkey' 或 'key.subkey.item'
+        """
+        if data is None:
+            return default
+        keys = path.split('.')
+        result = data
+        for key in keys:
+            if isinstance(result, dict):
+                result = result.get(key, default)
+            else:
+                return default
+            if result is None:
+                return default
+        return result
+    
     # 处理输出文件占用问题：若原文件被占用，自动改名为 _new
     final_output = output_path
     try:
@@ -370,7 +388,7 @@ def generate_page1(
         h = row_heights['overview']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "总体表现")
-        fig1 = plot_performance_overview_table(data=data, return_figure=True, 
+        fig1 = plot_performance_overview_table(data=safe_get('performance_overview'), return_figure=True, 
                                                figsize=(usable_width/72*2.54, h/72*2.54),
                                                show_title=False)
         insert_figure(c, fig1, x_left, y_cursor - h, usable_width, h)
@@ -378,13 +396,13 @@ def generate_page1(
     except Exception as e:
         print(f"  总体表现表格生成失败: {e}")
 
-    # 行2：产品规模总览（整行，包含右侧表格）
+    # 行2：产品规模总览（含右侧表格）
     try:
         print("  生成产品规模总览图表（含右侧表格）...")
         h = row_heights['scale']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "产品规模总览")
-        fig2 = plot_scale_overview(data=data, return_figure=True, 
+        fig2 = plot_scale_overview(data=safe_get('scale_overview'), return_figure=True, 
                                    figsize=(usable_width/72*2.54, h/72*2.54),
                                    show_title=False,
                                    include_right_table=True,
@@ -400,7 +418,7 @@ def generate_page1(
         h = row_heights['nav']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "单位净值表现")
-        fig3 = plot_nav_performance(data=data, return_figure=True, 
+        fig3 = plot_nav_performance(data=safe_get('nav_performance.nav_series'), return_figure=True, 
                                     figsize=(usable_width/72*2.54, h/72*2.54),
                                     show_title=False)
         insert_figure(c, fig3, x_left, y_cursor - h, usable_width, h)
@@ -417,12 +435,12 @@ def generate_page1(
         # 左图占 70%，右表占 30%
         left_w = usable_width * 0.7
         right_w = usable_width - left_w - 5
-        fig4 = plot_daily_return_chart(data=data, return_figure=True, 
+        fig4 = plot_daily_return_chart(data=safe_get('nav_performance.daily_returns'), return_figure=True, 
                                        figsize=(left_w/72*2.54, h/72*2.54),
                                        show_title=False)
         insert_figure(c, fig4, x_left, y_cursor - h, left_w, h)
         # 右侧表格
-        fig5 = plot_daily_return_table(data=data, return_figure=True, 
+        fig5 = plot_daily_return_table(data=safe_get('nav_performance.daily_returns'), return_figure=True, 
                                        figsize=(right_w/72*2.54, h/72*2.54),
                                        show_title=False)
         insert_figure(c, fig5, x_left + left_w + 5, y_cursor - h, right_w, h)
@@ -439,10 +457,11 @@ def generate_page1(
         left_w = usable_width * 0.5
         right_w = usable_width - left_w - 5
         # 恢复原始大小，不再缩小
-        fig6 = plot_return_analysis_table(data=data, return_figure=True, 
+        # plot_return_analysis_table 期望字典格式，使用 period_returns 而非 period_returns_table
+        fig6 = plot_return_analysis_table(data=safe_get('nav_performance.period_returns'), return_figure=True, 
                                           figsize=(left_w/72*2.54, h/72*2.54))
         insert_figure(c, fig6, x_left, y_cursor - h, left_w, h)
-        fig7 = plot_return_comparison_chart(data=data, return_figure=True, 
+        fig7 = plot_return_comparison_chart(data=safe_get('nav_performance.period_returns'), return_figure=True, 
                                            figsize=(right_w/72*2.54, h/72*2.54),
                                            show_title=False)
         insert_figure(c, fig7, x_left + left_w + 5, y_cursor - h, right_w, h)
@@ -477,12 +496,12 @@ def generate_page1(
         # 左图占 70%，右表占 30%
         left_w = usable_width * 0.7
         right_w = usable_width - left_w - 5
-        fig9 = plot_dynamic_drawdown_chart(data=data, return_figure=True, 
+        fig9 = plot_dynamic_drawdown_chart(data=safe_get('drawdown.series'), return_figure=True, 
                                           figsize=(left_w/72*2.54, h/72*2.54),
                                           show_title=False)
         insert_figure(c, fig9, x_left, y_cursor - h, left_w, h)
         # 右侧表格
-        fig10 = plot_dynamic_drawdown_table(data=data, return_figure=True, 
+        fig10 = plot_dynamic_drawdown_table(data=safe_get('drawdown.table'), return_figure=True, 
                                            figsize=(right_w/72*2.54, h/72*2.54),
                                            show_title=False)
         insert_figure(c, fig10, x_left + left_w + 5, y_cursor - h, right_w, h)
@@ -496,7 +515,7 @@ def generate_page1(
         h = row_heights['asset_allocation']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "大类持仓时序")
-        fig11 = plot_asset_allocation_chart(data=data, return_figure=True, 
+        fig11 = plot_asset_allocation_chart(data=safe_get('asset_allocation_series'), return_figure=True, 
                                             figsize=(usable_width/72*2.54, h/72*2.54),
                                             show_title=False)
         insert_figure(c, fig11, x_left, y_cursor - h, usable_width, h)
@@ -510,7 +529,8 @@ def generate_page1(
         h = row_heights['holdings']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "期末持仓")
-        fig12 = plot_end_period_holdings_table(data=data, return_figure=True, 
+        # end_holdings.holdings_table 包含 summary, assets, liabilities
+        fig12 = plot_end_period_holdings_table(data=safe_get('end_holdings.holdings_table'), return_figure=True, 
                                                figsize=(usable_width/72*2.54, h/72*2.54),
                                                show_title=False,
                                                table_fontsize=12)
@@ -525,7 +545,7 @@ def generate_page1(
         h = row_heights['stock_position']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "股票仓位时序")
-        fig13 = plot_stock_position_chart(data=data, return_figure=True, 
+        fig13 = plot_stock_position_chart(data=safe_get('asset_allocation_series'), return_figure=True, 
                                         figsize=(usable_width/72*2.54, h/72*2.54),
                                         show_title=False)
         insert_figure(c, fig13, x_left, y_cursor - h, usable_width, h)
@@ -539,7 +559,7 @@ def generate_page1(
         h = row_heights['liquidity_asset']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "流动性资产时序")
-        fig14 = plot_liquidity_asset_chart(data=data, return_figure=True, 
+        fig14 = plot_liquidity_asset_chart(data=safe_get('asset_allocation_series'), return_figure=True, 
                                           figsize=(usable_width/72*2.54, h/72*2.54),
                                           show_title=False)
         insert_figure(c, fig14, x_left, y_cursor - h, usable_width, h)
@@ -561,13 +581,13 @@ def generate_page1(
         chart_width = (usable_width - 10) / 2  # 两个图表并排，留10点间距
         
         # 左侧：饼图
-        fig15 = plot_market_value_pie_chart(data=data, return_figure=True, 
+        fig15 = plot_market_value_pie_chart(data=safe_get('end_holdings'), return_figure=True, 
                                            figsize=(chart_width/72*2.54, h_charts/72*2.54),
                                            show_title=True)
         insert_figure(c, fig15, x_left, y_cursor - h_charts, chart_width, h_charts)
         
         # 右侧：柱状图
-        fig16 = plot_average_market_value_bar_chart(data=data, return_figure=True, 
+        fig16 = plot_average_market_value_bar_chart(data=safe_get('end_holdings'), return_figure=True, 
                                                     figsize=(chart_width/72*2.54, h_charts/72*2.54),
                                                     show_title=True)
         insert_figure(c, fig16, x_left + chart_width + 10, y_cursor - h_charts, chart_width, h_charts)
@@ -577,7 +597,7 @@ def generate_page1(
         # 行13：持股行业分析 - 表格（整行）
         h_table = row_heights['industry_table']
         ensure_space(h_table + 10)
-        fig17 = plot_industry_holding_table(data=data, return_figure=True, 
+        fig17 = plot_industry_holding_table(data=safe_get('end_holdings'), return_figure=True, 
                                            figsize=(usable_width/72*2.54, h_table/72*2.54),
                                            show_title=True,
                                            table_fontsize=12)
@@ -592,7 +612,7 @@ def generate_page1(
         h = row_heights['industry_timeseries']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "持股行业占比时序")
-        fig18 = plot_industry_proportion_timeseries(data=data, return_figure=True, 
+        fig18 = plot_industry_proportion_timeseries(data=safe_get('industry_timeseries'), return_figure=True, 
                                                     figsize=(usable_width/72*2.54, h/72*2.54),
                                                     show_title=True)
         insert_figure(c, fig18, x_left, y_cursor - h, usable_width, h)
@@ -606,7 +626,7 @@ def generate_page1(
         h = row_heights['industry_deviation']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "持股行业偏离度时序")
-        fig19 = plot_industry_deviation_timeseries(data=data, return_figure=True, 
+        fig19 = plot_industry_deviation_timeseries(data=safe_get('industry_timeseries'), return_figure=True, 
                                                     figsize=(usable_width/72*2.54, h/72*2.54),
                                                     show_title=True)
         insert_figure(c, fig19, x_left, y_cursor - h, usable_width, h)
@@ -620,7 +640,7 @@ def generate_page1(
         h = row_heights['asset_performance']
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "大类资产绩效归因")
-        fig20 = plot_asset_performance_attribution_table(data=data, return_figure=True, 
+        fig20 = plot_asset_performance_attribution_table(data=safe_get('asset_class_attribution'), return_figure=True, 
                                                           figsize=(usable_width/72*2.54, h/72*2.54),
                                                           show_title=False,
                                                           table_fontsize=12)
@@ -636,7 +656,8 @@ def generate_page1(
         h_line = row_heights['brinson_attribution']
         ensure_space(h_line + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "Brinson归因")
-        fig21 = plot_brinson_attribution(data=data, return_figure=True, 
+        # brinson.series 包含时序数据
+        fig21 = plot_brinson_attribution(data=safe_get('brinson.series'), return_figure=True, 
                                           figsize=(usable_width/72*2.54, h_line/72*2.54),
                                           show_title=True)
         insert_figure(c, fig21, x_left, y_cursor - h_line, usable_width, h_line)
@@ -649,14 +670,14 @@ def generate_page1(
         left_w = usable_width * 0.6
         right_w = usable_width - left_w - 5
         
-        # 左侧：各行业累计收益率柱状图
-        fig22 = plot_brinson_industry_bar_chart(data=data, return_figure=True, 
+        # 左侧：各行业累计收益率柱状图（可能需要从 brinson 提取特定数据）
+        fig22 = plot_brinson_industry_bar_chart(data=safe_get('brinson'), return_figure=True, 
                                                  figsize=(left_w/72*2.54, h_bottom/72*2.54),
                                                  show_title=True)
         insert_figure(c, fig22, x_left, y_cursor - h_bottom, left_w, h_bottom)
         
-        # 右侧：归因分析表格
-        fig23 = plot_brinson_attribution_table(data=data, return_figure=True, 
+        # 右侧：归因分析表格，使用 brinson 的汇总数据
+        fig23 = plot_brinson_attribution_table(data=safe_get('brinson'), return_figure=True, 
                                                figsize=(right_w/72*2.54*0.7, h_bottom/72*2.54*0.7),
                                                show_title=True,
                                                table_fontsize=12)
@@ -680,14 +701,14 @@ def generate_page1(
         
         # 第一行：收益额排名前十（表格在左，图表在右）
         # 左侧：收益额表格
-        fig24_table = plot_industry_attribution_profit_table(data=data, return_figure=True, 
+        fig24_table = plot_industry_attribution_profit_table(data=safe_get('industry_attribution'), return_figure=True, 
                                                              figsize=(left_w/72*2.54, h/72*2.54),
                                                              show_title=True,
                                                              table_fontsize=12)
         insert_figure(c, fig24_table, x_left, y_cursor - h, left_w, h)
         
         # 右侧：收益额图表（不显示标题）
-        fig24_chart = plot_industry_attribution_profit_chart(data=data, return_figure=True, 
+        fig24_chart = plot_industry_attribution_profit_chart(data=safe_get('industry_attribution'), return_figure=True, 
                                                               figsize=(right_w/72*2.54, h/72*2.54),
                                                               show_title=False)
         insert_figure(c, fig24_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
@@ -696,14 +717,14 @@ def generate_page1(
         # 第二行：亏损额排名前十（表格在左，图表在右）
         ensure_space(h + 10)
         # 左侧：亏损额表格
-        fig25_table = plot_industry_attribution_loss_table(data=data, return_figure=True, 
+        fig25_table = plot_industry_attribution_loss_table(data=safe_get('industry_attribution'), return_figure=True, 
                                                             figsize=(left_w/72*2.54, h/72*2.54),
                                                             show_title=True,
                                                             table_fontsize=12)
         insert_figure(c, fig25_table, x_left, y_cursor - h, left_w, h)
         
         # 右侧：亏损额图表（不显示标题）
-        fig25_chart = plot_industry_attribution_loss_chart(data=data, return_figure=True, 
+        fig25_chart = plot_industry_attribution_loss_chart(data=safe_get('industry_attribution'), return_figure=True, 
                                                             figsize=(right_w/72*2.54, h/72*2.54),
                                                             show_title=False)
         insert_figure(c, fig25_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
@@ -726,14 +747,14 @@ def generate_page1(
         
         # 第一行：盈利前十（表格在左，图表在右）
         # 左侧：盈利前十表格
-        fig26_table = plot_stock_profit_table(data=data, return_figure=True, 
+        fig26_table = plot_stock_profit_table(data=safe_get('end_holdings.stock_performance'), return_figure=True, 
                                                figsize=(left_w/72*2.54, h/72*2.54),
                                                show_title=True,
                                                table_fontsize=12)
         insert_figure(c, fig26_table, x_left, y_cursor - h, left_w, h)
         
         # 右侧：盈利前十图表（不显示标题）
-        fig26_chart = plot_stock_profit_chart(data=data, return_figure=True, 
+        fig26_chart = plot_stock_profit_chart(data=safe_get('end_holdings.stock_performance'), return_figure=True, 
                                               figsize=(right_w/72*2.54, h/72*2.54),
                                               show_title=False)
         insert_figure(c, fig26_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
@@ -742,14 +763,14 @@ def generate_page1(
         # 第二行：亏损前十（表格在左，图表在右）
         ensure_space(h + 10)
         # 左侧：亏损前十表格
-        fig27_table = plot_stock_loss_table(data=data, return_figure=True, 
+        fig27_table = plot_stock_loss_table(data=safe_get('end_holdings.stock_performance'), return_figure=True, 
                                             figsize=(left_w/72*2.54, h/72*2.54),
                                             show_title=True,
                                             table_fontsize=12)
         insert_figure(c, fig27_table, x_left, y_cursor - h, left_w, h)
         
         # 右侧：亏损前十图表（不显示标题）
-        fig27_chart = plot_stock_loss_chart(data=data, return_figure=True, 
+        fig27_chart = plot_stock_loss_chart(data=safe_get('end_holdings.stock_performance'), return_figure=True, 
                                             figsize=(right_w/72*2.54, h/72*2.54),
                                             show_title=False)
         insert_figure(c, fig27_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
@@ -768,14 +789,14 @@ def generate_page1(
         left_w = usable_width * 0.5
         right_w = usable_width - left_w - 5
         
-        # 左侧：图表（不显示标题）
-        fig28_chart = plot_stock_holding_nodes_chart(data=data, return_figure=True, 
+        # 左侧：图表（不显示标题），使用 end_holdings.position_nodes
+        fig28_chart = plot_stock_holding_nodes_chart(data=safe_get('end_holdings.position_nodes'), return_figure=True, 
                                                       figsize=(left_w/72*2.54, h/72*2.54),
                                                       show_title=False)
         insert_figure(c, fig28_chart, x_left, y_cursor - h, left_w, h)
         
         # 右侧：表格（不显示标题，因为主标题已经在页面顶部）
-        fig28_table = plot_stock_holding_nodes_table(data=data, return_figure=True, 
+        fig28_table = plot_stock_holding_nodes_table(data=safe_get('end_holdings.position_nodes'), return_figure=True, 
                                                       figsize=(right_w/72*2.54, h/72*2.54),
                                                       show_title=False,
                                                       table_fontsize=12)
@@ -792,7 +813,7 @@ def generate_page1(
         y_cursor = draw_section_title(y_cursor, "换手率 (年化)")
         
         # 绘制表格
-        fig29 = plot_turnover_rate_table(data=data, return_figure=True, 
+        fig29 = plot_turnover_rate_table(data=safe_get('turnover'), return_figure=True, 
                                           figsize=(usable_width/72*2.54, h/72*2.54),
                                           show_title=True,
                                           table_fontsize=12)
@@ -813,14 +834,14 @@ def generate_page1(
         right_w = usable_width - left_w - 5
         
         # 左侧：表格（显示标题）
-        fig30_table = plot_period_transaction_table(data=data, return_figure=True, 
+        fig30_table = plot_period_transaction_table(data=safe_get('period_transaction'), return_figure=True, 
                                                     figsize=(left_w/72*2.54, h/72*2.54),
                                                     show_title=True,
                                                     table_fontsize=12)
         insert_figure(c, fig30_table, x_left, y_cursor - h, left_w, h)
         
         # 右侧：图表（不显示标题）
-        fig30_chart = plot_period_transaction_chart(data=data, return_figure=True, 
+        fig30_chart = plot_period_transaction_chart(data=safe_get('period_transaction'), return_figure=True, 
                                                     figsize=(right_w/72*2.54, h/72*2.54),
                                                     show_title=False)
         insert_figure(c, fig30_chart, x_left + left_w + 5, y_cursor - h, right_w, h)

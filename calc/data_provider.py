@@ -193,11 +193,158 @@ def get_position_details(
     返回:
         Dict: 包含 total_assets、total_profit、position_details
     """
-    # TODO: 实现期间持仓明细计算
+    # 获取每日资产数据（不需要详细持仓）
+    daily_data = get_daily_positions(
+        csv_path=csv_path,
+        include_positions=False
+    )
+    
+    if not daily_data:
+        return {
+            'total_assets': 0.0,
+            'total_profit': 0.0,
+            'position_details': []
+        }
+    
+    # 如果没有指定期间，使用全部数据
+    if not period_start:
+        period_start = daily_data[0]['date']
+    if not period_end:
+        period_end = daily_data[-1]['date']
+    
+    # 筛选期间内的数据
+    period_data = [
+        d for d in daily_data 
+        if period_start <= d['date'] <= period_end
+    ]
+    
+    if not period_data:
+        return {
+            'total_assets': 0.0,
+            'total_profit': 0.0,
+            'position_details': []
+        }
+    
+    # 获取期初和期末数据
+    start_day = period_data[0]
+    end_day = period_data[-1]
+    
+    # 计算期间总收益
+    start_assets = start_day['total_assets']
+    end_assets = end_day['total_assets']
+    total_profit = end_assets - start_assets
+    
+    # 获取期间内的交易记录
+    transactions = get_transactions(csv_path=csv_path, period_start=period_start, period_end=period_end)
+    
+    # 按股票代码汇总交易数据
+    stock_data = {}
+    for trans in transactions:
+        code = trans['code']
+        if code not in stock_data:
+            stock_data[code] = {
+                'code': code,
+                'name': trans.get('name', ''),  # 保存股票名称
+                'buy_amount': 0.0,
+                'sell_amount': 0.0,
+                'buy_quantity': 0,
+                'sell_quantity': 0,
+            }
+        
+        # 如果当前记录有名称但之前没有，更新名称
+        if not stock_data[code]['name'] and trans.get('name'):
+            stock_data[code]['name'] = trans['name']
+        
+        amount = trans['amount'] / 10000  # 转为万元
+        quantity = trans['quantity']
+        
+        if trans['direction'] == '买入':
+            stock_data[code]['buy_amount'] += amount
+            stock_data[code]['buy_quantity'] += quantity
+        else:  # 卖出
+            stock_data[code]['sell_amount'] += amount
+            stock_data[code]['sell_quantity'] += quantity
+    
+    # 获取股票名称（从Tushare）
+    if TUSHARE_TOKEN:
+        try:
+            import tushare as ts
+            ts.set_token(TUSHARE_TOKEN)
+            pro = ts.pro_api()
+            
+            # 获取所有代码
+            codes = list(stock_data.keys())
+            
+            # 批量查询股票名称
+            batch_size = 300
+            for i in range(0, len(codes), batch_size):
+                batch_codes = codes[i:i+batch_size]
+                try:
+                    info = pro.stock_basic(
+                        ts_code=','.join(batch_codes),
+                        fields='ts_code,name'
+                    )
+                    if info is not None and not info.empty:
+                        for _, row in info.iterrows():
+                            if row['ts_code'] in stock_data and pd.notna(row['name']):
+                                stock_data[row['ts_code']]['name'] = row['name']
+                except:
+                    pass
+        except:
+            pass
+    
+    # 构建持仓明细（只包含有交易的股票）
+    position_details = []
+    for code, data in stock_data.items():
+        # 净现金流 = 买入 - 卖出
+        net_cash_flow = data['buy_amount'] - data['sell_amount']
+        
+        # 如果有买入，估算市值和盈亏
+        if data['buy_quantity'] > 0:
+            # 简化估算：假设期末仍持有部分股票
+            avg_buy_price = data['buy_amount'] / data['buy_quantity'] * 10000 if data['buy_quantity'] > 0 else 0
+            avg_sell_price = data['sell_amount'] / data['sell_quantity'] * 10000 if data['sell_quantity'] > 0 else 0
+            
+            # 持仓数量 = 买入 - 卖出
+            position_quantity = data['buy_quantity'] - data['sell_quantity']
+            
+            if position_quantity > 0:
+                # 估算市值（使用买入均价）
+                market_value = position_quantity * avg_buy_price / 10000
+                
+                # 期初市值设为0（新建仓）
+                begin_market_value = 0.0
+                
+                # 盈亏 = 市值 - 净买入成本
+                profit_loss = market_value - net_cash_flow
+                
+                position_details.append({
+                    'code': data['code'],
+                    'name': data['name'],
+                    'market_value': round(market_value, 4),
+                    'profit_loss': round(profit_loss, 4),
+                    'previous_market_value': round(begin_market_value, 4),
+                    'begin_market_value': round(begin_market_value, 4),
+                    'net_cash_flow': round(net_cash_flow, 4),
+                })
+            else:
+                # 已清仓的股票，记录盈亏
+                profit_loss = data['sell_amount'] - data['buy_amount']
+                if abs(profit_loss) > 0.01:  # 只记录有明显盈亏的
+                    position_details.append({
+                        'code': data['code'],
+                        'name': data['name'],
+                        'market_value': 0.0,
+                        'profit_loss': round(profit_loss, 4),
+                        'previous_market_value': 0.0,
+                        'begin_market_value': 0.0,
+                        'net_cash_flow': round(net_cash_flow, 4),
+                    })
+    
     return {
-        'total_assets': 0.0,
-        'total_profit': 0.0,
-        'position_details': []
+        'total_assets': round(end_assets, 4),
+        'total_profit': round(total_profit, 4),
+        'position_details': position_details
     }
 
 
