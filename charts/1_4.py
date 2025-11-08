@@ -40,12 +40,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_daily_return_chart(
@@ -97,8 +97,10 @@ def plot_daily_return_chart(
     fig, ax = plt.subplots(figsize=figsize)
     
     # 左Y轴：日收益率（柱状图）
-    color_bar = '#1f77b4'  # 深蓝色
-    bars = ax.bar(dates, daily_returns, width=1.0, alpha=0.7, 
+    color_bar = '#082868'  # 深蓝色
+    # 减小width以增加柱子之间的间隔
+    bar_width = 0.6  # 从1.0减小到0.6，增加间隔
+    bars = ax.bar(dates, daily_returns, width=bar_width, alpha=0.7, 
                   color=color_bar, label='日收益率', edgecolor=color_bar, linewidth=0.5)
     
     # 添加零线
@@ -146,33 +148,35 @@ def plot_daily_return_chart(
     
     # 右Y轴：累计收益率（折线图）
     ax2 = ax.twinx()
-    color_line = '#d3d3d3'  # 浅灰色
+    color_line = '#afb0b2'  # 浅灰色
     line = ax2.plot(dates, cumulative_returns, color=color_line, marker='o', 
                    markersize=3, linewidth=2, label='累计收益率',
-                   markerfacecolor=color_line, markeredgecolor=color_line, markeredgewidth=0.5)
+                   markerfacecolor='white', markeredgecolor=color_line, markeredgewidth=1.5)
     
     ax2.set_ylabel('累计收益率(%)', color='black')
-    ax2.set_ylim(0, 90)
-    ax2.set_yticks([0, 20, 40, 60, 80])
+    # 根据数据动态设置Y轴范围，留出一些空间
+    max_cum_value = max(cumulative_returns) if cumulative_returns else 90
+    ax2.set_ylim(-20, max(100, max_cum_value + 10))  # 至少到100，或最大值+10
+    ax2.set_yticks([-20, 0, 20, 40, 60, 80, 100])  # 包含100的刻度
     ax2.tick_params(axis='y', labelcolor='black')
     
     # 标注累计收益率的最大值点
-    max_cum_idx = cumulative_returns.index(max(cumulative_returns))
-    max_cum_date = dates[max_cum_idx]
-    max_cum_value = max(cumulative_returns)
-    if max_cum_value > 80:  # 如果超过80%，标注
-        ax2.annotate(
-            f'{max_cum_value:.2f}%',
-            xy=(max_cum_date, max_cum_value),
-            xytext=(max_cum_date, max_cum_value + 5),
-            ha='center',
-            va='bottom',
-            fontsize=9,
-            color=color_line,
-            weight='bold',
-            arrowprops=dict(arrowstyle='->', color=color_line, lw=1.5),
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color_line, alpha=0.8)
-        )
+    # max_cum_idx = cumulative_returns.index(max(cumulative_returns))
+    # max_cum_date = dates[max_cum_idx]
+    # max_cum_value = max(cumulative_returns)
+    # if max_cum_value > 80:  # 如果超过80%，标注
+    #     ax2.annotate(
+    #         f'{max_cum_value:.2f}%',
+    #         xy=(max_cum_date, max_cum_value),
+    #         xytext=(max_cum_date, max_cum_value + 5),
+    #         ha='center',
+    #         va='bottom',
+    #         fontsize=9,
+    #         color=color_line,
+    #         weight='bold',
+    #         arrowprops=dict(arrowstyle='->', color=color_line, lw=1.5),
+    #         bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color_line, alpha=0.8)
+    #     )
     
     # 设置标题（如果启用）
     if show_title:
@@ -182,12 +186,22 @@ def plot_daily_return_chart(
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=15))  # 每15天一个刻度
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+
+    # 设置边框：只保留左边框，删除其他边框
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
+    # 同时处理右Y轴的边框（只保留右边框）
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['bottom'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
     
     # 设置图例（顶部居中，增加与图表的间隔）
     lines1, labels1 = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax.legend(lines1 + lines2, labels1 + labels2, 
-             loc='upper center', bbox_to_anchor=(0.5, 1.12), 
+             loc='upper center', bbox_to_anchor=(0.5, 1.2), 
              ncol=2, frameon=True)
     
     # 调整布局，为图例留出更多空间
@@ -264,7 +278,7 @@ def plot_daily_return_table(
         colLabels=None,
         cellLoc='center',
         loc='center',
-        bbox=[0.1, 0.3, 0.8, 0.4]
+        bbox=[0.2, 0.4, 0.6, 0.3]
     )
     
     # 设置表格样式
@@ -277,15 +291,15 @@ def plot_daily_return_table(
         for j in range(2):
             cell = table[(i, j)]
             if j == 0:  # 第一列（标签）
-                cell.set_text_props(weight='bold', ha='left', fontsize=12)
-                cell.set_facecolor('#f0f0f0')
+                cell.set_text_props(weight='bold', ha='center', fontsize=12)
+                cell.set_facecolor('#ffffff')
             else:  # 第二列（数值）
-                cell.set_text_props(ha='right', fontsize=12)
+                cell.set_text_props(ha='center', fontsize=12)
                 if i == 0:  # 最大收益，绿色
-                    cell.set_text_props(color='green')
+                    cell.set_text_props(color='black')
                 else:  # 最大亏损，红色
-                    cell.set_text_props(color='red')
-            cell.set_edgecolor('black')
+                    cell.set_text_props(color='black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(1.5)
     
     # 设置标题（如果启用）

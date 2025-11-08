@@ -17,12 +17,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_liquidity_asset_chart(
@@ -71,20 +71,23 @@ def plot_liquidity_asset_chart(
     ax2 = ax1.twinx()
     
     # 绘制流动性资产比例面积图（左Y轴，蓝色填充，带圆形标记）
-    ax1.fill_between(dates, liquidity_ratios, 0, alpha=0.6, color='#0066CC', label='流动性资产比例')
-    ax1.plot(dates, liquidity_ratios, color='#0066CC', marker='o', 
-             markersize=4, linewidth=1.5, alpha=0.8)
+    ax1.fill_between(dates, liquidity_ratios, 0, alpha=1, color='#526895', label='流动性资产比例')
+    ax1.plot(dates, liquidity_ratios, color='#082868', marker='o', 
+             markersize=4, linewidth=1.5, alpha=1,markerfacecolor='white', markeredgecolor='#082868',
+                     markeredgewidth=1.5)
     ax1.set_ylabel('占比(%)', fontsize=11)
     ax1.set_ylim(0.13, 100)
     ax1.set_yticks([0.13, 20, 40, 60, 80, 100])
     ax1.set_yticklabels(['0.13%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
-    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=1, axis='y')
     ax1.set_xlabel('日期', fontsize=11)
     
     # 绘制沪深300折线图（右Y轴，灰色，带圆形标记）
-    ax2.plot(dates, csi300_values, color='#808080', marker='o', 
-             markersize=4, linewidth=1.5, label='沪深300')
+    ax2.plot(dates, csi300_values, color='#afb0b2', marker='o', 
+             markersize=4, linewidth=1.5, label='沪深300',
+             markerfacecolor='white', markeredgecolor='#afb0b2',
+            markeredgewidth=1.5)
     ax2.set_ylabel('沪深300', fontsize=11)
     ax2.set_ylim(0.92, 1.24)
     ax2.set_yticks([0.92, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.24])
@@ -104,7 +107,9 @@ def plot_liquidity_asset_chart(
     ax1.legend(lines1 + lines2, labels1 + labels2,
                loc='upper center', bbox_to_anchor=(0.5, 1.12),
                ncol=2, frameon=True)
-    
+
+    ax1.spines['top'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
     # 添加标题（如果启用，但这里不显示，由 pages1.py 统一绘制）
     # if show_title:
     #     plt.title('流动性资产时序*', fontsize=16, fontweight='bold', pad=20, loc='left')

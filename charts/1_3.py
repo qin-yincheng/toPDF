@@ -17,12 +17,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_nav_performance(
@@ -71,23 +71,25 @@ def plot_nav_performance(
     
     # 绘制三条线
     # 1. 复权累计收益：深蓝色，实心圆点
-    color1 = '#1f77b4'  # 深蓝色
+    color1 = '#082868'  # 深蓝色
     line1 = ax.plot(dates, accumulated_return, color=color1, marker='o', 
                     markersize=4, linewidth=2, label='复权累计收益',
-                    markerfacecolor=color1, markeredgecolor=color1)
+                    markerfacecolor='white', markeredgecolor=color1,
+                    markeredgewidth=1.5)
     
     # 2. 沪深300：浅灰色，空心圆点
-    color2 = '#d3d3d3'  # 浅灰色
+    color2 = '#afb0b2'  # 浅灰色
     line2 = ax.plot(dates, csi300, color=color2, marker='o', 
                     markersize=4, linewidth=2, label='沪深300',
                     markerfacecolor='white', markeredgecolor=color2, 
                     markeredgewidth=1.5)
     
     # 3. 累计超额收益：红色，实心圆点
-    color3 = '#d62728'  # 红色
+    color3 = '#c12e34'  # 红色
     line3 = ax.plot(dates, excess_return, color=color3, marker='o', 
                     markersize=4, linewidth=2, label='累计超额收益',
-                    markerfacecolor=color3, markeredgecolor=color3)
+                    markerfacecolor='white', markeredgecolor=color3,
+                    markeredgewidth=1.5)
     
     # 设置坐标轴
     ax.set_xlabel('日期')
@@ -104,6 +106,10 @@ def plot_nav_performance(
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=8))  # 每8天一个刻度
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+
+    
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     
     # 设置图例（顶部居中，增加与图表的间隔）
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.12), 

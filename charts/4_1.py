@@ -19,12 +19,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_brinson_attribution(
@@ -72,12 +72,14 @@ def plot_brinson_attribution(
     fig, ax = plt.subplots(figsize=figsize)
     
     # 绘制选择收益折线图（深蓝色，带圆形标记）
-    ax.plot(dates, selection_returns, color='#1f77b4', marker='o', 
-            markersize=4, linewidth=1.5, label='选择收益')
+    ax.plot(dates, selection_returns, color='#082868', marker='o', 
+            markersize=4, linewidth=1.5, label='选择收益',markerfacecolor='white', markeredgecolor='#082868',
+            markeredgewidth=1.5)
     
     # 绘制配置收益折线图（浅灰色，带圆形标记）
-    ax.plot(dates, allocation_returns, color='#808080', marker='o', 
-            markersize=4, linewidth=1.5, label='配置收益')
+    ax.plot(dates, allocation_returns, color='#afb0b2', marker='o', 
+            markersize=4, linewidth=1.5, label='配置收益',markerfacecolor='white', markeredgecolor='#afb0b2',
+            markeredgewidth=1.5)
     
     # 设置Y轴
     ax.set_ylabel('累计收益率(%)', fontsize=11)
@@ -109,6 +111,9 @@ def plot_brinson_attribution(
     # 设置标题
     # if show_title:
     #     ax.set_title('Brinson归因', fontsize=12, fontweight='bold', pad=15, loc='left')
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     
     # 添加图例（在顶部中心）
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1),
@@ -289,15 +294,16 @@ def plot_brinson_industry_bar_chart(
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
     
-    # 设置柱状图位置
-    x = np.arange(len(industries))
-    width = 0.35  # 柱子宽度
+    # 设置柱状图位置（增加每组柱子之间的距离）
+    x = np.arange(len(industries)) * 1.25  # 乘以1.5增加间距
+    width = 0.4  # 柱子宽度
+    gap = 0.07
     
-    # 绘制分组柱状图
-    bars1 = ax.bar(x - width/2, selection_returns, width, 
-                   label='选择收益', color='#1f77b4', alpha=0.8)
-    bars2 = ax.bar(x + width/2, allocation_returns, width,
-                   label='配置收益', color='#808080', alpha=0.8)
+    # 绘制分组柱状图（两个柱子并排显示）
+    bars1 = ax.bar(x - (width + gap)/2, selection_returns, width, 
+                   label='选择收益', color='#082868', alpha=1)
+    bars2 = ax.bar(x + (width + gap)/2, allocation_returns, width,
+                   label='配置收益', color='#afb0b2', alpha=1)
     
     # 设置Y轴
     ax.set_ylabel('累计收益率(%)', fontsize=11)
@@ -333,6 +339,9 @@ def plot_brinson_industry_bar_chart(
     # 设置标题
     if show_title:
         ax.set_title('累计收益率(%)', fontsize=12, fontweight='bold', pad=15, loc='left')
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     
     # 添加图例
     ax.legend(loc='upper right', fontsize=10)
@@ -384,8 +393,8 @@ def plot_brinson_attribution_table(
     
     # 方法2：保留标题行，但缩小整体表格
     table_width = 0.6   # 表格宽度为图形宽度的80%
-    table_total_height = 0.5  # 表格总高度（包括标题）
-    title_height = 0.15  # 标题高度
+    table_total_height = 0.3  # 表格总高度（包括标题）
+    title_height = 0.1  # 标题高度
     
     # 计算位置（居中）
     table_x = (1 - table_width) / 2
@@ -394,7 +403,7 @@ def plot_brinson_attribution_table(
     # 绘制标题行
     title_rect = Rectangle((table_x, table_y + table_total_height - title_height), 
                           table_width, title_height,
-                          facecolor='#e8e8e8', edgecolor='black', linewidth=0.8,
+                          facecolor='#f0f0f0', edgecolor='#f0f0f0', linewidth=0.8,
                           transform=ax.transAxes)
     ax.add_patch(title_rect)
     ax.text(table_x + table_width/2, table_y + table_total_height - title_height/2, 
@@ -418,12 +427,12 @@ def plot_brinson_attribution_table(
         for j in range(2):
             cell = table[(i, j)]
             if j == 0:
-                cell.set_facecolor('#e8e8e8')
-                cell.set_text_props(ha='left', weight='normal')
+                cell.set_facecolor('#ffffff')
+                cell.set_text_props(ha='center', weight='normal')
             else:
                 cell.set_facecolor('#ffffff')
                 cell.set_text_props(ha='center')
-            cell.set_edgecolor('black')
+            cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
     
     # 调整布局

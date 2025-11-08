@@ -18,12 +18,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_industry_proportion_timeseries(
@@ -90,27 +90,27 @@ def plot_industry_proportion_timeseries(
     
     # 定义行业颜色映射（根据图片描述）
     color_map = {
-        '农林牧渔': '#8B0000',      # 深红/栗色
-        '基础化工': '#000080',      # 深蓝/海军蓝
-        '钢铁': '#708090',          # 灰蓝色
-        '有色金属': '#4B0082',      # 深紫色
-        '电子': '#DC143C',          # 红色
-        '汽车': '#87CEEB',          # 浅蓝色
-        '家用电器': '#00008B',      # 深蓝色
-        '食品饮料': '#FF8C00',      # 橙色
-        '纺织服饰': '#90EE90',      # 浅绿/薄荷绿
-        '轻工制造': '#FFC0CB',      # 粉色
-        '医药生物': '#8B0000',      # 深红
-        '公用事业': '#008080',      # 青色/蓝绿色
-        '交通运输': '#20B2AA',      # 浅蓝绿色
-        '房地产': '#DA70D6',        # 浅紫色
-        '商贸零售': '#808000',      # 橄榄绿
-        '社会服务': '#DDA0DD',      # 浅紫灰色
-        '银行': '#B8860B',          # 深黄/金色
-        '非银金融': '#8B6914',      # 深棕/金色
-        '综合': '#D2691E',          # 浅棕色
-        '建筑材料': '#B8860B',       # 深黄/金色
-        '建筑装饰': '#4B0082',       # 深紫色
+        '农林牧渔': '#38030d',      # 深红/栗色
+        '基础化工': '#28353e',      # 深蓝/海军蓝
+        '钢铁': '#5b6c8a',          # 灰蓝色
+        '有色金属': '#57557b',      # 深紫色
+        '电子': '#d93442',          # 红色
+        '汽车': '#7d94c0',          # 浅蓝色
+        '家用电器': '#1a6daf',      # 深蓝色
+        '食品饮料': '#d87939',      # 橙色
+        '纺织服饰': '#e8f5ee',      # 浅绿/薄荷绿
+        '轻工制造': '#fff9ed',      # 粉色
+        '医药生物': '#bf192f',      # 深红
+        '公用事业': '#64999f',      # 青色/蓝绿色
+        '交通运输': '#74b4b3',      # 浅蓝绿色
+        '房地产': '#c1a1d2',        # 浅紫色
+        '商贸零售': '#99b292',      # 橄榄绿
+        '社会服务': '#9da983',      # 浅紫灰色
+        '银行': '#b09fc9',          # 深黄/金色
+        '非银金融': '#b6ac79',      # 深棕/金色
+        '综合': '#b0835a',          # 浅棕色
+        '建筑材料': '#a38636',       # 深黄/金色
+        '建筑装饰': '#d0af22',       # 深紫色
     }
     
     # 为没有定义颜色的行业分配默认颜色
@@ -128,7 +128,7 @@ def plot_industry_proportion_timeseries(
     
     # 使用数值索引绘制柱状图，使所有柱子之间间隔相等
     x_positions = np.arange(len(dates))
-    bar_width = 0.6  # 柱子宽度
+    bar_width = 0.8  # 柱子宽度
     
     # 计算堆叠位置
     bottoms = {}
@@ -174,12 +174,14 @@ def plot_industry_proportion_timeseries(
     
     # 添加图例（在顶部，多列显示）
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), 
-              ncol=min(11, len(industry_names)), frameon=True, fontsize=8)
+              ncol= len(industry_names), frameon=True, fontsize=8)
     
     # # 添加脚注
     # ax.text(0, -0.08, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,
     #         ha='left', va='top', fontsize=8, style='italic')
     
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     # 调整布局，为图例和脚注留出空间
     plt.tight_layout(rect=[0, 0.05, 1, 0.90])
     

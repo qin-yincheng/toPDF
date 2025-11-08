@@ -426,7 +426,7 @@ def generate_page1(
                                        figsize=(right_w/72*2.54, h/72*2.54),
                                        show_title=False)
         insert_figure(c, fig5, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= (h + 10)
+        y_cursor -= (h + 15)  # 增加间距，确保与下一部分分离
     except Exception as e:
         print(f"  日收益表现图表生成失败: {e}")
 
@@ -438,6 +438,7 @@ def generate_page1(
         y_cursor = draw_section_title(y_cursor, "收益分析")
         left_w = usable_width * 0.5
         right_w = usable_width - left_w - 5
+        # 恢复原始大小，不再缩小
         fig6 = plot_return_analysis_table(data=data, return_figure=True, 
                                           figsize=(left_w/72*2.54, h/72*2.54))
         insert_figure(c, fig6, x_left, y_cursor - h, left_w, h)

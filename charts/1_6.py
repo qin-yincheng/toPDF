@@ -22,12 +22,12 @@ def setup_chinese_font() -> None:
     font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
     plt.rcParams['font.sans-serif'] = font_list
     plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 10
-    plt.rcParams['axes.titlesize'] = 14
-    plt.rcParams['axes.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 9
-    plt.rcParams['ytick.labelsize'] = 9
-    plt.rcParams['legend.fontsize'] = 9
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 14
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
 
 
 def _generate_mock_indicator_data() -> Dict[str, Dict[str, Any]]:
@@ -239,7 +239,7 @@ def plot_indicator_analysis_table(
         colLabels=table_data[0],  # 表头
         cellLoc='center',
         loc='center',
-        bbox=[0.02, 0.05, 1, 1]
+        bbox=[0, 0, 1, 1]
     )
     
     # 设置表格样式
@@ -250,9 +250,9 @@ def plot_indicator_analysis_table(
     # 设置表头样式
     for i in range(len(table_data[0])):
         cell = table[(0, i)]
-        cell.set_facecolor('#e8e8e8')  # 浅灰色背景
+        cell.set_facecolor('#f0f0f0')  # 浅灰色背景
         cell.set_text_props(weight='bold', ha='center')
-        cell.set_edgecolor('black')
+        cell.set_edgecolor('#f0f0f0')
         cell.set_linewidth(1)
     
     # 设置数据行样式
@@ -260,18 +260,18 @@ def plot_indicator_analysis_table(
         for j in range(len(table_data[0])):
             cell = table[(i, j)]
             # 第一列（指标列）左对齐，其他列右对齐
-            if j == 0:
-                cell.set_text_props(ha='left', weight='bold')
-                cell.set_facecolor('#f0f0f0')  # 浅灰色背景
+            # if j == 0:
+            #     cell.set_text_props(ha='center', weight='bold')
+            #     cell.set_facecolor('#ffffff')  # 浅灰色背景
+            # else:
+            cell.set_text_props(ha='center')
+            # 交替行颜色
+            if (i - 1) % 2 == 0:
+                cell.set_facecolor('#ffffff')  # 白色
             else:
-                cell.set_text_props(ha='right')
-                # 交替行颜色
-                if (i - 1) % 2 == 0:
-                    cell.set_facecolor('#ffffff')  # 白色
-                else:
-                    cell.set_facecolor('#f8f8f8')  # 浅灰色
-            cell.set_edgecolor('black')
-            cell.set_linewidth(0.8)
+                cell.set_facecolor('#f8f8f8')  # 浅灰色
+            cell.set_edgecolor('#f0f0f0')
+            cell.set_linewidth(1)
     
     # 调整布局
     plt.tight_layout()
