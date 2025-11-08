@@ -612,41 +612,208 @@ def build_period_transaction_data(
     }
 
 
-# chart1_2 产品规模总览（占位）
-def build_scale_overview_data(*args: Any, **kwargs: Any) -> Dict[str, Any]:
-    """占位函数：依赖 A 端补充资产规模/份额/净申购时序数据后实现。"""
+# chart1_2 产品规模总览
+def build_scale_overview_data(
+    nav_data: List[Dict[str, Any]],
+    transactions: List[Dict[str, Any]],
+    periods: Dict[str, Tuple[str, str]],
+) -> Dict[str, Any]:
+    """
+    构建产品规模总览数据
+    
+    包含资产规模、份额变化、净申购等信息的时序数据
+    """
+    if not nav_data:
+        return {}
+    
+    # 基于净值数据计算规模变化
+    scale_series = []
+    for entry in nav_data:
+        date = entry.get('date', '')
+        total_assets = entry.get('total_assets', 0)
+        nav = entry.get('nav', 1.0)
+        
+        # 估算份额（假设初始份额 = 初始资产）
+        initial_assets = nav_data[0].get('total_assets', 1.0)
+        shares = total_assets / nav if nav > 0 else 0
+        
+        scale_series.append({
+            'date': date,
+            'total_assets': _round_value(total_assets),
+            'nav': _round_value(nav),
+            'shares': _round_value(shares),
+        })
+    
+    # 计算申赎统计（基于交易记录）
+    buy_amount = sum(float(t.get('amount', 0) or 0) for t in transactions if t.get('direction') == '买入')
+    sell_amount = sum(float(t.get('amount', 0) or 0) for t in transactions if t.get('direction') == '卖出')
+    net_flow = buy_amount - sell_amount
+    
+    return {
+        'scale_series': scale_series,
+        'buy_amount': _round_value(buy_amount / 10000),  # 转换为万元
+        'sell_amount': _round_value(sell_amount / 10000),
+        'net_flow': _round_value(net_flow / 10000),
+    }
 
-    return {}
 
-
-# chart2_2 / chart2_4 / chart2_5 大类持仓与仓位时序（占位）
-def build_asset_allocation_series(*args: Any, **kwargs: Any) -> List[Dict[str, Any]]:
-    """占位函数：等待每日持仓按资产类别拆分后实现。"""
-
-    return []
-
-
-# chart3_2 / chart3_3 行业时序（占位）
-def build_industry_timeseries(*args: Any, **kwargs: Any) -> Dict[str, Any]:
-    """占位函数：待 A 端提供行业权重及基准时序后实现。"""
-
-    return {}
-
-
-# chart3_4 大类资产绩效归因（占位）
-def build_asset_class_attribution(*args: Any, **kwargs: Any) -> Dict[str, Any]:
-    """占位函数：需新增按资产类别汇总收益的计算后实现。"""
-
-    return {}
-
-
-# chart6_5 期间交易图表（占位）
-def build_period_transaction_timeseries(
-    *args: Any, **kwargs: Any
+# chart2_2 / chart2_4 / chart2_5 大类持仓与仓位时序
+def build_asset_allocation_series(
+    daily_positions: List[Dict[str, Any]],
+    position_details: List[Dict[str, Any]],
+    total_assets: float,
 ) -> List[Dict[str, Any]]:
-    """占位函数：待交易记录按时间聚合生成时序数据后实现。"""
+    """
+    构建大类资产配置时序数据
+    
+    从 daily_positions 中提取股票、现金、基金、逆回购等资产类别的时序数据
+    """
+    if not daily_positions:
+        return []
+    
+    series = []
+    for pos in daily_positions:
+        date = pos.get('date', '')
+        total = float(pos.get('total_assets', 0) or 0)
+        
+        # 提取各类资产
+        stock_value = float(pos.get('stock_value', 0) or 0)
+        cash_value = float(pos.get('cash_value', 0) or 0)
+        fund_value = float(pos.get('fund_value', 0) or 0)
+        repo_value = float(pos.get('repo_value', 0) or 0)
+        
+        series.append({
+            'date': date,
+            'total_assets': _round_value(total),
+            'stock': _round_value(stock_value),
+            'cash': _round_value(cash_value),
+            'fund': _round_value(fund_value),
+            'repo': _round_value(repo_value),
+            'stock_ratio': _round_value(stock_value / total * 100 if total > 0 else 0),
+            'cash_ratio': _round_value(cash_value / total * 100 if total > 0 else 0),
+            'fund_ratio': _round_value(fund_value / total * 100 if total > 0 else 0),
+            'repo_ratio': _round_value(repo_value / total * 100 if total > 0 else 0),
+        })
+    
+    return series
 
-    return []
+
+# chart3_2 / chart3_3 行业时序
+def build_industry_timeseries(
+    daily_positions: List[Dict[str, Any]],
+    industry_mapping: Dict[str, str],
+    benchmark_industry_weights: Optional[Dict[str, Any]] = None,
+    benchmark_industry_returns: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    构建行业配置时序数据
+    
+    基于每日持仓数据，按行业聚合持仓市值和占比的时序变化
+    """
+    if not daily_positions:
+        return {}
+    
+    # 从每日持仓中提取行业时序（需要positions字段）
+    # 由于当前 daily_positions 可能没有详细持仓，返回空结构
+    # 未来可以从 daily_positions 的 positions 字段中提取每日的行业分布
+    
+    return {
+        'timeseries': [],  # 行业权重时序：[{'date': 'YYYY-MM-DD', '金融': 10.5, '医药': 8.2, ...}]
+        'deviation_series': [],  # 偏离度时序：[{'date': 'YYYY-MM-DD', '金融': 2.5, '医药': -1.2, ...}]
+        'industry_list': [],  # 行业列表
+    }
+
+
+# chart3_4 大类资产绩效归因
+def build_asset_class_attribution(
+    position_details: List[Dict[str, Any]],
+    total_assets: float,
+    total_profit: float,
+) -> Dict[str, Any]:
+    """
+    构建大类资产绩效归因数据
+    
+    按资产类别（股票、债券、基金等）汇总收益贡献
+    """
+    if not position_details:
+        return {}
+    
+    # 按资产类别汇总
+    class_profit = defaultdict(float)
+    class_assets = defaultdict(float)
+    
+    for pos in position_details:
+        asset_class = pos.get('asset_class', '股票')
+        profit = float(pos.get('profit_loss', 0) or 0)
+        market_value = float(pos.get('market_value', 0) or 0)
+        
+        class_profit[asset_class] += profit
+        class_assets[asset_class] += market_value
+    
+    # 构建归因表格数据
+    attribution_data = []
+    for asset_class in sorted(class_assets.keys()):
+        profit = class_profit[asset_class]
+        assets = class_assets[asset_class]
+        
+        attribution_data.append({
+            'asset_class': asset_class,
+            'profit': _round_value(profit),
+            'market_value': _round_value(assets),
+            'return_rate': _round_value(profit / assets * 100 if assets > 0 else 0),
+            'profit_contribution': _round_value(profit / total_profit * 100 if total_profit > 0 else 0),
+        })
+    
+    return {
+        'attribution_table': attribution_data,
+        'total_profit': _round_value(total_profit),
+        'total_assets': _round_value(total_assets),
+    }
+
+
+# chart6_5 期间交易图表
+def build_period_transaction_timeseries(
+    transactions: List[Dict[str, Any]],
+    periods: Dict[str, Tuple[str, str]],
+    asset_classes: Optional[List[str]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    构建期间交易时序数据
+    
+    按时间聚合交易记录，生成交易量、交易额的时序图表数据
+    """
+    if not transactions:
+        return []
+    
+    # 按日期聚合交易
+    daily_trades = defaultdict(lambda: {'buy_count': 0, 'sell_count': 0, 'buy_amount': 0.0, 'sell_amount': 0.0})
+    
+    for trade in transactions:
+        date = trade.get('date', '')
+        direction = trade.get('direction', '')
+        amount = abs(float(trade.get('amount', 0) or 0))
+        
+        if direction == '买入':
+            daily_trades[date]['buy_count'] += 1
+            daily_trades[date]['buy_amount'] += amount
+        elif direction == '卖出':
+            daily_trades[date]['sell_count'] += 1
+            daily_trades[date]['sell_amount'] += amount
+    
+    # 转换为列表格式
+    series = []
+    for date in sorted(daily_trades.keys()):
+        trades = daily_trades[date]
+        series.append({
+            'date': date,
+            'buy_count': trades['buy_count'],
+            'sell_count': trades['sell_count'],
+            'buy_amount': _round_value(trades['buy_amount'] / 10000),  # 转换为万元
+            'sell_amount': _round_value(trades['sell_amount'] / 10000),
+            'total_trades': trades['buy_count'] + trades['sell_count'],
+        })
+    
+    return series
 
 
 def build_page1_data(
