@@ -24,11 +24,20 @@ pip install -r requirements.txt
 export TUSHARE_TOKEN="your_token_here"
 # 注册地址：https://tushare.pro
 
-# 4. 生成PDF报告
+# 4. 准备数据
+# generate_report.py 会自动检测并转换 Excel 文件
+# 确保 docs/交割单.xlsx 或 docs/交割单.csv 存在即可
+
+# 5. 生成PDF报告
 python generate_report.py
 ```
 
 **输出**：`私募基金报告_完整版.pdf`（约6.3MB，16页完整报告）
+
+**📝 注意**：
+- ✅ `generate_report.py` 会自动检查并转换 Excel 文件
+- ✅ 如果 CSV 已存在，直接使用，不会重复转换
+- ✅ 支持直接提供 CSV 或 Excel 文件
 
 ## 📁 项目结构
 
@@ -84,8 +93,7 @@ toPDF/
 │   └── daily_asset_distribution.csv  # 每日资产分布
 │
 ├── config.py                      # ⭐ 全局配置
-├── main.py                        # 数据转换工具
-├── generate_report.py             # ⭐ PDF生成入口
+├── generate_report.py             # ⭐ PDF生成入口（包含自动转换）
 └── requirements.txt               # 依赖列表
 ```
 
@@ -439,7 +447,7 @@ rm -rf docs/.cache
 ```bash
 # 1. 快速测试（推荐）
 python generate_report.py
-# 生成完整PDF报告，验证所有功能
+# 一键生成完整PDF报告，自动处理Excel转换
 
 # 2. 数据接口测试
 python -c "
@@ -452,9 +460,6 @@ print(f'总资产: {data[-1][\"total_assets\"]:.2f} 万元')
 
 # 3. 生成每日资产分布CSV
 python -m demo.generate_distribution_csv
-
-# 4. 数据转换工具
-python main.py  # 将 Excel 转换为 CSV
 ```
 
 ## � 故障排查

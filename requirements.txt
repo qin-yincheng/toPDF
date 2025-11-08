@@ -1,20 +1,51 @@
-pandas>=2.0.0
-openpyxl>=3.1.0
-tushare>=1.2.89
+# ============================================
+# 私募基金报告生成系统 - 依赖清单
+# ============================================
+
 # 核心依赖（必需）
-matplotlib>=3.5.0
-numpy>=1.21.0
-reportlab>=3.6.0
+# ----------------
+pandas>=2.0.0,<3.0.0          # 数据处理
+numpy>=1.21.0,<3.0.0          # 数值计算
+matplotlib>=3.5.0,<4.0.0      # 图表绘制
+reportlab>=3.6.0,<5.0.0       # PDF生成
+tushare>=1.2.89,<2.0.0        # 金融数据API
+openpyxl>=3.1.0,<4.0.0        # Excel文件处理
 
-# 可选依赖（用于 ECharts 功能）
-# 如果需要使用 pyecharts 生成图表，请安装：
-# pyecharts>=2.0.0
+# 推荐版本（已测试）
+# ----------------
+# pandas==2.3.1
+# numpy==2.3.2
+# matplotlib==3.10.6
+# reportlab==4.4.4
+# tushare==1.4.24
+# openpyxl==3.1.5
 
-# 如果需要将 HTML 转换为 PDF/图片，请安装以下之一：
-# playwright>=1.20.0  # 推荐，质量好
-# selenium>=4.0.0     # 备选方案
-# pdfkit>=1.0.0       # 备选方案（需要额外安装 wkhtmltopdf）
+# Python 版本要求
+# ----------------
+# python>=3.8,<3.13
 
-# 如果需要使用 pyecharts 的截图功能：
-# snapshot-selenium>=0.0.6
+# 可选依赖（用于扩展功能，默认不需要）
+# ----------------------------------------
+# 以下依赖仅在需要使用 pyecharts 生成交互式图表时安装
+# 当前项目使用 matplotlib，不需要这些依赖
 
+# pyecharts>=2.0.0           # 交互式图表库（可选）
+# snapshot-selenium>=0.0.6   # pyecharts 截图（可选）
+
+# HTML转PDF工具（可选，用于 pyecharts 输出）
+# playwright>=1.20.0         # 推荐方案
+# selenium>=4.0.0            # 备选方案
+# pdfkit>=1.0.0              # 备选方案（需要系统安装 wkhtmltopdf）
+
+# 注意事项
+# --------
+# 1. 必须设置环境变量 TUSHARE_TOKEN 才能获取行情数据
+#    export TUSHARE_TOKEN="your_token_here"
+#    注册地址：https://tushare.pro
+#
+# 2. 如果安装过程中遇到问题，可以尝试：
+#    pip install --upgrade pip
+#    pip install -r requirements.txt --no-cache-dir
+#
+# 3. 对于 macOS/Linux 用户，可能需要安装系统字体以支持中文显示
+#    项目会自动尝试使用：SimHei, Microsoft YaHei, Arial Unicode MS
