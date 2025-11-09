@@ -5,16 +5,72 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, List
 
 
+def _normalize_weight_mapping(weights: Dict[str, float] | None) -> Dict[str, float]:
+    """将权重统一为 0-1 之间的小数。"""
+    if not weights:
+        return {}
+
+    normalized: Dict[str, float] = {}
+    for industry, value in weights.items():
+        if value is None:
+            continue
+        weight = float(value)
+        if weight > 1.0:
+            weight = weight / 100.0
+        normalized[industry] = weight
+    return normalized
+
+
+def _normalize_return_mapping(returns: Dict[str, float] | None) -> Dict[str, float]:
+    """将收益率统一为小数形式。"""
+    if not returns:
+        return {}
+
+    normalized: Dict[str, float] = {}
+    for industry, value in returns.items():
+        if value is None:
+            continue
+        ret = float(value)
+        if ret > 1.0 or ret < -1.0:
+            ret = ret / 100.0
+        normalized[industry] = ret
+    return normalized
+
+
+def _extract_benchmark_snapshot(
+    benchmark_mapping: Dict[str, Any] | None, date: str
+) -> Dict[str, float]:
+    """兼容按日期或静态字典的基准输入。"""
+    if not benchmark_mapping:
+        return {}
+
+    if isinstance(benchmark_mapping, dict):
+        snapshot = benchmark_mapping.get(date)
+        if isinstance(snapshot, dict):
+            return {k: float(v) for k, v in snapshot.items() if v is not None}
+
+        # 如果不是按日期嵌套的结构，则尝试判断是否已是行业->数值
+        if all(
+            isinstance(value, (int, float)) or value is None
+            for value in benchmark_mapping.values()
+        ):
+            return {k: float(v) for k, v in benchmark_mapping.items() if v is not None}
+
+    return {}
+
+
 def brinson_attribution(
     product_industry_weights: Dict[str, float],
     benchmark_industry_weights: Dict[str, float],
     product_industry_returns: Dict[str, float],
     benchmark_industry_returns: Dict[str, float],
 ) -> Dict[str, float]:
-    """计算 Brinson 归因结果。
+    """按 Brinson-Fachler 口径计算归因结果，包含交互项。"""
 
-    参数均为小数形式，缺失行业按 0 处理。
-    """
+    product_industry_weights = _normalize_weight_mapping(product_industry_weights)
+    benchmark_industry_weights = _normalize_weight_mapping(benchmark_industry_weights)
+    product_industry_returns = _normalize_return_mapping(product_industry_returns)
+    benchmark_industry_returns = _normalize_return_mapping(benchmark_industry_returns)
 
     industries: Iterable[str] = (
         set(product_industry_weights)
@@ -23,8 +79,15 @@ def brinson_attribution(
         | set(benchmark_industry_returns)
     )
 
-    selection = 0.0
+    benchmark_total_return = sum(
+        benchmark_industry_weights.get(industry, 0.0)
+        * benchmark_industry_returns.get(industry, 0.0)
+        for industry in industries
+    )
+
+    selection_raw = 0.0
     allocation = 0.0
+    interaction = 0.0
 
     for industry in industries:
         wp = product_industry_weights.get(industry, 0.0)
@@ -32,14 +95,18 @@ def brinson_attribution(
         rp = product_industry_returns.get(industry, 0.0)
         rb = benchmark_industry_returns.get(industry, 0.0)
 
-        selection += wp * (rp - rb)
-        allocation += (wp - wb) * rb
+        selection_raw += wb * (rp - rb)
+        allocation += (wp - wb) * (rb - benchmark_total_return)
+        interaction += (wp - wb) * (rp - rb)
 
-    total = selection + allocation
+    selection_combined = selection_raw + interaction
+    total = selection_raw + allocation + interaction
 
     return {
-        "selection_effect": round(selection, 6),
+        "selection_effect": round(selection_raw, 6),
         "allocation_effect": round(allocation, 6),
+        "interaction_effect": round(interaction, 6),
+        "selection_effect_with_interaction": round(selection_combined, 6),
         "total_excess_return": round(total, 6),
     }
 
@@ -68,7 +135,9 @@ def calculate_brinson_on_date(
         return {
             "selection_effect": 0.0,
             "allocation_effect": 0.0,
+            "interaction_effect": 0.0,
             "total_excess_return": 0.0,
+            "selection_effect_with_interaction": 0.0,
         }
 
     industry_data: Dict[str, Dict[str, float]] = {}
@@ -106,16 +175,19 @@ def calculate_brinson_on_date(
         product_weights[industry] = weight
 
         begin_value = data["begin_value"]
-        if begin_value > 0:
-            net_cash_flow = data["net_cash_flow"]
+        net_cash_flow = data["net_cash_flow"]
+        denominator = begin_value + 0.5 * net_cash_flow
+        if abs(denominator) > 1e-8:
             product_returns[industry] = (
                 data["end_value"] - begin_value - net_cash_flow
-            ) / begin_value
+            ) / denominator
         else:
             product_returns[industry] = 0.0
 
     benchmark_weights = benchmark_industry_weights or {}
     benchmark_returns = benchmark_industry_returns or {}
+    benchmark_weights = _normalize_weight_mapping(benchmark_weights)
+    benchmark_returns = _normalize_return_mapping(benchmark_returns)
 
     brinson_result = brinson_attribution(
         product_weights,
@@ -132,6 +204,10 @@ def calculate_brinson_on_date(
     return {
         "selection_effect": round(brinson_result["selection_effect"] * 100, 2),
         "allocation_effect": round(brinson_result["allocation_effect"] * 100, 2),
+        "interaction_effect": round(brinson_result["interaction_effect"] * 100, 2),
+        "selection_effect_with_interaction": round(
+            brinson_result["selection_effect_with_interaction"] * 100, 2
+        ),
         "total_excess_return": round(brinson_result["total_excess_return"] * 100, 2),
     }
 
@@ -167,17 +243,15 @@ def calculate_daily_brinson_attribution(
                     "date": date,
                     "selection_effect": 0.0,
                     "allocation_effect": 0.0,
+                    "interaction_effect": 0.0,
+                    "selection_effect_with_interaction": 0.0,
                     "total_excess_return": 0.0,
                 }
             )
             continue
 
-        bench_weights = (
-            benchmark_industry_weights.get(date) if benchmark_industry_weights else None
-        )
-        bench_returns = (
-            benchmark_industry_returns.get(date) if benchmark_industry_returns else None
-        )
+        bench_weights = _extract_benchmark_snapshot(benchmark_industry_weights, date)
+        bench_returns = _extract_benchmark_snapshot(benchmark_industry_returns, date)
 
         result = calculate_brinson_on_date(
             date,
@@ -203,6 +277,8 @@ def calculate_cumulative_brinson_attribution(
 
     cumulative_selection = 0.0
     cumulative_allocation = 0.0
+    cumulative_interaction = 0.0
+    cumulative_selection_with_interaction = 0.0
     cumulative_total = 0.0
 
     cumulative_results: List[Dict[str, Any]] = []
@@ -210,6 +286,10 @@ def calculate_cumulative_brinson_attribution(
     for data in daily_brinson:
         cumulative_selection += float(data.get("selection_effect", 0.0))
         cumulative_allocation += float(data.get("allocation_effect", 0.0))
+        cumulative_interaction += float(data.get("interaction_effect", 0.0))
+        cumulative_selection_with_interaction += float(
+            data.get("selection_effect_with_interaction", 0.0)
+        )
         cumulative_total += float(data.get("total_excess_return", 0.0))
 
         cumulative_results.append(
@@ -217,6 +297,10 @@ def calculate_cumulative_brinson_attribution(
                 "date": data.get("date", ""),
                 "cumulative_selection": round(cumulative_selection, 2),
                 "cumulative_allocation": round(cumulative_allocation, 2),
+                "cumulative_interaction": round(cumulative_interaction, 2),
+                "cumulative_selection_with_interaction": round(
+                    cumulative_selection_with_interaction, 2
+                ),
                 "cumulative_excess_return": round(cumulative_total, 2),
             }
         )
@@ -276,8 +360,15 @@ def calculate_industry_attribution(
 
     benchmark_weights = benchmark_industry_weights or {}
     benchmark_returns = benchmark_industry_returns or {}
+    benchmark_weights = _normalize_weight_mapping(benchmark_weights)
+    benchmark_returns = _normalize_return_mapping(benchmark_returns)
 
     results: List[Dict[str, Any]] = []
+
+    benchmark_total_return = sum(
+        benchmark_weights.get(ind, 0.0) * benchmark_returns.get(ind, 0.0)
+        for ind in benchmark_weights
+    )
 
     for industry, data in industry_data.items():
         weight = data["end_value"] / total_assets if total_assets > 0 else 0.0
@@ -286,21 +377,24 @@ def calculate_industry_attribution(
             data["profit_loss"] / total_profit * 100 if total_profit != 0 else 0.0
         )
 
-        industry_return = 0.0
         begin_value = data["begin_value"]
-        if begin_value > 0:
-            net_cash_flow = data["net_cash_flow"]
+        net_cash_flow = data["net_cash_flow"]
+        denominator = begin_value + 0.5 * net_cash_flow
+        if abs(denominator) > 1e-8:
             industry_return = (
                 data["end_value"] - begin_value - net_cash_flow
-            ) / begin_value
-        elif begin_value == 0 and data["end_value"] == 0:
+            ) / denominator
+        else:
             industry_return = 0.0
 
         benchmark_weight = benchmark_weights.get(industry, 0.0)
         benchmark_return = benchmark_returns.get(industry, 0.0)
-
-        allocation = (weight - benchmark_weight) * benchmark_return
-        selection = weight * (industry_return - benchmark_return)
+        selection_raw = benchmark_weight * (industry_return - benchmark_return)
+        allocation = (weight - benchmark_weight) * (
+            benchmark_return - benchmark_total_return
+        )
+        interaction = (weight - benchmark_weight) * (industry_return - benchmark_return)
+        selection_with_interaction = selection_raw + interaction
 
         results.append(
             {
@@ -308,8 +402,12 @@ def calculate_industry_attribution(
                 "weight": round(weight_pct, 4),
                 "contribution": round(contribution_pct, 4),
                 "profit": round(data["profit_loss"], 2),
-                "selection_return": round(selection * 100, 2),
+                "selection_return": round(selection_raw * 100, 2),
                 "allocation_return": round(allocation * 100, 2),
+                "interaction_return": round(interaction * 100, 2),
+                "selection_return_with_interaction": round(
+                    selection_with_interaction * 100, 2
+                ),
             }
         )
 

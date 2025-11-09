@@ -126,6 +126,7 @@ def format_industry_attribution_for_pdf(
         "收益额(万元)",
         "选择收益(%)",
         "配置收益(%)",
+        "交互收益(%)",
     ]
     sorted_items = sorted(
         industry_attribution, key=lambda item: item["profit"], reverse=True
@@ -140,6 +141,7 @@ def format_industry_attribution_for_pdf(
                 f"{item['profit']:.2f}",
                 f"{item['selection_return']:.2f}",
                 f"{item['allocation_return']:.2f}",
+                f"{item.get('interaction_return', 0.0):.2f}",
             ]
         )
     loss_table = [header]
@@ -152,6 +154,7 @@ def format_industry_attribution_for_pdf(
                 f"{item['profit']:.2f}",
                 f"{item['selection_return']:.2f}",
                 f"{item['allocation_return']:.2f}",
+                f"{item.get('interaction_return', 0.0):.2f}",
             ]
         )
     return {"profit_table": profit_table, "loss_table": loss_table}

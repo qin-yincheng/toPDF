@@ -179,8 +179,12 @@ benchmark_returns = get_benchmark_returns("000300.SH", periods)
 
 # 8-9. 基准行业数据
 industry_weights = get_benchmark_industry_weights("000300.SH", date)
-industry_returns = get_benchmark_industry_returns("000300.SH", period)
-# 基准的行业权重和收益率
+industry_returns = get_benchmark_industry_returns("000300.SH", period_start, period_end)
+# 基准行业收益包含按期间与按日两种格式：
+# {
+#     "period_returns": {"银行": 0.0321, ...},
+#     "daily_returns": {"2024-11-04": {"银行": 0.0012, ...}, ...}
+# }
 ```
 
 #### 步骤2：数据构建（`calc/report_bridge.py`）

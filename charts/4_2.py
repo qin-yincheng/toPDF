@@ -71,12 +71,13 @@ def plot_industry_attribution_profit_table(
             f"{item.get('contribution', 0):.2f}",
             f"{item.get('profit_amount', 0):.2f}",
             f"{item.get('selection_return', 0):.2f}",
-            f"{item.get('allocation_return', 0):.2f}"
+            f"{item.get('allocation_return', 0):.2f}",
+            f"{item.get('interaction_return', 0):.2f}",
         ])
     
     # 表头
     headers = ['行业', '权重占净值比(%)', '贡献度(%)', '收益额(万元)', 
-               '选择收益(%)', '配置收益(%)']
+               '选择收益(%)', '配置收益(%)', '交互收益(%)']
     
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
     table_width = 1   # 表格宽度为图形宽度的70%
@@ -314,12 +315,13 @@ def plot_industry_attribution_loss_table(
             f"{item.get('contribution', 0):.2f}",
             f"{item.get('profit_amount', 0):.2f}",
             f"{item.get('selection_return', 0):.2f}",
-            f"{item.get('allocation_return', 0):.2f}"
+            f"{item.get('allocation_return', 0):.2f}",
+            f"{item.get('interaction_return', 0):.2f}",
         ])
     
     # 表头
     headers = ['行业', '权重占净值比(%)', '贡献度(%)', '收益额(万元)', 
-               '选择收益(%)', '配置收益(%)']
+               '选择收益(%)', '配置收益(%)', '交互收益(%)']
     
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
     table_width = 1   # 表格宽度为图形宽度的70%
@@ -504,25 +506,25 @@ def _generate_mock_profit_data() -> Dict[str, Any]:
     return {
         'profit_data': [
             {'industry': '机械设备', 'weight_ratio': 3.92, 'contribution': 10.78, 
-             'profit_amount': 12.87, 'selection_return': 2.76, 'allocation_return': 9.11},
+             'profit_amount': 12.87, 'selection_return': 2.76, 'allocation_return': 9.11, 'interaction_return': 1.05},
             {'industry': '纺织服饰', 'weight_ratio': 3.12, 'contribution': 7.41, 
-             'profit_amount': 11.67, 'selection_return': 4.97, 'allocation_return': 1.47},
+             'profit_amount': 11.67, 'selection_return': 4.97, 'allocation_return': 1.47, 'interaction_return': 0.32},
             {'industry': '石油石化', 'weight_ratio': 6.46, 'contribution': 7.59, 
-             'profit_amount': 8.81, 'selection_return': 3.68, 'allocation_return': 2.92},
+             'profit_amount': 8.81, 'selection_return': 3.68, 'allocation_return': 2.92, 'interaction_return': 0.45},
             {'industry': '电子', 'weight_ratio': 7.30, 'contribution': 5.59, 
-             'profit_amount': 8.24, 'selection_return': 7.35, 'allocation_return': -3.45},
+             'profit_amount': 8.24, 'selection_return': 7.35, 'allocation_return': -3.45, 'interaction_return': -0.85},
             {'industry': '医药生物', 'weight_ratio': 6.32, 'contribution': 4.31, 
-             'profit_amount': 5.24, 'selection_return': 3.45, 'allocation_return': -1.67},
+             'profit_amount': 5.24, 'selection_return': 3.45, 'allocation_return': -1.67, 'interaction_return': 0.58},
             {'industry': '环保', 'weight_ratio': 8.52, 'contribution': 4.26, 
-             'profit_amount': 4.85, 'selection_return': 0.24, 'allocation_return': 6.30},
+             'profit_amount': 4.85, 'selection_return': 0.24, 'allocation_return': 6.30, 'interaction_return': 0.42},
             {'industry': '国防军工', 'weight_ratio': 1.93, 'contribution': 2.36, 
-             'profit_amount': 3.41, 'selection_return': 2.79, 'allocation_return': -1.12},
+             'profit_amount': 3.41, 'selection_return': 2.79, 'allocation_return': -1.12, 'interaction_return': 0.61},
             {'industry': '商贸零售', 'weight_ratio': 6.52, 'contribution': 2.26, 
-             'profit_amount': 2.15, 'selection_return': 1.11, 'allocation_return': 0.57},
+             'profit_amount': 2.15, 'selection_return': 1.11, 'allocation_return': 0.57, 'interaction_return': 0.18},
             {'industry': '社会服务', 'weight_ratio': 0.80, 'contribution': 1.10, 
-             'profit_amount': 2.02, 'selection_return': 0.50, 'allocation_return': 0.46},
+             'profit_amount': 2.02, 'selection_return': 0.50, 'allocation_return': 0.46, 'interaction_return': 0.09},
             {'industry': '电力设备', 'weight_ratio': 2.17, 'contribution': 1.66, 
-             'profit_amount': 1.97, 'selection_return': -0.27, 'allocation_return': -1.24},
+             'profit_amount': 1.97, 'selection_return': -0.27, 'allocation_return': -1.24, 'interaction_return': -0.15},
         ]
     }
 
@@ -536,17 +538,17 @@ def _generate_mock_loss_data() -> Dict[str, Any]:
     return {
         'loss_data': [
             {'industry': '农林牧渔', 'weight_ratio': 2.96, 'contribution': -1.94, 
-             'profit_amount': -3.61, 'selection_return': -0.47, 'allocation_return': -1.20},
+             'profit_amount': -3.61, 'selection_return': -0.47, 'allocation_return': -1.20, 'interaction_return': -0.28},
             {'industry': '基础化工', 'weight_ratio': 8.86, 'contribution': -0.92, 
-             'profit_amount': -3.00, 'selection_return': 0.07, 'allocation_return': -1.77},
+             'profit_amount': -3.00, 'selection_return': 0.07, 'allocation_return': -1.77, 'interaction_return': -0.19},
             {'industry': '食品饮料', 'weight_ratio': 5.94, 'contribution': -0.36, 
-             'profit_amount': -2.42, 'selection_return': 0.10, 'allocation_return': -0.53},
+             'profit_amount': -2.42, 'selection_return': 0.10, 'allocation_return': -0.53, 'interaction_return': -0.11},
             {'industry': '轻工制造', 'weight_ratio': 3.57, 'contribution': -0.33, 
-             'profit_amount': -0.71, 'selection_return': 3.71, 'allocation_return': -4.34},
+             'profit_amount': -0.71, 'selection_return': 3.71, 'allocation_return': -4.34, 'interaction_return': -0.42},
             {'industry': '家用电器', 'weight_ratio': 0.18, 'contribution': -0.31, 
-             'profit_amount': -0.50, 'selection_return': -0.19, 'allocation_return': -0.85},
+             'profit_amount': -0.50, 'selection_return': -0.19, 'allocation_return': -0.85, 'interaction_return': -0.07},
             {'industry': '汽车', 'weight_ratio': 4.52, 'contribution': -0.01, 
-             'profit_amount': -0.04, 'selection_return': 3.66, 'allocation_return': -4.35},
+             'profit_amount': -0.04, 'selection_return': 3.66, 'allocation_return': -4.35, 'interaction_return': -0.41},
         ]
     }
 
