@@ -207,21 +207,38 @@ def calculate_xlim(
     返回:
         tuple: (x_min, x_max) 合理的X轴范围
     """
-    if not x_data:
-        # 如果没有数据，返回默认范围
-        if is_date is True or (is_date is None and isinstance(x_data, list) and len(x_data) > 0 and isinstance(x_data[0], datetime)):
-            default_date = datetime.now()
-            return (default_date - timedelta(days=30), default_date)
-        else:
-            return (0.0, 100.0)
+    # 检查数据是否为空（支持列表和numpy数组）
+    if isinstance(x_data, np.ndarray):
+        if x_data.size == 0:
+            # numpy数组为空
+            if is_date is True:
+                default_date = datetime.now()
+                return (default_date - timedelta(days=30), default_date)
+            else:
+                return (0.0, 100.0)
+    else:
+        if not x_data:
+            # 列表为空
+            if is_date is True or (is_date is None and isinstance(x_data, list) and len(x_data) > 0 and isinstance(x_data[0], datetime)):
+                default_date = datetime.now()
+                return (default_date - timedelta(days=30), default_date)
+            else:
+                return (0.0, 100.0)
     
     # 自动判断是否为日期类型
     if is_date is None:
-        is_date = isinstance(x_data[0], datetime) if x_data else False
+        # 获取第一个元素（支持列表和numpy数组）
+        first_elem = x_data[0] if (isinstance(x_data, np.ndarray) and x_data.size > 0) or (not isinstance(x_data, np.ndarray) and len(x_data) > 0) else None
+        is_date = isinstance(first_elem, datetime) if first_elem is not None else False
     
     if is_date:
         # 日期类型处理
-        valid_dates = [d for d in x_data if d is not None]
+        # 将numpy数组转换为列表以便处理
+        if isinstance(x_data, np.ndarray):
+            x_data_list = x_data.tolist()
+        else:
+            x_data_list = x_data
+        valid_dates = [d for d in x_data_list if d is not None]
         if not valid_dates:
             default_date = datetime.now()
             return (default_date - timedelta(days=30), default_date)
@@ -244,12 +261,20 @@ def calculate_xlim(
         return (x_min, x_max)
     else:
         # 数值类型处理
-        valid_values = [v for v in x_data if v is not None and not np.isnan(v)]
-        if not valid_values:
-            return (0.0, 100.0)
-        
-        min_val = min(valid_values)
-        max_val = max(valid_values)
+        # 将numpy数组转换为列表以便处理，或直接使用numpy函数
+        if isinstance(x_data, np.ndarray):
+            # 对于numpy数组，使用numpy函数更高效
+            valid_values = x_data[~np.isnan(x_data)]
+            if valid_values.size == 0:
+                return (0.0, 100.0)
+            min_val = float(np.min(valid_values))
+            max_val = float(np.max(valid_values))
+        else:
+            valid_values = [v for v in x_data if v is not None and not np.isnan(v)]
+            if not valid_values:
+                return (0.0, 100.0)
+            min_val = min(valid_values)
+            max_val = max(valid_values)
         
         # 如果所有值都相同，添加一些范围
         if min_val == max_val:
