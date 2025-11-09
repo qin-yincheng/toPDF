@@ -126,22 +126,26 @@ def plot_brinson_attribution(
     # 设置Y轴
     ax.set_ylabel('累计收益率(%)', fontsize=11)
     # 根据数据范围设置Y轴
-    all_values = selection_returns + allocation_returns
-    if len(all_values) > 0:
-        min_val = min(all_values)
-        max_val = max(all_values)
-        y_min = min(0, min_val - 1)
-        y_max = max_val + 2
-    else:
-        y_min = -5
-        y_max = 5
-    ax.set_ylim(y_min, y_max)
+    # all_values = selection_returns + allocation_returns
+    # if len(all_values) > 0:
+    #     min_val = min(all_values)
+    #     max_val = max(all_values)
+    #     y_min = min(0, min_val - 1)
+    #     y_max = max_val + 2
+    # else:
+    #     y_min = -5
+    #     y_max = 5
+    # ax.set_ylim(y_min, y_max)
     
-    # 设置Y轴刻度（0% 到约 40%）
-    y_ticks = np.arange(0, np.ceil(y_max) + 5, 5)
-    ax.set_yticks(y_ticks)
-    ax.set_yticklabels([f'{y:.0f}%' for y in y_ticks])
     
+    
+    # # 设置Y轴刻度（0% 到约 40%）
+    # y_ticks = np.arange(0, np.ceil(y_max) + 5, 5)
+    # ax.set_yticks(y_ticks)
+    # ax.set_yticklabels([f'{y:.0f}%' for y in y_ticks])
+    
+    ax.margins(y=0.1)
+
     # 添加网格线（水平虚线，灰色）
     ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
     
@@ -375,16 +379,18 @@ def plot_brinson_industry_bar_chart(
     else:
         y_min = -4
         y_max = 10
-    ax.set_ylim(y_min, y_max)
+    # ax.set_ylim(y_min, y_max)
     
-    # 设置Y轴刻度（确保包含0，间隔为2%）
-    y_ticks = np.arange(y_min, y_max + 1, 2)
-    # 确保0在刻度列表中（如果不在，添加它）
-    if 0 not in y_ticks:
-        y_ticks = np.append(y_ticks, 0)
-        y_ticks = np.sort(y_ticks)
-    ax.set_yticks(y_ticks)
-    ax.set_yticklabels([f'{y:.0f}%' for y in y_ticks])
+    # # 设置Y轴刻度（确保包含0，间隔为2%）
+    # y_ticks = np.arange(y_min, y_max + 1, 2)
+    # # 确保0在刻度列表中（如果不在，添加它）
+    # if 0 not in y_ticks:
+    #     y_ticks = np.append(y_ticks, 0)
+    #     y_ticks = np.sort(y_ticks)
+    # ax.set_yticks(y_ticks)
+    # ax.set_yticklabels([f'{y:.0f}%' for y in y_ticks])
+
+    ax.margins(y=0.1)
     
     # 设置X轴
     ax.set_xticks(x)

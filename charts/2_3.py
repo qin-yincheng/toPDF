@@ -186,7 +186,7 @@ def plot_end_period_holdings_table(
             cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(1)
     
-    # 绘制右侧负债明细表格（带标题）
+    # 绘制右侧负债明细（改为矩形块显示）
     liability_title_y = table_y_start + asset_title_height  # 标题矩形顶部位置，与资产总值对齐
     liability_table_y = table_y_start  # 表格顶部位置，与标题矩形底部无缝连接
     liability_table_height = table_height
@@ -201,38 +201,99 @@ def plot_end_period_holdings_table(
             liability_title_text,
             ha='center', va='center', fontsize=12, fontweight='bold')
     
-    # 负债明细表格（行高缩小）
-    liability_table = ax.table(
-        cellText=liability_table_data[1:],
-        colLabels=liability_table_data[0],
-        cellLoc='left',
-        loc='center',
-        bbox=[liability_x, liability_table_y - liability_table_height, liability_width, liability_table_height]
-    )
-    liability_table.auto_set_font_size(False)
-    liability_table.set_fontsize(table_fontsize)
-    liability_table.scale(1, 1.0)  # 进一步缩小行高
+    # 计算资产表格的行高（用于对齐）
+    # 资产表格有 len(asset_table_data) 行（包括表头）
+    num_asset_rows = len(asset_table_data)
+    asset_table_bottom = asset_table_y - asset_table_height
     
-    # 设置负债明细表格样式
-    for i in range(len(liability_table_data)):
-        for j in range(3):
-            cell = liability_table[(i, j)]
-            if i == 0:  # 表头
-                cell.set_facecolor('#f0f0f0')
-                cell.set_text_props(weight='bold', ha='center')
+    # 由于资产表格使用了scale(1, 1.6)，实际行高需要考虑缩放
+    # 表格总高度 / 行数 = 每行的基础高度
+    base_row_height = asset_table_height / num_asset_rows
+    # scale(1, 1.6)意味着垂直方向放大1.6倍，但表格总高度不变
+    # 所以每行的实际显示高度 = base_row_height
+    # 但为了精确对齐，我们需要获取资产表格的实际行位置
+    
+    # 获取资产表格的实际bbox（考虑scale后的实际位置）
+    # 由于scale不影响bbox，我们直接使用bbox计算
+    # 表头行高度（与数据行相同，因为scale是整体缩放）
+    header_row_height = base_row_height
+    data_row_height = base_row_height
+    
+    # 绘制负债表头（与资产表头对齐）
+    # 表头位置：从表格顶部开始
+    header_y_top = asset_table_y
+    header_y_bottom = header_y_top - header_row_height
+    
+    # 表头背景矩形
+    header_rect = Rectangle((liability_x, header_y_bottom), liability_width, header_row_height,
+                           facecolor='#f0f0f0', edgecolor='#f0f0f0', linewidth=1)
+    ax.add_patch(header_rect)
+    
+    # 表头文字（三列）
+    header_col_width = liability_width / 3
+    header_texts = liability_table_data[0]
+    for j, text in enumerate(header_texts):
+        x_pos = liability_x + header_col_width * (j + 0.5)
+        ax.text(x_pos, header_y_top - header_row_height / 2,
+                text, ha='center', va='center', fontsize=table_fontsize, fontweight='bold')
+    
+    # 绘制负债数据行（矩形块，与资产表格行对齐）
+    num_liability_data_rows = len(liability_table_data) - 1  # 减去表头
+    num_asset_data_rows = len(asset_table_data) - 1  # 减去表头
+    
+    # 从表头下方开始绘制数据行
+    current_y = header_y_bottom
+    
+    for i in range(max(num_liability_data_rows, num_asset_data_rows)):
+        # 计算当前行的y位置（与资产表格对齐）
+        # 资产表格第i+1行（i=0是第一行数据）的位置
+        row_index = i + 1  # 数据行索引（从1开始，0是表头）
+        # 计算该行在资产表格中的位置
+        asset_row_y_top = asset_table_y - header_row_height - i * data_row_height
+        asset_row_y_bottom = asset_row_y_top - data_row_height
+        
+        if i < num_liability_data_rows:
+            # 有负债数据，绘制矩形块
+            liability_row_data = liability_table_data[i + 1]
+            
+            # 根据行索引决定背景色（与资产表格一致）
+            if i % 2 == 0:  # 偶数行（第一行数据i=0）白色
+                row_color = '#ffffff'
+            else:  # 奇数行（第二行数据i=1）浅灰
+                row_color = '#f8f8f8'
+            
+            # 绘制行背景矩形（整体背景）
+            row_rect = Rectangle((liability_x, asset_row_y_bottom), liability_width, data_row_height,
+                                facecolor=row_color, edgecolor='#f0f0f0', linewidth=1)
+            ax.add_patch(row_rect)
+            
+            # 绘制负债名称列的背景（浅灰，与资产名称列一致）
+            name_col_rect = Rectangle((liability_x, asset_row_y_bottom), header_col_width, data_row_height,
+                                     facecolor='#f0f0f0', edgecolor='#f0f0f0', linewidth=1)
+            ax.add_patch(name_col_rect)
+            
+            # 绘制三列文字
+            for j, text in enumerate(liability_row_data):
+                x_pos = liability_x + header_col_width * (j + 0.5)
+                y_pos = asset_row_y_top - data_row_height / 2
+                ax.text(x_pos, y_pos,
+                       text, ha='center', va='center', fontsize=table_fontsize)
+        else:
+            # 没有更多负债数据，但为了对齐，绘制空白行
+            if i % 2 == 0:
+                row_color = '#ffffff'
             else:
-                if j == 0:
-                    cell.set_text_props(ha='center')
-                else:
-                    cell.set_text_props(ha='center')
-                # 交替行颜色：第一行数据（i=1）白色，第二行（i=2）浅灰，以此类推
-                # i=1 是奇数，应该是白色；i=2 是偶数，应该是浅灰
-                if (i - 1) % 2 == 0:  # 第一行数据（i=1）白色
-                    cell.set_facecolor('#ffffff')
-                else:  # 第二行数据（i=2）浅灰
-                    cell.set_facecolor('#f8f8f8')
-            cell.set_edgecolor('#f0f0f0')
-            cell.set_linewidth(1)
+                row_color = '#f8f8f8'
+            
+            # 绘制行背景矩形（整体背景）
+            row_rect = Rectangle((liability_x, asset_row_y_bottom), liability_width, data_row_height,
+                                facecolor=row_color, edgecolor='#f0f0f0', linewidth=1)
+            ax.add_patch(row_rect)
+            
+            # 绘制负债名称列的背景（浅灰，与资产名称列一致）
+            name_col_rect = Rectangle((liability_x, asset_row_y_bottom), header_col_width, data_row_height,
+                                     facecolor='#f0f0f0', edgecolor='#f0f0f0', linewidth=1)
+            ax.add_patch(name_col_rect)
     
     # 添加标题（如果启用，但这里不显示，由 pages.py 统一绘制）
     # plt.title('期末持仓', fontsize=16, fontweight='bold', pad=20, loc='left')
