@@ -385,9 +385,9 @@ def build_indicator_analysis_data(
         recovery_days = metrics_for_period.get("recovery_period")
         recovery_date = metrics_for_period.get("recovery_date")
         if recovery_days is not None and recovery_days >= 0 and recovery_date:
-            indicator_data["最大回撤修复期(月)"][period] = (
-                f"{(recovery_days / 30.0):.1f} ({recovery_date})"
-            )
+            indicator_data["最大回撤修复期(月)"][
+                period
+            ] = f"{(recovery_days / 30.0):.1f} ({recovery_date})"
 
     return indicator_data
 
@@ -427,20 +427,22 @@ def build_end_holdings_data(
     if assets is None:
         # 注意：position_details只包含有交易的股票，不包含现金等其他资产
         # 计算股票总市值和现金
-        stock_value = sum(float(pos.get("market_value", 0.0) or 0.0) for pos in position_details)
+        stock_value = sum(
+            float(pos.get("market_value", 0.0) or 0.0) for pos in position_details
+        )
         cash_value = total_assets - stock_value
-        
+
         # 构建资产分类列表
         grouped = {}
         if stock_value > 0:
             grouped["股票"] = stock_value
         if cash_value > 0:
             grouped["现金"] = cash_value
-        
+
         # 如果都为0，至少显示一个
         if not grouped:
             grouped["现金"] = 0.0
-        
+
         assets = [
             {
                 "name": name,
@@ -501,6 +503,7 @@ def _serialize_industry_item(entry: Dict[str, Any]) -> Dict[str, Any]:
         "profit_amount": _round_value(entry.get("profit", 0.0)),
         "selection_return": _round_value(entry.get("selection_return", 0.0)),
         "allocation_return": _round_value(entry.get("allocation_return", 0.0)),
+        "interaction_return": _round_value(entry.get("interaction_return", 0.0)),
     }
 
 
@@ -537,10 +540,13 @@ def build_industry_attribution_data(
             "proportion": _round_value(item.get("weight", 0.0)),
             "contribution": _round_value(item.get("contribution", 0.0)),
             "profit": _round_value(item.get("profit", 0.0)),
+            "selection_return": _round_value(item.get("selection_return", 0.0)),
+            "allocation_return": _round_value(item.get("allocation_return", 0.0)),
+            "interaction_return": _round_value(item.get("interaction_return", 0.0)),
         }
         for item in industry_attribution
     ]
-    
+
     # 只包含期末有持仓的行业数据（用于饼图等展示期末状态的图表）
     # 对于这些图表，我们需要基于position_details中market_value>0的计算占比
     end_holdings_by_industry = {}
@@ -549,21 +555,31 @@ def build_industry_attribution_data(
         if market_value > 0:
             code = pos.get("code", "")
             industry = industry_mapping.get(code, "未知行业")
-            end_holdings_by_industry[industry] = end_holdings_by_industry.get(industry, 0) + market_value
-    
+            end_holdings_by_industry[industry] = (
+                end_holdings_by_industry.get(industry, 0) + market_value
+            )
+
     end_total = sum(end_holdings_by_industry.values())
-    end_industry_data = [
-        {
-            "industry": industry,
-            "proportion": _round_value(value / end_total * 100 if end_total > 0 else 0),
-            "market_value": _round_value(value),
-        }
-        for industry, value in end_holdings_by_industry.items()
-    ] if end_total > 0 else []
+    end_industry_data = (
+        [
+            {
+                "industry": industry,
+                "proportion": _round_value(
+                    value / end_total * 100 if end_total > 0 else 0
+                ),
+                "market_value": _round_value(value),
+            }
+            for industry, value in end_holdings_by_industry.items()
+        ]
+        if end_total > 0
+        else []
+    )
 
     return {
         "industry_distribution": {"industry_data": industry_data},  # 全期间行业数据
-        "end_holdings_distribution": {"industry_data": end_industry_data},  # 期末持仓行业数据
+        "end_holdings_distribution": {
+            "industry_data": end_industry_data
+        },  # 期末持仓行业数据
         "industry_tables": formatter.format_industry_attribution_for_pdf(
             industry_attribution, top_n=top_n
         ),
@@ -584,6 +600,11 @@ def build_brinson_data(
     industry_mapping: Dict[str, str],
     benchmark_industry_weights: Optional[Dict[str, Dict[str, float]]] = None,
     benchmark_industry_returns: Optional[Dict[str, Dict[str, float]]] = None,
+    position_details: Optional[List[Dict[str, Any]]] = None,
+    total_assets: float = 0.0,
+    total_profit: float = 0.0,
+    period_benchmark_weights: Optional[Dict[str, float]] = None,
+    period_benchmark_returns: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Any]:
     """生成 Brinson 归因折线及表格数据。"""
 
@@ -600,6 +621,7 @@ def build_brinson_data(
             "date": item.get("date", ""),
             "selection_return": _round_value(item.get("cumulative_selection", 0.0)),
             "allocation_return": _round_value(item.get("cumulative_allocation", 0.0)),
+            "interaction_return": _round_value(item.get("cumulative_interaction", 0.0)),
             "total_excess_return": _round_value(
                 item.get("cumulative_excess_return", 0.0)
             ),
@@ -619,15 +641,66 @@ def build_brinson_data(
             f"{_round_value(latest.get('cumulative_allocation', 0.0)):.2f}",
         ],
         [
+            "累计交互收益",
+            f"{_round_value(latest.get('cumulative_interaction', 0.0)):.2f}",
+        ],
+        [
             "累计超额收益",
             f"{_round_value(latest.get('cumulative_excess_return', 0.0)):.2f}",
         ],
     ]
 
+    stock_selection_return = 0.0
+    industry_allocation_return = 0.0
+    if latest:
+        stock_selection_return = _round_value(
+            latest.get("cumulative_selection_with_interaction")
+            if "cumulative_selection_with_interaction" in latest
+            else latest.get("cumulative_selection", 0.0)
+            + latest.get("cumulative_interaction", 0.0)
+        )
+        industry_allocation_return = _round_value(
+            latest.get("cumulative_allocation", 0.0)
+        )
+
+    industry_bar_data: List[Dict[str, Any]] = []
+    if position_details and total_assets > 0:
+        industry_attr = attribution.calculate_industry_attribution(
+            position_details,
+            total_assets,
+            total_profit,
+            industry_mapping,
+            benchmark_industry_weights=period_benchmark_weights,
+            benchmark_industry_returns=period_benchmark_returns,
+        )
+
+        def combined_score(entry: Dict[str, Any]) -> float:
+            selection_with_interaction = entry.get(
+                "selection_return_with_interaction", entry.get("selection_return", 0.0)
+            )
+            return selection_with_interaction + entry.get("allocation_return", 0.0)
+
+        top_industries = sorted(industry_attr, key=combined_score, reverse=True)[:10]
+        industry_bar_data = [
+            {
+                "industry": entry.get("industry", ""),
+                "selection_return": _round_value(
+                    entry.get("selection_return_with_interaction")
+                    if entry.get("selection_return_with_interaction") is not None
+                    else entry.get("selection_return", 0.0)
+                ),
+                "allocation_return": _round_value(entry.get("allocation_return", 0.0)),
+            }
+            for entry in top_industries
+        ]
+
     return {
         "daily": daily,
         "series": series,
         "summary_table": summary_table,
+        "industry_data": industry_bar_data,
+        "stock_selection_return": stock_selection_return,
+        "industry_allocation_return": industry_allocation_return,
     }
 
 
@@ -647,29 +720,29 @@ def build_turnover_data(
         asset_classes=asset_classes,
     )
     table = formatter.format_turnover_rates_for_pdf(turnover_rates)
-    
+
     # 转换为图表期望的格式
     turnover_data = []
     for asset_class, period_values in turnover_rates.items():
-        data_dict = {'asset_class': asset_class}
+        data_dict = {"asset_class": asset_class}
         for period, value in period_values.items():
             # 将期间名映射到图表期望的键名
             period_key_map = {
-                '统计期间': 'statistical_period',
-                '近一个月': 'last_month',
-                '近三个月': 'last_three_months',
-                '近六个月': 'last_six_months',
-                '今年以来': 'year_to_date',
-                '成立以来': 'since_inception',
+                "统计期间": "statistical_period",
+                "近一个月": "last_month",
+                "近三个月": "last_three_months",
+                "近六个月": "last_six_months",
+                "今年以来": "year_to_date",
+                "成立以来": "since_inception",
             }
-            key = period_key_map.get(period, period.lower().replace(' ', '_'))
+            key = period_key_map.get(period, period.lower().replace(" ", "_"))
             data_dict[key] = value
         turnover_data.append(data_dict)
-    
+
     return {
-        "turnover_rates": turnover_rates, 
+        "turnover_rates": turnover_rates,
         "table": table,
-        "turnover_data": turnover_data
+        "turnover_data": turnover_data,
     }
 
 
@@ -685,16 +758,18 @@ def build_period_transaction_data(
         asset_classes=asset_classes,
     )
     table = formatter.format_trading_statistics_for_pdf(trading_stats)
-    
+
     # 转换为图表期望的格式
     transaction_data = []
     for asset_class, values in trading_stats.items():
-        transaction_data.append({
-            'asset_class': asset_class,
-            'buy_amount': values['buy_amount'],
-            'sell_amount': values['sell_amount'],
-        })
-    
+        transaction_data.append(
+            {
+                "asset_class": asset_class,
+                "buy_amount": values["buy_amount"],
+                "sell_amount": values["sell_amount"],
+            }
+        )
+
     return {
         "trading_stats": trading_stats,
         "table": table,
@@ -711,41 +786,51 @@ def build_scale_overview_data(
 ) -> Dict[str, Any]:
     """
     构建产品规模总览数据
-    
+
     包含资产规模、份额变化、净申购等信息的时序数据
     """
     if not nav_data:
         return {}
-    
+
     # 基于净值数据计算规模变化
     scale_series = []
     for entry in nav_data:
-        date = entry.get('date', '')
-        total_assets = entry.get('total_assets', 0)
-        nav = entry.get('nav', 1.0)
-        
+        date = entry.get("date", "")
+        total_assets = entry.get("total_assets", 0)
+        nav = entry.get("nav", 1.0)
+
         # 估算份额（假设初始份额 = 初始资产）
-        initial_assets = nav_data[0].get('total_assets', 1.0)
+        initial_assets = nav_data[0].get("total_assets", 1.0)
         shares = total_assets / nav if nav > 0 else 0
-        
-        scale_series.append({
-            'date': date,
-            'asset_scale': _round_value(total_assets),  # 图表期望的键名
-            'shares': _round_value(shares),
-            'net_subscription': _round_value(0),  # TODO: 需要从申赎记录计算
-            'nav': _round_value(nav),
-        })
-    
+
+        scale_series.append(
+            {
+                "date": date,
+                "asset_scale": _round_value(total_assets),  # 图表期望的键名
+                "shares": _round_value(shares),
+                "net_subscription": _round_value(0),  # TODO: 需要从申赎记录计算
+                "nav": _round_value(nav),
+            }
+        )
+
     # 计算申赎统计（基于交易记录）
-    buy_amount = sum(float(t.get('amount', 0) or 0) for t in transactions if t.get('direction') == '买入')
-    sell_amount = sum(float(t.get('amount', 0) or 0) for t in transactions if t.get('direction') == '卖出')
+    buy_amount = sum(
+        float(t.get("amount", 0) or 0)
+        for t in transactions
+        if t.get("direction") == "买入"
+    )
+    sell_amount = sum(
+        float(t.get("amount", 0) or 0)
+        for t in transactions
+        if t.get("direction") == "卖出"
+    )
     net_flow = buy_amount - sell_amount
-    
+
     return {
-        'scale_series': scale_series,
-        'buy_amount': _round_value(buy_amount / 10000),  # 转换为万元
-        'sell_amount': _round_value(sell_amount / 10000),
-        'net_flow': _round_value(net_flow / 10000),
+        "scale_series": scale_series,
+        "buy_amount": _round_value(buy_amount / 10000),  # 转换为万元
+        "sell_amount": _round_value(sell_amount / 10000),
+        "net_flow": _round_value(net_flow / 10000),
     }
 
 
@@ -757,55 +842,57 @@ def build_asset_allocation_series(
 ) -> List[Dict[str, Any]]:
     """
     构建大类资产配置时序数据
-    
+
     从 daily_positions 中提取股票、现金、基金、逆回购等资产类别的时序数据
     """
     if not daily_positions:
         return []
-    
+
     series = []
     for pos in daily_positions:
-        date = pos.get('date', '')
-        total = float(pos.get('total_assets', 0) or 0)
-        
+        date = pos.get("date", "")
+        total = float(pos.get("total_assets", 0) or 0)
+
         # 提取各类资产
-        stock_value = float(pos.get('stock_value', 0) or 0)
-        cash_value = float(pos.get('cash_value', 0) or 0)
-        fund_value = float(pos.get('fund_value', 0) or 0)
-        repo_value = float(pos.get('repo_value', 0) or 0)
-        
+        stock_value = float(pos.get("stock_value", 0) or 0)
+        cash_value = float(pos.get("cash_value", 0) or 0)
+        fund_value = float(pos.get("fund_value", 0) or 0)
+        repo_value = float(pos.get("repo_value", 0) or 0)
+
         # 计算占比
         stock_ratio = stock_value / total * 100 if total > 0 else 0
         cash_ratio = cash_value / total * 100 if total > 0 else 0
         fund_ratio = fund_value / total * 100 if total > 0 else 0
         repo_ratio = repo_value / total * 100 if total > 0 else 0
         other_ratio = 100 - (stock_ratio + cash_ratio + fund_ratio + repo_ratio)
-        
+
         # 流动性资产 = 现金 + 基金 + 逆回购
         liquidity_ratio = cash_ratio + fund_ratio + repo_ratio
-        
-        series.append({
-            'date': date,
-            'total_assets': _round_value(total),
-            # 图表期望的键名
-            'stocks': _round_value(stock_ratio),  # 注意是占比百分数
-            'cash': _round_value(cash_ratio),
-            'funds': _round_value(fund_ratio),
-            'reverse_repurchase': _round_value(repo_ratio),
-            'other_assets': _round_value(max(0, other_ratio)),
-            # 股票仓位时序图需要的字段
-            'stock_position': _round_value(stock_ratio),
-            'top10': _round_value(0),  # TODO: 需要从持仓明细中计算TOP10占比
-            'csi300': _round_value(1.0),  # TODO: 需要基准数据
-            # 流动性资产时序图需要的字段
-            'liquidity_ratio': _round_value(liquidity_ratio),
-            # 保留原始市值数据供其他用途
-            'stock_value': _round_value(stock_value),
-            'cash_value': _round_value(cash_value),
-            'fund_value': _round_value(fund_value),
-            'repo_value': _round_value(repo_value),
-        })
-    
+
+        series.append(
+            {
+                "date": date,
+                "total_assets": _round_value(total),
+                # 图表期望的键名
+                "stocks": _round_value(stock_ratio),  # 注意是占比百分数
+                "cash": _round_value(cash_ratio),
+                "funds": _round_value(fund_ratio),
+                "reverse_repurchase": _round_value(repo_ratio),
+                "other_assets": _round_value(max(0, other_ratio)),
+                # 股票仓位时序图需要的字段
+                "stock_position": _round_value(stock_ratio),
+                "top10": _round_value(0),  # TODO: 需要从持仓明细中计算TOP10占比
+                "csi300": _round_value(1.0),  # TODO: 需要基准数据
+                # 流动性资产时序图需要的字段
+                "liquidity_ratio": _round_value(liquidity_ratio),
+                # 保留原始市值数据供其他用途
+                "stock_value": _round_value(stock_value),
+                "cash_value": _round_value(cash_value),
+                "fund_value": _round_value(fund_value),
+                "repo_value": _round_value(repo_value),
+            }
+        )
+
     return series
 
 
@@ -818,76 +905,80 @@ def build_industry_timeseries(
 ) -> Dict[str, Any]:
     """
     构建行业配置时序数据
-    
+
     基于每日持仓数据，按行业聚合持仓市值和占比的时序变化
     """
     if not daily_positions:
         return {
-            'timeseries': [],
-            'deviation_series': [],
-            'industry_list': [],
+            "timeseries": [],
+            "deviation_series": [],
+            "industry_list": [],
         }
-    
+
     # 收集所有行业
     all_industries = set()
     timeseries = []
-    
+
     for day_data in daily_positions:
-        date = day_data.get('date', '')
-        positions = day_data.get('positions', [])
-        total_stock_value = day_data.get('stock_value', 0.0) # 万元
-        
+        date = day_data.get("date", "")
+        positions = day_data.get("positions", [])
+        total_stock_value = day_data.get("stock_value", 0.0)  # 万元
+
         if not positions or total_stock_value == 0:
             continue
-        
+
         # 按行业聚合市值
         industry_values = {}
         for pos in positions:
-            code = pos.get('code', '')
+            code = pos.get("code", "")
             # 清理代码：600000.SH -> 600000
-            code_clean = code.replace('.SH', '').replace('.SZ', '').zfill(6)
-            
+            code_clean = code.replace(".SH", "").replace(".SZ", "").zfill(6)
+
             # 查找行业（industry_mapping的键格式是 000002.SZ）
-            ts_code = f"{code_clean}.SH" if code_clean.startswith('6') else f"{code_clean}.SZ"
-            industry = industry_mapping.get(ts_code, '其他')
-            
-            market_value = pos.get('market_value', 0.0)  # 万元
-            industry_values[industry] = industry_values.get(industry, 0.0) + market_value
+            ts_code = (
+                f"{code_clean}.SH" if code_clean.startswith("6") else f"{code_clean}.SZ"
+            )
+            industry = industry_mapping.get(ts_code, "其他")
+
+            market_value = pos.get("market_value", 0.0)  # 万元
+            industry_values[industry] = (
+                industry_values.get(industry, 0.0) + market_value
+            )
             all_industries.add(industry)
-        
+
         # 计算行业占比（相对于股票总市值）
         industry_ratios = {}
         for industry, value in industry_values.items():
             ratio = (value / total_stock_value * 100) if total_stock_value > 0 else 0.0
             industry_ratios[industry] = round(ratio, 2)
-        
+
         # 添加日期
-        industry_ratios['date'] = date
+        industry_ratios["date"] = date
         timeseries.append(industry_ratios)
-    
+
     # 计算偏离度（如果有基准数据）
     deviation_series = []
     if benchmark_industry_weights and timeseries:
         for day_ratios in timeseries:
-            date = day_ratios['date']
-            deviations = {'date': date}
+            date = day_ratios["date"]
+            deviations = {"date": date}
             total_abs_deviation = 0.0
-            
+
             for industry in all_industries:
                 portfolio_weight = day_ratios.get(industry, 0.0)
                 benchmark_weight = benchmark_industry_weights.get(industry, 0.0)
                 deviation = portfolio_weight - benchmark_weight
                 deviations[industry] = round(deviation, 2)
                 total_abs_deviation += abs(deviation)
-            
+
             # 添加综合偏离度指标（所有行业偏离度绝对值之和的一半，因为正负偏离会抵消）
-            deviations['deviation'] = round(total_abs_deviation / 2, 2)
+            deviations["deviation"] = round(total_abs_deviation / 2, 2)
             deviation_series.append(deviations)
-    
+
     return {
-        'timeseries': timeseries,
-        'deviation_series': deviation_series,
-        'industry_list': sorted(list(all_industries)),
+        "timeseries": timeseries,
+        "deviation_series": deviation_series,
+        "industry_list": sorted(list(all_industries)),
     }
 
 
@@ -899,24 +990,24 @@ def build_asset_class_attribution(
 ) -> Dict[str, Any]:
     """
     构建大类资产绩效归因数据
-    
+
     按资产类别（股票、债券、基金等）汇总收益贡献
     """
     if not position_details:
         return {}
-    
+
     # 按资产类别汇总
     class_profit = defaultdict(float)
     class_assets = defaultdict(float)
-    
+
     for pos in position_details:
-        asset_class = pos.get('asset_class', '股票')
-        profit = float(pos.get('profit_loss', 0) or 0)
-        market_value = float(pos.get('market_value', 0) or 0)
-        
+        asset_class = pos.get("asset_class", "股票")
+        profit = float(pos.get("profit_loss", 0) or 0)
+        market_value = float(pos.get("market_value", 0) or 0)
+
         class_profit[asset_class] += profit
         class_assets[asset_class] += market_value
-    
+
     # 构建归因表格数据
     attribution_data = []
     for asset_class in sorted(class_assets.keys()):
@@ -925,20 +1016,24 @@ def build_asset_class_attribution(
         weight_ratio = assets / total_assets * 100 if total_assets > 0 else 0
         return_rate = profit / assets * 100 if assets > 0 else 0
         profit_contribution = profit / total_profit * 100 if total_profit > 0 else 0
-        
-        attribution_data.append({
-            'asset_class': asset_class,
-            'weight_ratio': _round_value(weight_ratio),  # 权重占净值比
-            'nav_contribution': _round_value(profit_contribution),  # 净值增长贡献
-            'return_rate': _round_value(return_rate),  # 收益率
-            'return_amount': _round_value(profit),  # 收益额
-            'return_contribution': _round_value(profit_contribution),  # 收益额贡献率
-        })
-    
+
+        attribution_data.append(
+            {
+                "asset_class": asset_class,
+                "weight_ratio": _round_value(weight_ratio),  # 权重占净值比
+                "nav_contribution": _round_value(profit_contribution),  # 净值增长贡献
+                "return_rate": _round_value(return_rate),  # 收益率
+                "return_amount": _round_value(profit),  # 收益额
+                "return_contribution": _round_value(
+                    profit_contribution
+                ),  # 收益额贡献率
+            }
+        )
+
     return {
-        'asset_data': attribution_data,  # 图表期望的键名
-        'total_profit': _round_value(total_profit),
-        'total_assets': _round_value(total_assets),
+        "asset_data": attribution_data,  # 图表期望的键名
+        "total_profit": _round_value(total_profit),
+        "total_assets": _round_value(total_assets),
     }
 
 
@@ -950,40 +1045,44 @@ def build_period_transaction_timeseries(
 ) -> List[Dict[str, Any]]:
     """
     构建期间交易时序数据
-    
+
     按时间聚合交易记录，生成交易量、交易额的时序图表数据
     """
     if not transactions:
         return []
-    
+
     # 按日期聚合交易
-    daily_trades = defaultdict(lambda: {'buy_count': 0, 'sell_count': 0, 'buy_amount': 0.0, 'sell_amount': 0.0})
-    
+    daily_trades = defaultdict(
+        lambda: {"buy_count": 0, "sell_count": 0, "buy_amount": 0.0, "sell_amount": 0.0}
+    )
+
     for trade in transactions:
-        date = trade.get('date', '')
-        direction = trade.get('direction', '')
-        amount = abs(float(trade.get('amount', 0) or 0))
-        
-        if direction == '买入':
-            daily_trades[date]['buy_count'] += 1
-            daily_trades[date]['buy_amount'] += amount
-        elif direction == '卖出':
-            daily_trades[date]['sell_count'] += 1
-            daily_trades[date]['sell_amount'] += amount
-    
+        date = trade.get("date", "")
+        direction = trade.get("direction", "")
+        amount = abs(float(trade.get("amount", 0) or 0))
+
+        if direction == "买入":
+            daily_trades[date]["buy_count"] += 1
+            daily_trades[date]["buy_amount"] += amount
+        elif direction == "卖出":
+            daily_trades[date]["sell_count"] += 1
+            daily_trades[date]["sell_amount"] += amount
+
     # 转换为列表格式
     series = []
     for date in sorted(daily_trades.keys()):
         trades = daily_trades[date]
-        series.append({
-            'date': date,
-            'buy_count': trades['buy_count'],
-            'sell_count': trades['sell_count'],
-            'buy_amount': _round_value(trades['buy_amount'] / 10000),  # 转换为万元
-            'sell_amount': _round_value(trades['sell_amount'] / 10000),
-            'total_trades': trades['buy_count'] + trades['sell_count'],
-        })
-    
+        series.append(
+            {
+                "date": date,
+                "buy_count": trades["buy_count"],
+                "sell_count": trades["sell_count"],
+                "buy_amount": _round_value(trades["buy_amount"] / 10000),  # 转换为万元
+                "sell_amount": _round_value(trades["sell_amount"] / 10000),
+                "total_trades": trades["buy_count"] + trades["sell_count"],
+            }
+        )
+
     return series
 
 
@@ -1011,6 +1110,20 @@ def build_page1_data(
     period_metrics: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
+    benchmark_industry_period_returns: Dict[str, float] = {}
+    benchmark_industry_daily_returns: Dict[str, Dict[str, float]] = {}
+
+    if isinstance(benchmark_industry_returns, dict):
+        period_ret = benchmark_industry_returns.get("period_returns")
+        daily_ret = benchmark_industry_returns.get("daily_returns")
+        if isinstance(period_ret, dict):
+            benchmark_industry_period_returns = period_ret
+        else:
+            benchmark_industry_period_returns = benchmark_industry_returns  # 类型兼容
+        if isinstance(daily_ret, dict):
+            benchmark_industry_daily_returns = daily_ret
+    elif benchmark_industry_returns:
+        benchmark_industry_period_returns = benchmark_industry_returns  # type: ignore[assignment]
     result["performance_overview"] = build_performance_overview_data(
         nav_data,
         product_info=product_info,
@@ -1051,13 +1164,18 @@ def build_page1_data(
         total_profit,
         industry_mapping,
         benchmark_industry_weights=benchmark_industry_weights,
-        benchmark_industry_returns=benchmark_industry_returns,
+        benchmark_industry_returns=benchmark_industry_period_returns,
     )
     result["brinson"] = build_brinson_data(
         daily_positions,
         industry_mapping,
         benchmark_industry_weights=benchmark_industry_weights,
-        benchmark_industry_returns=benchmark_industry_returns,
+        benchmark_industry_returns=benchmark_industry_daily_returns,
+        position_details=position_details,
+        total_assets=total_assets,
+        total_profit=total_profit,
+        period_benchmark_weights=benchmark_industry_weights,
+        period_benchmark_returns=benchmark_industry_period_returns,
     )
     result["turnover"] = build_turnover_data(
         transactions,
