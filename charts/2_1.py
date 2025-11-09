@@ -12,26 +12,13 @@ if str(project_root) not in sys.path:
 
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
+from charts.font_config import setup_chinese_font
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
 from charts.utils import calculate_xlim, calculate_date_tick_params
 from calc.utils import is_trading_day
 
-
-def setup_chinese_font() -> None:
-    """
-    配置matplotlib中文字体
-    """
-    font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
-    plt.rcParams['font.sans-serif'] = font_list
-    plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 12
-    plt.rcParams['axes.titlesize'] = 16
-    plt.rcParams['axes.labelsize'] = 14
-    plt.rcParams['xtick.labelsize'] = 12
-    plt.rcParams['ytick.labelsize'] = 12
-    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_dynamic_drawdown_chart(
@@ -261,7 +248,7 @@ def plot_dynamic_drawdown_table(
             cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(1)
     
-    # 添加标题（如果启用，但这里不显示，由 pages1.py 统一绘制）
+    # 添加标题（如果启用，但这里不显示，由 pages.py 统一绘制）
     # plt.title('动态回撤', fontsize=16, fontweight='bold', pad=20, loc='left')
     
     # 调整布局
