@@ -12,26 +12,13 @@ if str(project_root) not in sys.path:
 
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
+from charts.font_config import setup_chinese_font
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
 from charts.utils import calculate_xlim, calculate_date_tick_params
 from calc.utils import is_trading_day
 
-
-def setup_chinese_font() -> None:
-    """
-    配置matplotlib中文字体
-    """
-    font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
-    plt.rcParams['font.sans-serif'] = font_list
-    plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 12
-    plt.rcParams['axes.titlesize'] = 16
-    plt.rcParams['axes.labelsize'] = 14
-    plt.rcParams['xtick.labelsize'] = 12
-    plt.rcParams['ytick.labelsize'] = 12
-    plt.rcParams['legend.fontsize'] = 10
 
 
 def plot_industry_deviation_timeseries(
@@ -143,9 +130,9 @@ def plot_industry_deviation_timeseries(
     else:
         # 较大范围，使用1%间隔
         y_ticks = np.arange(np.floor(y_min), np.ceil(y_max) + 1, 1)
-    ax.set_yticks(y_ticks)
-    ax.set_yticklabels([f'{y:.2f}%' for y in y_ticks])
-    
+    # ax.set_yticks(y_ticks)
+    # ax.set_yticklabels([f'{y:.2f}%' for y in y_tickss])
+    ax.margins(y=0.1)
     # 添加网格线
     ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
     

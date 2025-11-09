@@ -12,6 +12,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from typing import Optional, Dict, Any
 import os
+import platform
 from io import BytesIO
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as backend_pdf
@@ -19,19 +20,64 @@ import matplotlib.backends.backend_pdf as backend_pdf
 
 def setup_chinese_fonts() -> None:
     """
-    配置中文字体
+    配置ReportLab中文字体（用于PDF文本）
+    返回注册成功的字体名称
     """
-    font_paths = {
-        "SimHei": "C:/Windows/Fonts/simhei.ttf",
-        "SimSun": "C:/Windows/Fonts/simsun.ttc",
-    }
-
-    for font_name, font_path in font_paths.items():
-        if os.path.exists(font_path):
-            try:
-                pdfmetrics.registerFont(TTFont(font_name, font_path))
-            except Exception as e:
-                print(f"注册字体失败 {font_name}: {e}")
+    system = platform.system()
+    
+    if system == "Darwin":  # macOS
+        # macOS 系统字体路径
+        font_paths = [
+            ("/System/Library/Fonts/PingFang.ttc", "PingFang SC"),
+            ("/System/Library/Fonts/STHeiti Light.ttc", "STHeiti"),
+            ("/System/Library/Fonts/STHeiti Medium.ttc", "STHeiti"),
+            ("/Library/Fonts/Songti.ttc", "Songti SC"),
+        ]
+        
+        for font_path, font_name in font_paths:
+            if os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    print(f"  ✓ ReportLab 注册字体: {font_name}")
+                    return font_name  # 返回成功注册的字体名
+                except Exception as e:
+                    print(f"  ⚠️  注册字体失败 {font_name}: {e}")
+    
+    elif system == "Windows":
+        # Windows 系统字体路径
+        font_paths = {
+            "Microsoft YaHei": "C:/Windows/Fonts/msyh.ttc",
+            "SimHei": "C:/Windows/Fonts/simhei.ttf",
+            "SimSun": "C:/Windows/Fonts/simsun.ttc",
+        }
+        
+        for font_name, font_path in font_paths.items():
+            if os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    print(f"  ✓ ReportLab 注册字体: {font_name}")
+                    return font_name  # 返回成功注册的字体名
+                except Exception as e:
+                    print(f"  ⚠️  注册字体失败 {font_name}: {e}")
+    
+    else:  # Linux
+        font_paths = {
+            "WenQuanYi Micro Hei": "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "Noto Sans CJK SC": "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        }
+        
+        for font_name, font_path in font_paths.items():
+            if os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    print(f"  ✓ ReportLab 注册字体: {font_name}")
+                    return font_name  # 返回成功注册的字体名
+                except Exception as e:
+                    print(f"  ⚠️  注册字体失败 {font_name}: {e}")
+    
+    # 如果所有字体都失败，返回None
+    print(f"  ⚠️  未能注册任何中文字体")
+    return None
 
 
 def figure_to_image(fig, dpi: int = 200) -> BytesIO:
@@ -113,8 +159,11 @@ def generate_page1(
     返回:
         str: 保存的文件路径
     """
-    # 配置中文字体
-    setup_chinese_fonts()
+    # 配置中文字体并获取字体名称
+    chinese_font_name = setup_chinese_fonts()
+    if not chinese_font_name:
+        chinese_font_name = "Helvetica"  # 后备字体
+        print("  ⚠️  使用后备字体 Helvetica（不支持中文）")
 
     # 导入各个图表生成函数
     import sys
@@ -364,8 +413,10 @@ def generate_page1(
     def draw_section_title(y_top: float, text: str) -> float:
         """在 y_top 处绘制左对齐标题与蓝色竖条，返回内容起始 y 坐标。"""
         try:
-            c.setFont("SimHei", 8)
+            # 使用已注册的中文字体
+            c.setFont(chinese_font_name, 8)
         except:
+            # 后备字体
             c.setFont("Helvetica-Bold", 8)
         font_size = 8
         # 文本字符高度（中文字符高度约为字体大小的0.85倍）
@@ -729,8 +780,15 @@ def generate_page1(
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "持股行业占比时序")
         # industry_timeseries.timeseries 才是图表期望的列表数据
+        timeseries_data = safe_get("industry_timeseries.timeseries")
+        if timeseries_data:
+            print(f"    数据条数: {len(timeseries_data)}")
+            if len(timeseries_data) > 0:
+                print(f"    第一条数据keys: {list(timeseries_data[0].keys())[:5]}...")  # 只显示前5个key
+        else:
+            print("    警告: industry_timeseries.timeseries 数据为空")
         fig18 = plot_industry_proportion_timeseries(
-            data=safe_get("industry_timeseries.timeseries"),
+            data=timeseries_data,
             return_figure=True,
             figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
             show_title=True,
@@ -738,7 +796,9 @@ def generate_page1(
         insert_figure(c, fig18, x_left, y_cursor - h, usable_width, h)
         y_cursor -= h + 10
     except Exception as e:
+        import traceback
         print(f"  持股行业占比时序图表生成失败: {e}")
+        print(f"  错误详情: {traceback.format_exc()}")
 
     # 持股行业偏离度时序部分
     try:
@@ -1042,7 +1102,10 @@ def generate_page1(
     
     # 添加页脚
     footer_y = bottom_margin
-    c.setFont("Helvetica", 8)
+    try:
+        c.setFont(chinese_font_name, 8)
+    except:
+        c.setFont("Helvetica", 8)
     c.drawString(margin, footer_y, "请务必阅读正文后的免责声明")
     
     # 保存 PDF

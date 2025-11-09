@@ -6,6 +6,7 @@
 
 from typing import List, Dict, Any, Optional, Tuple
 import matplotlib.pyplot as plt
+from charts.font_config import setup_chinese_font
 import numpy as np
 
 try:
@@ -15,20 +16,6 @@ except ImportError:
     PYECHARTS_AVAILABLE = False
     print("警告: pyecharts 未安装，ECharts 功能将不可用。请运行: pip install pyecharts")
 
-
-def setup_chinese_font() -> None:
-    """
-    配置matplotlib中文字体
-    """
-    font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
-    plt.rcParams['font.sans-serif'] = font_list
-    plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 12
-    plt.rcParams['axes.titlesize'] = 16
-    plt.rcParams['axes.labelsize'] = 14
-    plt.rcParams['xtick.labelsize'] = 12
-    plt.rcParams['ytick.labelsize'] = 12
-    plt.rcParams['legend.fontsize'] = 10
 
 
 def _generate_mock_performance_data() -> Dict[str, Any]:

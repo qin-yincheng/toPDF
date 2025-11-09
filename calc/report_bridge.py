@@ -987,18 +987,22 @@ def build_asset_class_attribution(
     position_details: List[Dict[str, Any]],
     total_assets: float,
     total_profit: float,
+    daily_positions: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
     构建大类资产绩效归因数据
 
     按资产类别（股票、债券、基金等）汇总收益贡献
+
+    改进的计算方式：
+    - 权重占净值比：使用期间平均持仓权重
+    - 收益率：基于期初资产或平均持仓计算，避免期末清仓导致的异常值
     """
     if not position_details:
         return {}
-
-    # 按资产类别汇总
+    # === 按资产类别汇总期末数据 ===
     class_profit = defaultdict(float)
-    class_assets = defaultdict(float)
+    class_end_assets = defaultdict(float)
 
     for pos in position_details:
         asset_class = pos.get("asset_class", "股票")
@@ -1006,29 +1010,83 @@ def build_asset_class_attribution(
         market_value = float(pos.get("market_value", 0) or 0)
 
         class_profit[asset_class] += profit
-        class_assets[asset_class] += market_value
+        class_end_assets[asset_class] += market_value
 
-    # 构建归因表格数据
+    # === 计算期间平均持仓与期初资产（可选） ===
+    class_avg_assets = {}
+    class_initial_assets = {}
+
+    if daily_positions and len(daily_positions) > 0:
+        # 获取期初资产
+        first_day = daily_positions[0]
+        class_initial_assets = {
+            "股票": first_day.get("stock_value", 0),
+            "现金": first_day.get("cash_value", 0),
+            "基金": first_day.get("fund_value", 0),
+            "逆回购": first_day.get("repo_value", 0),
+        }
+
+        # 计算平均持仓
+        class_sum = defaultdict(float)
+        for day in daily_positions:
+            class_sum["股票"] += day.get("stock_value", 0)
+            class_sum["现金"] += day.get("cash_value", 0)
+            class_sum["基金"] += day.get("fund_value", 0)
+            class_sum["逆回购"] += day.get("repo_value", 0)
+
+        n_days = len(daily_positions)
+        for asset_class in class_sum:
+            class_avg_assets[asset_class] = (
+                class_sum[asset_class] / n_days if n_days > 0 else 0
+            )
+
+    # === 构建归因表格数据 ===
     attribution_data = []
-    for asset_class in sorted(class_assets.keys()):
-        profit = class_profit[asset_class]
-        assets = class_assets[asset_class]
-        weight_ratio = assets / total_assets * 100 if total_assets > 0 else 0
-        return_rate = profit / assets * 100 if assets > 0 else 0
+    all_classes = set(class_profit.keys()) | set(class_avg_assets.keys())
+
+    for asset_class in sorted(all_classes):
+        profit = class_profit.get(asset_class, 0)
+        end_assets = class_end_assets.get(asset_class, 0)
+        avg_assets = class_avg_assets.get(asset_class, 0)
+        initial_assets = class_initial_assets.get(asset_class, 0)
+
+        # 权重占净值比：使用平均持仓权重（更能代表期间实际配置）
+        if class_avg_assets:
+            total_avg = sum(class_avg_assets.values())
+            weight_ratio = avg_assets / total_avg * 100 if total_avg > 0 else 0
+        else:
+            # 降级方案：使用期末权重
+            weight_ratio = end_assets / total_assets * 100 if total_assets > 0 else 0
+
+        # 收益率：优先使用平均持仓，其次期初资产，最后期末资产
+        if avg_assets > 0:
+            return_rate = profit / avg_assets * 100
+        elif initial_assets > 0:
+            return_rate = profit / initial_assets * 100
+        elif end_assets > 0:
+            return_rate = profit / end_assets * 100
+        else:
+            return_rate = 0
+
+        # 收益贡献率
         profit_contribution = profit / total_profit * 100 if total_profit > 0 else 0
 
-        attribution_data.append(
-            {
-                "asset_class": asset_class,
-                "weight_ratio": _round_value(weight_ratio),  # 权重占净值比
-                "nav_contribution": _round_value(profit_contribution),  # 净值增长贡献
-                "return_rate": _round_value(return_rate),  # 收益率
-                "return_amount": _round_value(profit),  # 收益额
-                "return_contribution": _round_value(
-                    profit_contribution
-                ),  # 收益额贡献率
-            }
-        )
+        # 只包含有数据的资产类别
+        if profit != 0 or end_assets != 0 or avg_assets != 0:
+            attribution_data.append(
+                {
+                    "asset_class": asset_class,
+                    "weight_ratio": _round_value(weight_ratio),  # 权重占净值比
+                    "nav_contribution": _round_value(
+                        profit_contribution
+                    ),  # 净值增长贡献
+                    "return_rate": _round_value(return_rate),  # 收益率
+                    "return_amount": _round_value(profit),  # 收益额
+                    "return_contribution": _round_value(
+                        profit_contribution
+                    ),  # 收益额贡献率
+                }
+            )
 
     return {
         "asset_data": attribution_data,  # 图表期望的键名
@@ -1207,6 +1265,7 @@ def build_page1_data(
         position_details,
         total_assets,
         total_profit,
+        daily_positions=daily_positions,
     )
     result["period_transaction_series"] = build_period_transaction_timeseries(
         transactions,
