@@ -157,15 +157,16 @@ def _calculate_daily_holdings(
                 if holdings[code]['quantity'] <= 0:
                     del holdings[code]
         
-        # 记录当日持仓快照
+        # 记录当日持仓快照（将Timestamp转为YYYY-MM-DD字符串）
         if holdings:
-            daily_holdings[date] = {}
+            date_str = date.strftime('%Y-%m-%d') if hasattr(date, 'strftime') else str(date)[:10]
+            daily_holdings[date_str] = {}
             for code, holding in holdings.items():
                 if holding['quantity'] > 0:
                     avg_cost = holding['total_cost'] / holding['quantity']
                     # 使用交割单的价格作为市值估算（简化）
                     # 实际应该使用收盘价，但这里为简化处理
-                    daily_holdings[date][code] = {
+                    daily_holdings[date_str][code] = {
                         'quantity': holding['quantity'],
                         'avg_cost': avg_cost,
                         'market_value': holding['total_cost'],  # 简化：使用成本价

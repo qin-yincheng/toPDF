@@ -425,10 +425,22 @@ def build_end_holdings_data(
 
     assets = asset_breakdown
     if assets is None:
-        grouped = defaultdict(float)
-        for pos in position_details:
-            asset_class = pos.get("asset_class", "股票")
-            grouped[asset_class] += float(pos.get("market_value", 0.0) or 0.0)
+        # 注意：position_details只包含有交易的股票，不包含现金等其他资产
+        # 计算股票总市值和现金
+        stock_value = sum(float(pos.get("market_value", 0.0) or 0.0) for pos in position_details)
+        cash_value = total_assets - stock_value
+        
+        # 构建资产分类列表
+        grouped = {}
+        if stock_value > 0:
+            grouped["股票"] = stock_value
+        if cash_value > 0:
+            grouped["现金"] = cash_value
+        
+        # 如果都为0，至少显示一个
+        if not grouped:
+            grouped["现金"] = 0.0
+        
         assets = [
             {
                 "name": name,
@@ -810,16 +822,72 @@ def build_industry_timeseries(
     基于每日持仓数据，按行业聚合持仓市值和占比的时序变化
     """
     if not daily_positions:
-        return {}
+        return {
+            'timeseries': [],
+            'deviation_series': [],
+            'industry_list': [],
+        }
     
-    # 从每日持仓中提取行业时序（需要positions字段）
-    # 由于当前 daily_positions 可能没有详细持仓，返回空结构
-    # 未来可以从 daily_positions 的 positions 字段中提取每日的行业分布
+    # 收集所有行业
+    all_industries = set()
+    timeseries = []
+    
+    for day_data in daily_positions:
+        date = day_data.get('date', '')
+        positions = day_data.get('positions', [])
+        total_stock_value = day_data.get('stock_value', 0.0) # 万元
+        
+        if not positions or total_stock_value == 0:
+            continue
+        
+        # 按行业聚合市值
+        industry_values = {}
+        for pos in positions:
+            code = pos.get('code', '')
+            # 清理代码：600000.SH -> 600000
+            code_clean = code.replace('.SH', '').replace('.SZ', '').zfill(6)
+            
+            # 查找行业（industry_mapping的键格式是 000002.SZ）
+            ts_code = f"{code_clean}.SH" if code_clean.startswith('6') else f"{code_clean}.SZ"
+            industry = industry_mapping.get(ts_code, '其他')
+            
+            market_value = pos.get('market_value', 0.0)  # 万元
+            industry_values[industry] = industry_values.get(industry, 0.0) + market_value
+            all_industries.add(industry)
+        
+        # 计算行业占比（相对于股票总市值）
+        industry_ratios = {}
+        for industry, value in industry_values.items():
+            ratio = (value / total_stock_value * 100) if total_stock_value > 0 else 0.0
+            industry_ratios[industry] = round(ratio, 2)
+        
+        # 添加日期
+        industry_ratios['date'] = date
+        timeseries.append(industry_ratios)
+    
+    # 计算偏离度（如果有基准数据）
+    deviation_series = []
+    if benchmark_industry_weights and timeseries:
+        for day_ratios in timeseries:
+            date = day_ratios['date']
+            deviations = {'date': date}
+            total_abs_deviation = 0.0
+            
+            for industry in all_industries:
+                portfolio_weight = day_ratios.get(industry, 0.0)
+                benchmark_weight = benchmark_industry_weights.get(industry, 0.0)
+                deviation = portfolio_weight - benchmark_weight
+                deviations[industry] = round(deviation, 2)
+                total_abs_deviation += abs(deviation)
+            
+            # 添加综合偏离度指标（所有行业偏离度绝对值之和的一半，因为正负偏离会抵消）
+            deviations['deviation'] = round(total_abs_deviation / 2, 2)
+            deviation_series.append(deviations)
     
     return {
-        'timeseries': [],  # 行业权重时序：[{'date': 'YYYY-MM-DD', '金融': 10.5, '医药': 8.2, ...}]
-        'deviation_series': [],  # 偏离度时序：[{'date': 'YYYY-MM-DD', '金融': 2.5, '医药': -1.2, ...}]
-        'industry_list': [],  # 行业列表
+        'timeseries': timeseries,
+        'deviation_series': deviation_series,
+        'industry_list': sorted(list(all_industries)),
     }
 
 

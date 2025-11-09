@@ -120,7 +120,7 @@ def main():
 
     # 1. 获取基础数据
     print("\n1️⃣  获取每日持仓数据...")
-    daily_positions = get_daily_positions(include_positions=False)
+    daily_positions = get_daily_positions(include_positions=True)  # 包含持仓明细以支持行业时序图
     print(f"   ✓ 获取 {len(daily_positions)} 天数据")
 
     # 2. 获取统计区间
