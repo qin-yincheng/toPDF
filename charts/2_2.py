@@ -3,11 +3,19 @@
 使用 matplotlib 生成 100% 堆叠柱状图
 """
 
+# 添加项目根目录到 Python 路径，以便正确导入模块
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
+from calc.utils import is_trading_day
 
 
 def setup_chinese_font() -> None:
@@ -64,13 +72,30 @@ def plot_asset_allocation_chart(
     if data is None:
         data = _generate_mock_asset_allocation_data()
     
-    # 解析数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
-    stocks = [d['stocks'] for d in data]
-    funds = [d['funds'] for d in data]
-    reverse_repurchase = [d['reverse_repurchase'] for d in data]
-    cash = [d['cash'] for d in data]
-    other_assets = [d['other_assets'] for d in data]
+    # 解析数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    stocks_raw = [d['stocks'] for d in data]
+    funds_raw = [d['funds'] for d in data]
+    reverse_repurchase_raw = [d['reverse_repurchase'] for d in data]
+    cash_raw = [d['cash'] for d in data]
+    other_assets_raw = [d['other_assets'] for d in data]
+    
+    # 只保留交易日的数据
+    dates = []
+    stocks = []
+    funds = []
+    reverse_repurchase = []
+    cash = []
+    other_assets = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            stocks.append(stocks_raw[i])
+            funds.append(funds_raw[i])
+            reverse_repurchase.append(reverse_repurchase_raw[i])
+            cash.append(cash_raw[i])
+            other_assets.append(other_assets_raw[i])
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)

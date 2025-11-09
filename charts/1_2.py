@@ -138,7 +138,8 @@ def plot_scale_overview(
         allow_negative=True,
         round_to_nice_number=True
     )
-    ax1.set_ylim(y_min_left, y_max_left)
+    # ax1.set_ylim(y_min_left, y_max_left)
+    ax1.margins(y=0.1)
     ax1.grid(True, alpha=0.5, linestyle='--')
     
     # 右Y轴：净申购额
@@ -158,7 +159,8 @@ def plot_scale_overview(
         allow_negative=False,
         round_to_nice_number=True
     )
-    ax2.set_ylim(y_min_right, y_max_right)
+    # ax2.set_ylim(y_min_right, y_max_right)
+    ax2.margins(y=0.1)
     
     # 设置标题（如果启用）
     if show_title:
