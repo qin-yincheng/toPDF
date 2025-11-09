@@ -17,6 +17,7 @@ import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
 from calc.utils import is_trading_day
+from charts.utils import calculate_xlim, calculate_date_tick_params
 
 
 def setup_chinese_font() -> None:
@@ -109,6 +110,21 @@ def plot_industry_proportion_timeseries(
     dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
     
     # 获取所有行业名称（排除'date'键）
+    # 需要从原始数据获取，因为过滤后可能为空
+    if not data or len(data) == 0:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        if return_figure:
+            plt.close(fig)
+            return fig
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+            return save_path
+        plt.show()
+        return None
+    
     industry_names = [key for key in data[0].keys() if key != 'date']
     
     # 只保留交易日的数据
@@ -119,6 +135,21 @@ def plot_industry_proportion_timeseries(
         if is_trading_day(date_str):
             dates.append(date_obj)
             filtered_data.append(data[i])
+    
+    # 检查过滤后的数据是否为空
+    if not filtered_data or len(filtered_data) == 0:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, '暂无交易日数据', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        if return_figure:
+            plt.close(fig)
+            return fig
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            plt.close(fig)
+            return save_path
+        plt.show()
+        return None
     
     # 使用过滤后的数据
     data = filtered_data
@@ -158,6 +189,18 @@ def plot_industry_proportion_timeseries(
     for industry in industry_names:
         industry_data[industry] = [d.get(industry, 0.0) for d in data]
     
+    # 过滤掉占比始终为0或很小的行业（减少图例混乱）
+    # 只保留在至少一个时间点占比大于0.1%的行业
+    active_industries = []
+    for industry in industry_names:
+        max_value = max(industry_data[industry]) if industry_data[industry] else 0.0
+        if max_value > 0.1:  # 至少有一个时间点占比大于0.1%
+            active_industries.append(industry)
+    
+    # 如果没有活跃行业，使用所有行业
+    if not active_industries:
+        active_industries = industry_names
+    
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
     
@@ -166,51 +209,59 @@ def plot_industry_proportion_timeseries(
     bar_width = 0.8  # 柱子宽度
     
     # 计算堆叠位置
-    bottoms = {}
     current_bottom = np.zeros(len(dates))
     
-    # 按行业顺序绘制堆叠柱状图
-    for i, industry in enumerate(industry_names):
+    # 按行业顺序绘制堆叠柱状图（只绘制活跃行业）
+    # 按最大占比排序，确保大占比行业在底部（更稳定）
+    active_industries_sorted = sorted(active_industries, 
+                                      key=lambda ind: max(industry_data[ind]) if industry_data[ind] else 0.0, 
+                                      reverse=True)
+    
+    for i, industry in enumerate(active_industries_sorted):
         values = np.array(industry_data[industry])
+        # 获取该行业在原始列表中的索引，用于颜色
+        original_idx = industry_names.index(industry) if industry in industry_names else i
         ax.bar(x_positions, values, width=bar_width, bottom=current_bottom,
-               label=industry, color=colors[i], edgecolor='white', linewidth=0.5)
+               label=industry, color=colors[original_idx], edgecolor='white', linewidth=0.5)
         current_bottom += values
     
     # 设置Y轴
     ax.set_ylabel('占比(%)', fontsize=11)
-    # ax.set_ylim(0, 100)
-    # ax.set_yticks([0, 20, 40, 60, 80, 100])
-    # ax.set_yticklabels(['0.00%', '20.00%', '40.00%', '60.00%', '80.00%', '100.00%'])
-    ax.margins(y=0.1)
+    ax.set_ylim(0, 100)
+    ax.set_yticks([0, 20, 40, 60, 80, 100])
+    ax.set_yticklabels(['0.00%', '20.00%', '40.00%', '60.00%', '80.00%', '100.00%'])
+    # ax.margins(y=0.1)
     ax.grid(True, alpha=0.3, linestyle='--', axis='y')
     
-    # 设置X轴
+    # 设置X轴刻度和标签
     ax.set_xlabel('日期', fontsize=11)
-    if len(x_positions) > 0:
-        ax.set_xlim(x_positions[0] - 0.5, x_positions[-1] + 0.5)
-    
-    # 设置X轴刻度为日期
-    # 根据数据点数量合理设置日期刻度
-    if len(dates) <= 30:
-        # 数据点较少时，显示所有日期
-        ax.set_xticks(x_positions)
-        ax.set_xticklabels([date.strftime('%Y-%m-%d') for date in dates], rotation=45, ha='right')
-    else:
-        # 数据点较多时，每10-15个工作日一个刻度
-        tick_interval = max(1, len(dates) // 15)  # 大约显示15个日期标签
-        tick_indices = list(range(0, len(dates), tick_interval))
-        if tick_indices[-1] != len(dates) - 1:
-            tick_indices.append(len(dates) - 1)  # 确保最后一个日期显示
+    # 使用工具函数自动计算合适的刻度间隔
+    if len(dates) > 0:
+        # 使用工具函数计算日期刻度参数
+        tick_indices, tick_labels = calculate_date_tick_params(dates)
+        
+        # 设置刻度位置（使用索引位置）
         ax.set_xticks([x_positions[i] for i in tick_indices])
-        ax.set_xticklabels([dates[i].strftime('%Y-%m-%d') for i in tick_indices], rotation=45, ha='right')
+        
+        # 设置刻度标签为对应的日期
+        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        
+        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
+        x_min, x_max = calculate_xlim(x_positions, padding_ratio=0.02, is_date=False)
+        ax.set_xlim(x_min, x_max)
+    else:
+        ax.set_xticks([])
+        ax.set_xticklabels([])
     
     # 设置标题
     # if show_title:
     #     ax.set_title('持股行业占比时序', fontsize=12, fontweight='bold', pad=15, loc='left')
     
     # 添加图例（在顶部，多列显示）
+    # 根据活跃行业数量动态调整列数
+    n_legend_cols = min(len(active_industries_sorted), 15)  # 最多15列，避免图例太宽
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), 
-              ncol= len(industry_names), frameon=True, fontsize=8)
+              ncol=n_legend_cols, frameon=True, fontsize=8)
     
     # # 添加脚注
     # ax.text(0, -0.08, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,

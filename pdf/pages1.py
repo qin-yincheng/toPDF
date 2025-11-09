@@ -729,8 +729,15 @@ def generate_page1(
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "持股行业占比时序")
         # industry_timeseries.timeseries 才是图表期望的列表数据
+        timeseries_data = safe_get("industry_timeseries.timeseries")
+        if timeseries_data:
+            print(f"    数据条数: {len(timeseries_data)}")
+            if len(timeseries_data) > 0:
+                print(f"    第一条数据keys: {list(timeseries_data[0].keys())[:5]}...")  # 只显示前5个key
+        else:
+            print("    警告: industry_timeseries.timeseries 数据为空")
         fig18 = plot_industry_proportion_timeseries(
-            data=safe_get("industry_timeseries.timeseries"),
+            data=timeseries_data,
             return_figure=True,
             figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
             show_title=True,
@@ -738,7 +745,9 @@ def generate_page1(
         insert_figure(c, fig18, x_left, y_cursor - h, usable_width, h)
         y_cursor -= h + 10
     except Exception as e:
+        import traceback
         print(f"  持股行业占比时序图表生成失败: {e}")
+        print(f"  错误详情: {traceback.format_exc()}")
 
     # 持股行业偏离度时序部分
     try:

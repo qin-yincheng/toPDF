@@ -143,9 +143,9 @@ def plot_industry_deviation_timeseries(
     else:
         # 较大范围，使用1%间隔
         y_ticks = np.arange(np.floor(y_min), np.ceil(y_max) + 1, 1)
-    ax.set_yticks(y_ticks)
-    ax.set_yticklabels([f'{y:.2f}%' for y in y_ticks])
-    
+    # ax.set_yticks(y_ticks)
+    # ax.set_yticklabels([f'{y:.2f}%' for y in y_tickss])
+    ax.margins(y=0.1)
     # 添加网格线
     ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
     
