@@ -222,8 +222,10 @@ def plot_industry_attribution_profit_chart(
     max_contrib = max(contributions) if contributions else 10
     max_weight = max(weights) if weights else 8
     y_max = max(max_contrib, max_weight) * 1.1  # 取两者最大值
-    ax1.set_ylim(0, y_max)
-    ax2.set_ylim(0, y_max)
+    # ax1.set_ylim(0, y_max)
+    # ax2.set_ylim(0, y_max)
+    ax1.margins(y=0.1)
+    ax2.margins(y=0.1)
     
     # 设置X轴：显示所有10个位置，但只显示5个标签（机械设备、石油石化、医药生物、国防军工、社会服务）
     # 这5个行业在原始数据中的索引是：0, 2, 4, 6, 8
@@ -466,9 +468,10 @@ def plot_industry_attribution_loss_chart(
     # 对于负数范围，需要同时考虑贡献度的最小值和权重的最大值
     y_min = min_contrib * 1.1
     y_max = max(max_contrib, max_weight) * 1.1
-    ax1.set_ylim(y_min, y_max)
-    ax2.set_ylim(0, y_max)  # 权重始终为正数
-    
+    # ax1.set_ylim(y_min, y_max)
+    # ax2.set_ylim(0, y_max)  # 权重始终为正数
+    ax1.margins(y=0.1)
+    ax2.margins(y=0.1)
     # 设置X轴  
     ax1.set_xticks(x)
     ax1.set_xticklabels(industries, rotation=45, ha='right')

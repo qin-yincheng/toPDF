@@ -7,11 +7,8 @@ DOCS_DIR = ROOT_DIR / "docs"
 
 # 数据文件（统一存放在 docs/ 下）
 EXCEL_FILE = DOCS_DIR / "交割单.xlsx"
-
-# CSV 数据文件配置
-# 可以选择使用完整数据或部分数据
-CSV_FILE = DOCS_DIR / "交割单_2025-04-01-2025-11-04.csv"  # 一年数据
-# CSV_FILE = DOCS_DIR / "交割单.csv"  # 全部数据（2015-2025）
+# CSV_FILE = DOCS_DIR / "交割单.csv"
+CSV_FILE = DOCS_DIR / "交割单_2024-11-04-2025-11-04.csv"
 
 # CSV 编码
 CSV_ENCODING = "utf-8-sig"

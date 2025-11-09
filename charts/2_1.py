@@ -3,11 +3,20 @@
 使用 matplotlib 生成动态回撤折线图和汇总表格
 """
 
+# 添加项目根目录到 Python 路径，以便正确导入模块
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
+from charts.utils import calculate_xlim, calculate_date_tick_params
+from calc.utils import is_trading_day
 
 
 def setup_chinese_font() -> None:
@@ -61,24 +70,40 @@ def plot_dynamic_drawdown_chart(
     if data is None:
         data = _generate_mock_drawdown_data()
     
-    # 解析数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
-    product_drawdown = [d['product_drawdown'] for d in data]
-    benchmark_drawdown = [d.get('benchmark_drawdown', 0) for d in data]
+    # 解析数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    product_drawdown_raw = [d['product_drawdown'] for d in data]
+    benchmark_drawdown_raw = [d.get('benchmark_drawdown', 0) for d in data]
+    
+    # 只保留交易日的数据
+    dates = []
+    product_drawdown = []
+    benchmark_drawdown = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            product_drawdown.append(product_drawdown_raw[i])
+            benchmark_drawdown.append(benchmark_drawdown_raw[i])
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
     
+    # 设置X轴：使用索引位置，但显示日期标签
+    # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
+    n_points = len(dates)
+    x_indices = list(range(n_points))
+    
     # 绘制产品回撤线（蓝色）
     color1 = '#5470c6'  # 深蓝色
-    line1 = ax.plot(dates, product_drawdown, color=color1, marker='o', 
+    line1 = ax.plot(x_indices, product_drawdown, color=color1, marker='', 
                      markersize=4, linewidth=2, label='阳光安盛多禾一号私募证券投资基金',
                      markerfacecolor='white', markeredgecolor=color1,
                      markeredgewidth=1.5)
     
     # 绘制基准回撤线（绿色）
     color2 = '#91cc75'  # 绿色
-    line2 = ax.plot(dates, benchmark_drawdown, color=color2, marker='o', 
+    line2 = ax.plot(x_indices, benchmark_drawdown, color=color2, marker='', 
                      markersize=4, linewidth=2, label='沪深300',
                      markerfacecolor='white', markeredgecolor=color2,
                      markeredgewidth=1.5)
@@ -86,16 +111,31 @@ def plot_dynamic_drawdown_chart(
     # 设置Y轴（回撤从0%到最大回撤）
     max_drawdown = max(max(product_drawdown), max(benchmark_drawdown))
     y_min = min(-25, max_drawdown - 2)  # 留出一些空间
-    ax.set_ylim(y_min, 1)
+    ax.margins(y=0.1)
+    # ax.set_ylim(y_min, 1)
     ax.set_ylabel('回撤(%)', color='black')
     ax.tick_params(axis='y', labelcolor='black')
     ax.grid(True, alpha=0.3, linestyle='--')
     
-    # 设置X轴日期格式
+    # 设置X轴刻度和标签
     ax.set_xlabel('日期')
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=15))  # 每15天一个刻度
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    # 使用工具函数自动计算合适的刻度间隔
+    if n_points > 0:
+        # 使用工具函数计算日期刻度参数
+        tick_indices, tick_labels = calculate_date_tick_params(dates)
+        
+        # 设置刻度位置
+        ax.set_xticks(tick_indices)
+        
+        # 设置刻度标签为对应的日期
+        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        
+        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
+        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
+        ax.set_xlim(x_min, x_max)
+    else:
+        ax.set_xticks([])
+        ax.set_xticklabels([])
     
     # 设置标题（如果启用）
     if show_title:

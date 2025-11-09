@@ -3,11 +3,19 @@
 使用 matplotlib 生成多线折线图
 """
 
+# 添加项目根目录到 Python 路径，以便正确导入模块
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
+from charts.utils import calculate_xlim, calculate_date_tick_params
+from calc.utils import is_trading_day
 
 
 def setup_chinese_font() -> None:
@@ -60,33 +68,51 @@ def plot_nav_performance(
     if data is None:
         data = _generate_mock_nav_data()
     
-    # 解析数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
-    accumulated_return = [d['accumulated_return'] for d in data]
-    csi300 = [d.get('csi300', 0) for d in data]
-    excess_return = [d.get('excess_return', 0) for d in data]
+    # 解析数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    accumulated_return_raw = [d['accumulated_return'] for d in data]
+    csi300_raw = [d.get('csi300', 0) for d in data]
+    excess_return_raw = [d.get('excess_return', 0) for d in data]
+    
+    # 只保留交易日的数据
+    dates = []
+    accumulated_return = []
+    csi300 = []
+    excess_return = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            accumulated_return.append(accumulated_return_raw[i])
+            csi300.append(csi300_raw[i])
+            excess_return.append(excess_return_raw[i])
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
     
+    # 设置X轴：使用索引位置，但显示日期标签
+    # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
+    n_points = len(dates)
+    x_indices = list(range(n_points))
+    
     # 绘制三条线
     # 1. 复权累计收益：深蓝色，实心圆点
     color1 = '#082868'  # 深蓝色
-    line1 = ax.plot(dates, accumulated_return, color=color1, marker='o', 
+    line1 = ax.plot(x_indices, accumulated_return, color=color1, marker='', 
                     markersize=4, linewidth=2, label='复权累计收益',
                     markerfacecolor='white', markeredgecolor=color1,
                     markeredgewidth=1.5)
     
     # 2. 沪深300：浅灰色，空心圆点
     color2 = '#afb0b2'  # 浅灰色
-    line2 = ax.plot(dates, csi300, color=color2, marker='o', 
+    line2 = ax.plot(x_indices, csi300, color=color2, marker='', 
                     markersize=4, linewidth=2, label='沪深300',
                     markerfacecolor='white', markeredgecolor=color2, 
                     markeredgewidth=1.5)
     
     # 3. 累计超额收益：红色，实心圆点
     color3 = '#c12e34'  # 红色
-    line3 = ax.plot(dates, excess_return, color=color3, marker='o', 
+    line3 = ax.plot(x_indices, excess_return, color=color3, marker='', 
                     markersize=4, linewidth=2, label='累计超额收益',
                     markerfacecolor='white', markeredgecolor=color3,
                     markeredgewidth=1.5)
@@ -94,18 +120,30 @@ def plot_nav_performance(
     # 设置坐标轴
     ax.set_xlabel('日期')
     ax.set_ylabel('收益率(%)', color='black')
-    ax.set_ylim(-20, 100)
-    ax.set_yticks([-20, 0, 20, 40, 60, 80, 100])
     ax.grid(True, alpha=0.3, linestyle='--')
     
     # 设置标题（如果启用）
     if show_title:
         ax.set_title('单位净值表现', fontsize=14, fontweight='bold', pad=20)
     
-    # 设置日期格式
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=8))  # 每8天一个刻度
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    # 设置X轴刻度和标签
+    # 使用工具函数自动计算合适的刻度间隔
+    if n_points > 0:
+        # 使用工具函数计算日期刻度参数
+        tick_indices, tick_labels = calculate_date_tick_params(dates)
+        
+        # 设置刻度位置
+        ax.set_xticks(tick_indices)
+        
+        # 设置刻度标签为对应的日期
+        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        
+        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
+        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
+        ax.set_xlim(x_min, x_max)
+    else:
+        ax.set_xticks([])
+        ax.set_xticklabels([])
 
     
     ax.spines['top'].set_visible(False)

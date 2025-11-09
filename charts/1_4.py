@@ -3,9 +3,18 @@
 使用 matplotlib 和 pyecharts 生成柱状图+折线图组合图表和摘要表格（分两个图片）
 """
 
+# 添加项目根目录到 Python 路径，以便正确导入模块
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 import numpy as np
+from charts.utils import calculate_xlim, calculate_date_tick_params
+from calc.utils import is_trading_day
 
 try:
     from pyecharts.charts import Bar, Line, Grid
@@ -82,10 +91,21 @@ def plot_daily_return_chart(
     if data is None:
         data = _generate_mock_daily_return_data()
     
-    # 解析数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
-    daily_returns = [d['daily_return'] for d in data]
-    cumulative_returns = [d.get('cumulative_return', 0) for d in data]
+    # 解析数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    daily_returns_raw = [d['daily_return'] for d in data]
+    cumulative_returns_raw = [d.get('cumulative_return', 0) for d in data]
+    
+    # 只保留交易日的数据
+    dates = []
+    daily_returns = []
+    cumulative_returns = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            daily_returns.append(daily_returns_raw[i])
+            cumulative_returns.append(cumulative_returns_raw[i])
     
     # 计算摘要数据
     max_daily_return = max(daily_returns)
@@ -96,11 +116,16 @@ def plot_daily_return_chart(
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
     
+    # 设置X轴：使用索引位置，但显示日期标签
+    # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
+    n_points = len(dates)
+    x_indices = list(range(n_points))
+    
     # 左Y轴：日收益率（柱状图）
     color_bar = '#082868'  # 深蓝色
     # 减小width以增加柱子之间的间隔
     bar_width = 0.6  # 从1.0减小到0.6，增加间隔
-    bars = ax.bar(dates, daily_returns, width=bar_width, alpha=0.7, 
+    bars = ax.bar(x_indices, daily_returns, width=bar_width, alpha=0.7, 
                   color=color_bar, label='日收益率', edgecolor=color_bar, linewidth=0.5)
     
     # 添加零线
@@ -108,19 +133,20 @@ def plot_daily_return_chart(
     
     ax.set_xlabel('日期')
     ax.set_ylabel('收益率(%)', color='black')
-    ax.set_ylim(-12, 12)
-    ax.set_yticks([-10, -5, 0, 5, 10])
+    # ax.set_ylim(-12, 12)
+    # ax.set_yticks([-10, -5, 0, 5, 10])
+    ax.margins(y=0.1)
     ax.tick_params(axis='y', labelcolor='black')
     ax.grid(True, alpha=0.3, linestyle='--', zorder=0)
     
     # 标注最大收益和最大亏损
     # 最大收益标注
-    max_date = dates[max_return_idx]
+    max_x_pos = max_return_idx
     max_value = max_daily_return
     ax.annotate(
         f'{max_value:.2f}',
-        xy=(max_date, max_value),
-        xytext=(max_date, max_value + 1.5),
+        xy=(max_x_pos, max_value),
+        xytext=(max_x_pos, max_value + 1.5),
         ha='center',
         va='bottom',
         fontsize=9,
@@ -131,12 +157,12 @@ def plot_daily_return_chart(
     )
     
     # 最大亏损标注
-    min_date = dates[min_return_idx]
+    min_x_pos = min_return_idx
     min_value = min_daily_return
     ax.annotate(
         f'{min_value:.2f}',
-        xy=(min_date, min_value),
-        xytext=(min_date, min_value - 1.5),
+        xy=(min_x_pos, min_value),
+        xytext=(min_x_pos, min_value - 1.5),
         ha='center',
         va='top',
         fontsize=9,
@@ -149,15 +175,16 @@ def plot_daily_return_chart(
     # 右Y轴：累计收益率（折线图）
     ax2 = ax.twinx()
     color_line = '#afb0b2'  # 浅灰色
-    line = ax2.plot(dates, cumulative_returns, color=color_line, marker='o', 
+    line = ax2.plot(x_indices, cumulative_returns, color=color_line, marker='', 
                    markersize=3, linewidth=2, label='累计收益率',
                    markerfacecolor='white', markeredgecolor=color_line, markeredgewidth=1.5)
     
     ax2.set_ylabel('累计收益率(%)', color='black')
     # 根据数据动态设置Y轴范围，留出一些空间
     max_cum_value = max(cumulative_returns) if cumulative_returns else 90
-    ax2.set_ylim(-20, max(100, max_cum_value + 10))  # 至少到100，或最大值+10
-    ax2.set_yticks([-20, 0, 20, 40, 60, 80, 100])  # 包含100的刻度
+    # ax2.set_ylim(-20, max(100, max_cum_value + 10))  # 至少到100，或最大值+10
+    # ax2.set_yticks([-20, 0, 20, 40, 60, 80, 100])  # 包含100的刻度
+    ax.margins(y=0.1)
     ax2.tick_params(axis='y', labelcolor='black')
     
     # 标注累计收益率的最大值点
@@ -182,10 +209,24 @@ def plot_daily_return_chart(
     if show_title:
         ax.set_title('日收益表现', fontsize=14, fontweight='bold', pad=20)
     
-    # 设置日期格式
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=15))  # 每15天一个刻度
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    # 设置X轴刻度和标签
+    # 使用工具函数自动计算合适的刻度间隔
+    if n_points > 0:
+        # 使用工具函数计算日期刻度参数
+        tick_indices, tick_labels = calculate_date_tick_params(dates)
+        
+        # 设置刻度位置
+        ax.set_xticks(tick_indices)
+        
+        # 设置刻度标签为对应的日期
+        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        
+        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
+        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
+        ax.set_xlim(x_min, x_max)
+    else:
+        ax.set_xticks([])
+        ax.set_xticklabels([])
 
     # 设置边框：只保留左边框，删除其他边框
     ax.spines['top'].set_visible(False)
