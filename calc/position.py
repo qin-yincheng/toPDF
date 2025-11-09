@@ -215,6 +215,20 @@ def calculate_daily_asset_distribution(
     stock_value = (holdings_qty * price_df).sum(axis=1)
     # 现金 = 初始资金 - 累计买入金额 + 累计卖出金额
     cash_value = ini - cum_buy + cum_sell
+    
+    # 修正：如果初始资金设置不足导致现金为负数
+    # 需要动态调整初始资金，使现金始终非负
+    min_cash = cash_value.min()
+    if min_cash < 0:
+        # 调整初始资金，确保最小现金为0
+        adjustment = -min_cash + 1  # 加1避免刚好为0
+        ini_adjusted = ini + adjustment
+        cash_value = ini_adjusted - cum_buy + cum_sell
+        print(f"  ⚠️ 初始资金 {ini/1e8:.2f}亿 不足，已自动调整为 {ini_adjusted/1e8:.2f}亿")
+    
+    # 确保现金非负（防止浮点数精度问题）
+    cash_value = cash_value.clip(lower=0)
+    
     # 总资产
     total_assets = (stock_value + cash_value).replace(0, pd.NA)
 

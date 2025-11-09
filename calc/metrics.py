@@ -668,6 +668,13 @@ def calculate_active_return(
         产品年化收益率 = ((1 + 产品期间收益率/100) ^ (365 / 实际天数)) - 1 × 100%
         基准年化收益率 = ((1 + 基准期间收益率/100) ^ (365 / 实际天数)) - 1 × 100%
     """
+    # 如果基准收益率为None，返回0
+    if benchmark_period_return is None:
+        return {
+            "active_return": 0.0,
+            "annualized_active_return": 0.0,
+        }
+    
     # 主动收益
     active_return = product_period_return - benchmark_period_return
 
