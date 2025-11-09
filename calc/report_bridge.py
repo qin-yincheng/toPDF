@@ -315,11 +315,20 @@ def build_indicator_analysis_data(
     period_metrics: Dict[str, Dict[str, Any]],
     nav_data: Optional[List[Dict[str, Any]]] = None,
     periods: Optional[Dict[str, Tuple[str, str]]] = None,
+    risk_free_rate: float = 0.03,
+    benchmark_returns: Optional[List[float]] = None,
+    benchmark_period_returns: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Dict[str, Any]]:
     """根据多时间段指标输出 chart1_6 期望的嵌套结构。"""
 
     if not period_metrics and nav_data and periods:
-        period_metrics = metrics.calculate_period_metrics(nav_data, periods)
+        period_metrics = metrics.calculate_period_metrics(
+            nav_data,
+            periods,
+            risk_free_rate=risk_free_rate,
+            benchmark_returns=benchmark_returns,
+            benchmark_period_returns=benchmark_period_returns,
+        )
     if not period_metrics:
         return {}
 
@@ -366,6 +375,20 @@ def build_indicator_analysis_data(
     indicator_data["最大回撤期间"] = {period: "-" for period in period_order}
     indicator_data["最大回撤修复期(月)"] = {period: "-" for period in period_order}
 
+    for period in period_order:
+        metrics_for_period = period_metrics.get(period, {})
+        start_date = metrics_for_period.get("max_dd_start_date")
+        end_date = metrics_for_period.get("max_dd_end_date")
+        if start_date and end_date:
+            indicator_data["最大回撤期间"][period] = f"{start_date} 至 {end_date}"
+
+        recovery_days = metrics_for_period.get("recovery_period")
+        recovery_date = metrics_for_period.get("recovery_date")
+        if recovery_days is not None and recovery_days >= 0 and recovery_date:
+            indicator_data["最大回撤修复期(月)"][period] = (
+                f"{(recovery_days / 30.0):.1f} ({recovery_date})"
+            )
+
     return indicator_data
 
 
@@ -374,8 +397,8 @@ def _serialize_stock_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         {
             "stock_code": entry.get("code", ""),
             "stock_name": entry.get("name", ""),
-            "weight_ratio": _round_value(entry.get("weight", 0.0)),
-            "contribution": _round_value(entry.get("contribution", 0.0)),
+            "weight_ratio": _round_value(entry.get("weight", 0.0), digits=4),
+            "contribution": _round_value(entry.get("contribution", 0.0), digits=4),
             "profit_amount": _round_value(entry.get("profit", 0.0)),
         }
         for entry in items
@@ -461,8 +484,8 @@ def build_end_holdings_data(
 def _serialize_industry_item(entry: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "industry": entry.get("industry", ""),
-        "weight_ratio": _round_value(entry.get("weight", 0.0)),
-        "contribution": _round_value(entry.get("contribution", 0.0)),
+        "weight_ratio": _round_value(entry.get("weight", 0.0), digits=4),
+        "contribution": _round_value(entry.get("contribution", 0.0), digits=4),
         "profit_amount": _round_value(entry.get("profit", 0.0)),
         "selection_return": _round_value(entry.get("selection_return", 0.0)),
         "allocation_return": _round_value(entry.get("allocation_return", 0.0)),
@@ -942,6 +965,9 @@ def build_page1_data(
         period_metrics or {},
         nav_data=nav_data,
         periods=periods,
+        risk_free_rate=risk_free_rate,
+        benchmark_returns=benchmark_returns,
+        benchmark_period_returns=benchmark_period_returns,
     )
     result["end_holdings"] = build_end_holdings_data(
         position_details,
