@@ -13,6 +13,7 @@ if str(project_root) not in sys.path:
 
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from charts.font_config import setup_chinese_font
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
@@ -167,9 +168,53 @@ def plot_industry_proportion_timeseries(
     }
     
     # 为没有定义颜色的行业分配默认颜色
-    default_colors = plt.cm.Set3(np.linspace(0, 1, len(industry_names)))
-    colors = [color_map.get(ind, default_colors[i % len(default_colors)]) 
-              for i, ind in enumerate(industry_names)]
+    # 使用多个colormap组合，确保每个行业都有不同的颜色
+    def generate_unique_colors(n):
+        """生成n个不同的颜色"""
+        colors_list = []
+        # 使用多个colormap来获得更多颜色
+        colormaps = [plt.cm.Set3, plt.cm.Pastel1, plt.cm.Pastel2, plt.cm.Set1, 
+                     plt.cm.Set2, plt.cm.Dark2, plt.cm.Accent, plt.cm.tab10,
+                     plt.cm.tab20, plt.cm.tab20b, plt.cm.tab20c]
+        
+        color_idx = 0
+        for cmap in colormaps:
+            if color_idx >= n:
+                break
+            # 从每个colormap中取颜色，避免重复
+            for i in range(cmap.N):
+                if color_idx >= n:
+                    break
+                colors_list.append(cmap(i))
+                color_idx += 1
+        
+        # 如果还不够，使用HSV颜色空间均匀分布
+        if len(colors_list) < n:
+            remaining = n - len(colors_list)
+            for i in range(remaining):
+                hue = (i / remaining) % 1.0
+                saturation = 0.6 + (i % 3) * 0.1  # 0.6-0.8之间变化
+                value = 0.7 + (i % 2) * 0.2  # 0.7-0.9之间变化
+                rgb = mcolors.hsv_to_rgb([hue, saturation, value])
+                colors_list.append(rgb)
+        
+        return colors_list[:n]
+    
+    # 获取所有未定义颜色的行业
+    undefined_industries = [ind for ind in industry_names if ind not in color_map]
+    if undefined_industries:
+        unique_colors = generate_unique_colors(len(undefined_industries))
+        # 为未定义的行业分配颜色
+        for i, industry in enumerate(undefined_industries):
+            # 将RGB转换为十六进制
+            rgb = unique_colors[i]
+            hex_color = '#{:02x}{:02x}{:02x}'.format(
+                int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255)
+            )
+            color_map[industry] = hex_color
+    
+    # 为所有行业分配颜色
+    colors = [color_map.get(ind, '#808080') for ind in industry_names]
     
     # 提取每个行业的数据
     industry_data = {}
@@ -247,8 +292,10 @@ def plot_industry_proportion_timeseries(
     # 添加图例（在顶部，多列显示）
     # 根据活跃行业数量动态调整列数
     n_legend_cols = min(len(active_industries_sorted), 15)  # 最多15列，避免图例太宽
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), 
-              ncol=n_legend_cols, frameon=True, fontsize=8)
+    # 增加图例与图表的距离，从1.15增加到1.25，并增加padding
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), 
+              ncol=n_legend_cols, frameon=True, fontsize=8, 
+              columnspacing=1.0, handletextpad=0.5)
     
     # # 添加脚注
     # ax.text(0, -0.08, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,
@@ -256,8 +303,9 @@ def plot_industry_proportion_timeseries(
     
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    # 调整布局，为图例和脚注留出空间
-    plt.tight_layout(rect=[0, 0.05, 1, 0.90])
+    # 调整布局，为图例留出更多空间（从0.90增加到0.85，给图例更多空间）
+    plt.tight_layout(rect=[0, 0.05, 1, 0.8])
+    plt.subplots_adjust(top=0.75)
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
