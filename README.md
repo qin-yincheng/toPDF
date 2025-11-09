@@ -77,8 +77,7 @@ toPDF/
 │   └── 6_5.py                     # 期间交易
 │
 ├── pdf/                           # PDF生成模块
-│   ├── generator.py               # ⭐ PDF主生成器
-│   └── pages1.py                  # ⭐ 页面布局和图表组装
+│   └── pages.py                   # ⭐ 页面布局和图表组装
 │
 ├── data/                          # 数据处理模块
 │   └── reader.py                  # Excel/CSV读取和转换
@@ -134,7 +133,7 @@ toPDF/
 └──────────────────────────────────────────┘
     ↓
 ┌──────────────────────────────────────────┐
-│  5. PDF组装 (pdf/pages1.py)              │
+│  5. PDF组装 (pdf/pages.py)               │
 │  - 页面布局和排版                        │
 │  - 图表嵌入和缩放                        │
 │  - 生成最终PDF文件                       │
@@ -233,7 +232,7 @@ fig = plot_return_analysis_table(
 )
 ```
 
-#### 步骤4：PDF生成（`pdf/pages1.py`）
+#### 步骤4：PDF生成（`pdf/pages.py`）
 
 **页面布局策略**：
 - A4横向（297mm × 210mm）
@@ -559,7 +558,7 @@ def build_new_chart_data(daily_positions, ...):
     }
 ```
 
-3. **集成到PDF**（在 `pdf/pages1.py`）：
+3. **集成到PDF**（在 `pdf/pages.py`）：
 ```python
 from charts.new_chart import plot_new_chart
 
@@ -604,14 +603,68 @@ BENCHMARK_CODE = "399006.SZ"  # 创业板指
 - `399006.SZ` - 创业板指
 - `000001.SH` - 上证指数
 
-## � 相关文档
+## 🎨 跨平台字体配置
+
+项目支持 **macOS、Windows、Linux** 跨平台中文显示，自动检测并使用最佳字体。
+
+### 字体自动选择
+
+**macOS**：PingFang SC → PingFang HK → Heiti SC → STHeiti  
+**Windows**：Microsoft YaHei → SimHei → SimSun  
+**Linux**：WenQuanYi Micro Hei → Noto Sans CJK
+
+### 测试字体配置
+
+```bash
+# 查看系统可用字体和当前配置
+python3 charts/font_config.py
+```
+
+会生成 `font_test.png` 测试图片，检查中文是否正常显示。
+
+### 问题排查
+
+**问题**：PDF 中图表左上角中文显示为黑色方块
+
+**原因**：系统缺少中文字体或 matplotlib 未正确配置
+
+**解决方案**：
+
+1. **macOS**（通常自带）：
+   ```bash
+   # 检查字体
+   ls /System/Library/Fonts/ | grep -i pingfang
+   ```
+
+2. **Windows**：确保已安装微软雅黑（Windows Vista+ 自带）
+
+3. **Linux (Ubuntu/Debian)**：
+   ```bash
+   # 安装文泉驿字体
+   sudo apt-get install fonts-wqy-microhei fonts-wqy-zenhei
+   
+   # 或安装 Google Noto 字体
+   sudo apt-get install fonts-noto-cjk
+   ```
+
+4. **清除字体缓存**（如果更新字体后仍有问题）：
+   ```bash
+   rm -rf ~/.matplotlib/fontlist*.json
+   ```
+
+5. **验证修复**：重新生成 PDF 并检查图表
+
+📖 **详细说明**：参见 [字体配置文档](docs/FONT_CONFIG.md)
+
+## 📋 相关文档
 
 - [接口规范](docs/开发者A.md) - 数据接口详细说明
 - [补充说明](docs/开发者A补充.md) - 额外需求和说明
 - [模版实现](docs/模版模块实现.md) - 实现细节文档
 - [任务分配](docs/任务分配.md) - 开发者分工
+- [字体配置](docs/FONT_CONFIG.md) - 跨平台字体配置说明
 
-## �🛠️ 技术栈
+## 🛠️ 技术栈
 
 - **Python 3.8+**
 - **pandas** - 数据处理
@@ -621,6 +674,19 @@ BENCHMARK_CODE = "399006.SZ"  # 创业板指
 - **numpy** - 数值计算
 
 ## 📝 开发日志
+
+### v1.1.0 (2025-11-09)
+
+✅ **跨平台字体支持**
+- 实现自动字体检测（macOS/Windows/Linux）
+- 创建统一的字体配置模块 `font_config.py`
+- 更新所有21个图表文件使用统一配置
+- 添加字体测试工具
+- 修复 Mac 上中文显示为方块的问题
+
+🐛 **Bug 修复**
+- 修复期末持仓显示"100%证券"应为"100%现金"的问题
+- 优化资产分类逻辑（直接计算股票和现金）
 
 ### v1.0.0 (2025-11-08)
 
@@ -643,7 +709,7 @@ BENCHMARK_CODE = "399006.SZ"  # 创业板指
 - 空数据场景自动处理
 - 数据单位统一（万元）
 - 日期格式标准化
-- 中文字体自动适配
+- 中文字体跨平台适配
 
 ## 📄 许可证
 

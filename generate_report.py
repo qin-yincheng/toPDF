@@ -20,7 +20,7 @@ from calc.data_provider import (
     get_benchmark_industry_returns,
 )
 from calc.report_bridge import build_page1_data
-from pdf.pages1 import generate_page1
+from pdf.pages import generate_page1
 from config import DOCS_DIR, CSV_FILE
 
 
