@@ -6,6 +6,7 @@
 
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from charts.font_config import setup_chinese_font
 from matplotlib.patches import Rectangle
 import numpy as np
@@ -67,20 +68,41 @@ def plot_market_value_pie_chart(
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
     
-    # 定义颜色映射（根据你的图片调整）
-    color_map = {
-        '食品饮料': '#082868',
-        '建筑装饰': '#afb0b2', 
-        '轻工制造': '#c12e34',
-        '基础化工': '#fac858',
-        '商贸零售': '#3ba272',
-        '电力设备': '#339ca8',
-        '建筑材料': '#0098d9',
-        '纺织服饰': '#d87939',
-        '其他行业': '#b093c0'
-    }
+    # 自动分配颜色（与3_2.py相同的逻辑）
+    def generate_unique_colors(n):
+        """生成n个不同的颜色"""
+        colors_list = []
+        # 使用多个colormap来获得更多颜色
+        colormaps = [plt.cm.Set3, plt.cm.Pastel1, plt.cm.Pastel2, plt.cm.Set1, 
+                     plt.cm.Set2, plt.cm.Dark2, plt.cm.Accent, plt.cm.tab10,
+                     plt.cm.tab20, plt.cm.tab20b, plt.cm.tab20c]
+        
+        color_idx = 0
+        for cmap in colormaps:
+            if color_idx >= n:
+                break
+            # 从每个colormap中取颜色，避免重复
+            for i in range(cmap.N):
+                if color_idx >= n:
+                    break
+                colors_list.append(cmap(i))
+                color_idx += 1
+        
+        # 如果还不够，使用HSV颜色空间均匀分布
+        if len(colors_list) < n:
+            remaining = n - len(colors_list)
+            for i in range(remaining):
+                hue = (i / remaining) % 1.0
+                saturation = 0.6 + (i % 3) * 0.1  # 0.6-0.8之间变化
+                value = 0.7 + (i % 2) * 0.2  # 0.7-0.9之间变化
+                rgb = mcolors.hsv_to_rgb([hue, saturation, value])
+                colors_list.append(rgb)
+        
+        return colors_list[:n]
     
-    colors = [color_map.get(ind, '#808080') for ind in industries]
+    # 为所有行业自动生成颜色
+    unique_colors = generate_unique_colors(len(industries))
+    colors = [mcolors.to_hex(color) for color in unique_colors]
     
     # 绘制饼图 - 只显示内部百分比，不显示外部标签
     wedges, texts, autotexts = ax.pie(
@@ -181,7 +203,43 @@ def plot_average_market_value_bar_chart(
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
     
-    # 绘制横向柱状图
+    # 自动分配颜色（与饼图相同的逻辑）
+    def generate_unique_colors(n):
+        """生成n个不同的颜色"""
+        colors_list = []
+        # 使用多个colormap来获得更多颜色
+        colormaps = [plt.cm.Set3, plt.cm.Pastel1, plt.cm.Pastel2, plt.cm.Set1, 
+                     plt.cm.Set2, plt.cm.Dark2, plt.cm.Accent, plt.cm.tab10,
+                     plt.cm.tab20, plt.cm.tab20b, plt.cm.tab20c]
+        
+        color_idx = 0
+        for cmap in colormaps:
+            if color_idx >= n:
+                break
+            # 从每个colormap中取颜色，避免重复
+            for i in range(cmap.N):
+                if color_idx >= n:
+                    break
+                colors_list.append(cmap(i))
+                color_idx += 1
+        
+        # 如果还不够，使用HSV颜色空间均匀分布
+        if len(colors_list) < n:
+            remaining = n - len(colors_list)
+            for i in range(remaining):
+                hue = (i / remaining) % 1.0
+                saturation = 0.6 + (i % 3) * 0.1  # 0.6-0.8之间变化
+                value = 0.7 + (i % 2) * 0.2  # 0.7-0.9之间变化
+                rgb = mcolors.hsv_to_rgb([hue, saturation, value])
+                colors_list.append(rgb)
+        
+        return colors_list[:n]
+    
+    # 为所有行业自动生成颜色
+    unique_colors = generate_unique_colors(len(industries))
+    colors = [mcolors.to_hex(color) for color in unique_colors]
+    
+    # 绘制横向柱状图（每个柱子使用不同颜色）
     y_pos = np.arange(len(industries))
     bars = ax.barh(y_pos, proportions, color='#082868', alpha=1)
     

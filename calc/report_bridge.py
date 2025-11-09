@@ -560,7 +560,8 @@ def build_industry_attribution_data(
             )
 
     end_total = sum(end_holdings_by_industry.values())
-    end_industry_data = (
+    # 先构建所有行业数据
+    all_end_industry_data = (
         [
             {
                 "industry": industry,
@@ -574,6 +575,33 @@ def build_industry_attribution_data(
         if end_total > 0
         else []
     )
+    
+    # 按市值排序，只保留前10个行业，其他的合并为"剩余行业"
+    if all_end_industry_data:
+        # 按市值降序排序
+        sorted_data = sorted(all_end_industry_data, key=lambda x: x['market_value'], reverse=True)
+        
+        # 取前10个
+        top_10_data = sorted_data[:10]
+        
+        # 计算剩余行业的市值和占比
+        if len(sorted_data) > 10:
+            remaining_market_value = sum(item['market_value'] for item in sorted_data[10:])
+            remaining_proportion = _round_value(
+                remaining_market_value / end_total * 100 if end_total > 0 else 0
+            )
+            
+            # 如果剩余行业占比大于0，添加"剩余行业"
+            if remaining_proportion > 0:
+                top_10_data.append({
+                    "industry": "剩余行业",
+                    "proportion": remaining_proportion,
+                    "market_value": _round_value(remaining_market_value),
+                })
+        
+        end_industry_data = top_10_data
+    else:
+        end_industry_data = []
 
     return {
         "industry_distribution": {"industry_data": industry_data},  # 全期间行业数据
