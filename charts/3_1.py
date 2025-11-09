@@ -6,29 +6,10 @@
 
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
+from charts.font_config import setup_chinese_font
 from matplotlib.patches import Rectangle
 import numpy as np
 
-
-def setup_chinese_font() -> None:
-    """
-    配置matplotlib中文字体
-    """
-    font_list = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
-    plt.rcParams['font.sans-serif'] = font_list
-    plt.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['font.size'] = 12
-    plt.rcParams['axes.titlesize'] = 16
-    plt.rcParams['axes.labelsize'] = 14
-    plt.rcParams['xtick.labelsize'] = 12
-    plt.rcParams['ytick.labelsize'] = 12
-    plt.rcParams['legend.fontsize'] = 10
-
-
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.patches import Rectangle
-from typing import Dict, Any, Optional
 
 
 def plot_market_value_pie_chart(
