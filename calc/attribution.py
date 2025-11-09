@@ -305,8 +305,8 @@ def calculate_industry_attribution(
         results.append(
             {
                 "industry": industry,
-                "weight": round(weight_pct, 2),
-                "contribution": round(contribution_pct, 2),
+                "weight": round(weight_pct, 4),
+                "contribution": round(contribution_pct, 4),
                 "profit": round(data["profit_loss"], 2),
                 "selection_return": round(selection * 100, 2),
                 "allocation_return": round(allocation * 100, 2),
@@ -345,8 +345,8 @@ def calculate_stock_performance(
             {
                 "code": pos.get("code", ""),
                 "name": pos.get("name", ""),
-                "weight": round(weight_pct, 2),
-                "contribution": round(contribution_pct, 2),
+                "weight": round(weight_pct, 4),
+                "contribution": round(contribution_pct, 4),
                 "profit": round(profit_loss, 2),
             }
         )
