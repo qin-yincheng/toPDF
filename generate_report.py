@@ -21,7 +21,7 @@ from calc.data_provider import (
 )
 from calc.report_bridge import build_page1_data
 from pdf.pages1 import generate_page1
-from config import DOCS_DIR
+from config import DOCS_DIR, CSV_FILE
 
 
 def convert_daily_positions_to_nav(daily_positions):
@@ -96,6 +96,7 @@ def main():
 
     # 0. 检查并转换Excel到CSV（如果需要）
     csv_path = os.path.join(DOCS_DIR, "交割单_2024-11-04-2025-11-04.csv")
+    csv_path = os.path.join(DOCS_DIR, "交割单_2024-11-04-2025-11-04.csv")
     xlsx_path = os.path.join(DOCS_DIR, "交割单.xlsx")
 
     if not os.path.exists(csv_path):
@@ -119,7 +120,7 @@ def main():
 
     # 1. 获取基础数据
     print("\n1️⃣  获取每日持仓数据...")
-    daily_positions = get_daily_positions(include_positions=False)
+    daily_positions = get_daily_positions(include_positions=True)  # 包含持仓明细以支持行业时序图
     print(f"   ✓ 获取 {len(daily_positions)} 天数据")
 
     # 2. 获取统计区间
@@ -241,7 +242,9 @@ def main():
 
     # 9. 生成PDF
     print("\n9️⃣  生成PDF文件...")
-    output_path = "私募基金报告_完整版.pdf"
+    # 根据CSV文件名生成PDF文件名
+    csv_stem = CSV_FILE.stem  # 获取不带扩展名的文件名
+    output_path = f'私募基金报告_{csv_stem}.pdf'
     result_path = generate_page1(output_path=output_path, data=page1_data)
 
     print("\n" + "=" * 70)
