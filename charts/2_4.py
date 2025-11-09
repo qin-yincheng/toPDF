@@ -3,11 +3,20 @@
 使用 matplotlib 生成股票仓位时序图（面积图 + 折线图，双Y轴）
 """
 
+# 添加项目根目录到 Python 路径，以便正确导入模块
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
+from charts.utils import calculate_xlim, calculate_date_tick_params
+from calc.utils import is_trading_day
 
 
 def setup_chinese_font() -> None:
@@ -62,18 +71,36 @@ def plot_stock_position_chart(
     if data is None:
         data = _generate_mock_stock_position_data()
     
-    # 解析日期和数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
-    stock_positions = [d['stock_position'] for d in data]
-    top10_values = [d.get('top10', 0) for d in data]
-    csi300_values = [d['csi300'] for d in data]
+    # 解析日期和数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    stock_positions_raw = [d['stock_position'] for d in data]
+    top10_values_raw = [d.get('top10', 0) for d in data]
+    csi300_values_raw = [d['csi300'] for d in data]
+    
+    # 只保留交易日的数据
+    dates = []
+    stock_positions = []
+    top10_values = []
+    csi300_values = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            stock_positions.append(stock_positions_raw[i])
+            top10_values.append(top10_values_raw[i])
+            csi300_values.append(csi300_values_raw[i])
     
     # 创建图表和双Y轴
     fig, ax1 = plt.subplots(figsize=figsize)
     ax2 = ax1.twinx()
     
+    # 设置X轴：使用索引位置，但显示日期标签
+    # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
+    n_points = len(dates)
+    x_indices = list(range(n_points))
+    
     # 绘制股票仓位面积图（左Y轴，深灰色填充）
-    ax1.fill_between(dates, stock_positions, 0, alpha=1, color='#929aa8', label='股票仓位')
+    ax1.fill_between(x_indices, stock_positions, 0, alpha=1, color='#929aa8', label='股票仓位')
     ax1.set_ylabel('占比', fontsize=11)
     ax1.set_ylim(0, 100)
     ax1.set_yticks([0, 20, 40, 60, 80, 100])
@@ -84,24 +111,35 @@ def plot_stock_position_chart(
     
     # 绘制TOP10折线图（左Y轴，灰色，带圆形标记）
     if any(top10_values):
-        ax1.plot(dates, top10_values, color='#808080', marker='', 
+        ax1.plot(x_indices, top10_values, color='#808080', marker='', 
                 markersize=4, linewidth=1.5, label='TOP10', alpha=0.7)
     
     # 绘制沪深300折线图（右Y轴，红色，带圆形标记）
-    ax2.plot(dates, csi300_values, color='#c12e34', marker='', 
+    ax2.plot(x_indices, csi300_values, color='#c12e34', marker='', 
              markersize=4, linewidth=1.5, label='沪深300')
     ax2.set_ylabel('沪深300', fontsize=11)
     ax2.set_ylim(0.9178, 1.2365)
     ax2.set_yticks([0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.2365])
     ax2.set_yticklabels(['0.95', '1', '1.05', '1.1', '1.15', '1.2', '1.2365'])
     
-    # 设置X轴日期格式
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax1.xaxis.set_major_locator(mdates.DayLocator(interval=10))
-    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
-    
-    # 设置X轴范围
-    ax1.set_xlim(dates[0], dates[-1])
+    # 设置X轴刻度和标签
+    # 使用工具函数自动计算合适的刻度间隔
+    if n_points > 0:
+        # 使用工具函数计算日期刻度参数
+        tick_indices, tick_labels = calculate_date_tick_params(dates)
+        
+        # 设置刻度位置
+        ax1.set_xticks(tick_indices)
+        
+        # 设置刻度标签为对应的日期
+        ax1.set_xticklabels(tick_labels, rotation=45, ha='right')
+        
+        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
+        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
+        ax1.set_xlim(x_min, x_max)
+    else:
+        ax1.set_xticks([])
+        ax1.set_xticklabels([])
     
     # 合并图例
     lines1, labels1 = ax1.get_legend_handles_labels()

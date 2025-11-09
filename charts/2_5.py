@@ -3,11 +3,20 @@
 使用 matplotlib 生成流动性资产时序图（面积图 + 折线图，双Y轴）
 """
 
+# 添加项目根目录到 Python 路径，以便正确导入模块
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
+from charts.utils import calculate_xlim, calculate_date_tick_params
+from calc.utils import is_trading_day
 
 
 def setup_chinese_font() -> None:
@@ -61,18 +70,34 @@ def plot_liquidity_asset_chart(
     if data is None:
         data = _generate_mock_liquidity_data()
     
-    # 解析日期和数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
-    liquidity_ratios = [d['liquidity_ratio'] for d in data]
-    csi300_values = [d['csi300'] for d in data]
+    # 解析日期和数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    liquidity_ratios_raw = [d['liquidity_ratio'] for d in data]
+    csi300_values_raw = [d['csi300'] for d in data]
+    
+    # 只保留交易日的数据
+    dates = []
+    liquidity_ratios = []
+    csi300_values = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            liquidity_ratios.append(liquidity_ratios_raw[i])
+            csi300_values.append(csi300_values_raw[i])
     
     # 创建图表和双Y轴
     fig, ax1 = plt.subplots(figsize=figsize)
     ax2 = ax1.twinx()
     
+    # 设置X轴：使用索引位置，但显示日期标签
+    # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
+    n_points = len(dates)
+    x_indices = list(range(n_points))
+    
     # 绘制流动性资产比例面积图（左Y轴，蓝色填充，带圆形标记）
-    ax1.fill_between(dates, liquidity_ratios, 0, alpha=1, color='#526895', label='流动性资产比例')
-    ax1.plot(dates, liquidity_ratios, color='#082868', marker='', 
+    ax1.fill_between(x_indices, liquidity_ratios, 0, alpha=1, color='#526895', label='流动性资产比例')
+    ax1.plot(x_indices, liquidity_ratios, color='#082868', marker='', 
              markersize=4, linewidth=1.5, alpha=1,markerfacecolor='white', markeredgecolor='#082868',
                      markeredgewidth=1.5)
     ax1.set_ylabel('占比(%)', fontsize=11)
@@ -84,7 +109,7 @@ def plot_liquidity_asset_chart(
     ax1.set_xlabel('日期', fontsize=11)
     
     # 绘制沪深300折线图（右Y轴，灰色，带圆形标记）
-    ax2.plot(dates, csi300_values, color='#afb0b2', marker='', 
+    ax2.plot(x_indices, csi300_values, color='#afb0b2', marker='', 
              markersize=4, linewidth=1.5, label='沪深300',
              markerfacecolor='white', markeredgecolor='#afb0b2',
             markeredgewidth=1.5)
@@ -93,13 +118,24 @@ def plot_liquidity_asset_chart(
     ax2.set_yticks([0.92, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.24])
     ax2.set_yticklabels(['0.92', '0.95', '1', '1.05', '1.1', '1.15', '1.2', '1.24'])
     
-    # 设置X轴日期格式
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax1.xaxis.set_major_locator(mdates.DayLocator(interval=10))
-    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
-    
-    # 设置X轴范围
-    ax1.set_xlim(dates[0], dates[-1])
+    # 设置X轴刻度和标签
+    # 使用工具函数自动计算合适的刻度间隔
+    if n_points > 0:
+        # 使用工具函数计算日期刻度参数
+        tick_indices, tick_labels = calculate_date_tick_params(dates)
+        
+        # 设置刻度位置
+        ax1.set_xticks(tick_indices)
+        
+        # 设置刻度标签为对应的日期
+        ax1.set_xticklabels(tick_labels, rotation=45, ha='right')
+        
+        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
+        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
+        ax1.set_xlim(x_min, x_max)
+    else:
+        ax1.set_xticks([])
+        ax1.set_xticklabels([])
     
     # 合并图例
     lines1, labels1 = ax1.get_legend_handles_labels()

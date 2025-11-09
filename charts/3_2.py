@@ -4,11 +4,19 @@
 显示不同行业在不同时间点的占比分布
 """
 
+# 添加项目根目录到 Python 路径，以便正确导入模块
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
+from calc.utils import is_trading_day
 
 
 def setup_chinese_font() -> None:
@@ -97,11 +105,23 @@ def plot_industry_proportion_timeseries(
         plt.show()
         return None
     
-    # 解析数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    # 解析数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
     
     # 获取所有行业名称（排除'date'键）
     industry_names = [key for key in data[0].keys() if key != 'date']
+    
+    # 只保留交易日的数据
+    dates = []
+    filtered_data = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            filtered_data.append(data[i])
+    
+    # 使用过滤后的数据
+    data = filtered_data
     
     # 定义行业颜色映射（根据图片描述）
     color_map = {

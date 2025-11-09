@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import numpy as np
 from charts.utils import calculate_xlim, calculate_date_tick_params
+from calc.utils import is_trading_day
 
 
 def setup_chinese_font() -> None:
@@ -67,11 +68,24 @@ def plot_nav_performance(
     if data is None:
         data = _generate_mock_nav_data()
     
-    # 解析数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
-    accumulated_return = [d['accumulated_return'] for d in data]
-    csi300 = [d.get('csi300', 0) for d in data]
-    excess_return = [d.get('excess_return', 0) for d in data]
+    # 解析数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    accumulated_return_raw = [d['accumulated_return'] for d in data]
+    csi300_raw = [d.get('csi300', 0) for d in data]
+    excess_return_raw = [d.get('excess_return', 0) for d in data]
+    
+    # 只保留交易日的数据
+    dates = []
+    accumulated_return = []
+    csi300 = []
+    excess_return = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            accumulated_return.append(accumulated_return_raw[i])
+            csi300.append(csi300_raw[i])
+            excess_return.append(excess_return_raw[i])
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
