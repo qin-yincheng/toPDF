@@ -71,14 +71,14 @@ def plot_dynamic_drawdown_chart(
     
     # 绘制产品回撤线（蓝色）
     color1 = '#5470c6'  # 深蓝色
-    line1 = ax.plot(dates, product_drawdown, color=color1, marker='o', 
+    line1 = ax.plot(dates, product_drawdown, color=color1, marker='', 
                      markersize=4, linewidth=2, label='阳光安盛多禾一号私募证券投资基金',
                      markerfacecolor='white', markeredgecolor=color1,
                      markeredgewidth=1.5)
     
     # 绘制基准回撤线（绿色）
     color2 = '#91cc75'  # 绿色
-    line2 = ax.plot(dates, benchmark_drawdown, color=color2, marker='o', 
+    line2 = ax.plot(dates, benchmark_drawdown, color=color2, marker='', 
                      markersize=4, linewidth=2, label='沪深300',
                      markerfacecolor='white', markeredgecolor=color2,
                      markeredgewidth=1.5)
@@ -86,7 +86,8 @@ def plot_dynamic_drawdown_chart(
     # 设置Y轴（回撤从0%到最大回撤）
     max_drawdown = max(max(product_drawdown), max(benchmark_drawdown))
     y_min = min(-25, max_drawdown - 2)  # 留出一些空间
-    ax.set_ylim(y_min, 1)
+    ax.margins(y=0.1)
+    # ax.set_ylim(y_min, 1)
     ax.set_ylabel('回撤(%)', color='black')
     ax.tick_params(axis='y', labelcolor='black')
     ax.grid(True, alpha=0.3, linestyle='--')

@@ -108,7 +108,8 @@ def plot_industry_deviation_timeseries(
     max_val = max(deviations)
     y_min = max(0, min_val - 0.2)
     y_max = max_val + 0.2
-    ax.set_ylim(y_min, y_max)
+    # ax.set_ylim(y_min, y_max)
+    ax.margins(y=0.1)
     
     # 设置Y轴刻度（根据图片描述：3.23%, 3.50%, 4.00%, 4.50%, 5.00%, 5.50%, 6.00%, 6.32%）
     # 动态生成合适的刻度

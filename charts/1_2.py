@@ -3,11 +3,21 @@
 使用 matplotlib 生成各种金融分析图表
 """
 
+# 添加项目根目录到 Python 路径，以便正确导入模块
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.ticker import IndexLocator, FuncFormatter
 from datetime import datetime, timedelta
 import numpy as np
+from calc.utils import is_trading_day
+from charts.utils import calculate_ylim, calculate_xlim, calculate_date_tick_params
 
 
 def setup_chinese_font() -> None:
@@ -67,11 +77,24 @@ def plot_scale_overview(
     if data is None:
         data = _generate_mock_scale_data()
     
-    # 解析数据
-    dates = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
-    asset_scale = [d['asset_scale'] for d in data]
-    shares = [d.get('shares', 0) for d in data]
-    net_subscription = [d.get('net_subscription', 0) for d in data]
+    # 解析数据并过滤掉非交易日（节假日）
+    dates_raw = [datetime.strptime(d['date'], '%Y-%m-%d') for d in data]
+    asset_scale_raw = [d['asset_scale'] for d in data]
+    shares_raw = [d.get('shares', 0) for d in data]
+    net_subscription_raw = [d.get('net_subscription', 0) for d in data]
+    
+    # 只保留交易日的数据
+    dates = []
+    asset_scale = []
+    shares = []
+    net_subscription = []
+    for i, date_obj in enumerate(dates_raw):
+        date_str = date_obj.strftime('%Y-%m-%d')
+        if is_trading_day(date_str):
+            dates.append(date_obj)
+            asset_scale.append(asset_scale_raw[i])
+            shares.append(shares_raw[i])
+            net_subscription.append(net_subscription_raw[i])
     
     # 创建图表
     if include_right_table:
@@ -89,11 +112,17 @@ def plot_scale_overview(
     color1 = '#082868'  # 深蓝色
     color2 = '#afb0b2'  # 浅灰色
     
-    line1 = ax1.plot(dates, asset_scale, color=color1, marker='o', 
+    # 设置X轴：使用索引位置，但显示日期标签
+    # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
+    n_points = len(dates)
+    x_indices = list(range(n_points))
+    
+    # 使用索引位置绘制
+    line1 = ax1.plot(x_indices, asset_scale, color=color1, marker='', 
                      markersize=4, linewidth=2, label='资产规模', 
                      markerfacecolor='white', markeredgecolor=color1,
                      markeredgewidth=1.5)
-    line2 = ax1.plot(dates, shares, color=color2, marker='o', 
+    line2 = ax1.plot(x_indices, shares, color=color2, marker='', 
                      markersize=4, linewidth=2, label='份额', 
                      markerfacecolor='white', markeredgecolor=color2, 
                      markeredgewidth=1.5)
@@ -101,19 +130,35 @@ def plot_scale_overview(
     ax1.set_xlabel('日期')
     ax1.set_ylabel('资产规模/份额(万元)', color='black')
     ax1.tick_params(axis='y', labelcolor='black')
-    ax1.set_ylim(0, 180)
-    ax1.grid(True, alpha=0.3, linestyle='--')
+    # 基于数据特性自动计算左Y轴范围（资产规模和份额）
+    y_min_left, y_max_left = calculate_ylim(
+        [asset_scale, shares],
+        start_from_zero=False,
+        padding_ratio=0.1,
+        allow_negative=True,
+        round_to_nice_number=True
+    )
+    ax1.set_ylim(y_min_left, y_max_left)
+    ax1.grid(True, alpha=0.5, linestyle='--')
     
     # 右Y轴：净申购额
     ax2 = ax1.twinx()
     color3 = '#2ca02c'  # 绿色（虽然图例显示绿色，但实际可能是深蓝色）
-    # line3 = ax2.plot(dates, net_subscription, color=color1, marker='o', 
+    # line3 = ax2.plot(x_indices, net_subscription, color=color1, marker='o', 
     #                  markersize=4, linewidth=2, label='净申购额',
     #                  markerfacecolor=color1, markeredgecolor=color1)
     
     ax2.set_ylabel('申购/赎回/净申购赎回(万元)', color='black')
     ax2.tick_params(axis='y', labelcolor='black')
-    ax2.set_ylim(0, 1)
+    # 基于数据特性自动计算右Y轴范围（净申购额）
+    y_min_right, y_max_right = calculate_ylim(
+        [net_subscription],
+        start_from_zero=True,
+        padding_ratio=0.15,  # 净申购额使用稍大的边距，因为数值较小
+        allow_negative=False,
+        round_to_nice_number=True
+    )
+    ax2.set_ylim(y_min_right, y_max_right)
     
     # 设置标题（如果启用）
     if show_title:
@@ -124,10 +169,24 @@ def plot_scale_overview(
     ax1.spines['top'].set_visible(False)
     ax2.spines['top'].set_visible(False)
 
-    # 设置日期格式
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax1.xaxis.set_major_locator(mdates.DayLocator(interval=15))  # 每15天一个刻度
-    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    # 设置X轴刻度和标签
+    # 使用工具函数自动计算合适的刻度间隔
+    if n_points > 0:
+        # 使用工具函数计算日期刻度参数
+        tick_indices, tick_labels = calculate_date_tick_params(dates)
+        
+        # 设置刻度位置
+        ax1.set_xticks(tick_indices)
+        
+        # 设置刻度标签为对应的日期
+        ax1.set_xticklabels(tick_labels, rotation=45, ha='right')
+        
+        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
+        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
+        ax1.set_xlim(x_min, x_max)
+    else:
+        ax1.set_xticks([])
+        ax1.set_xticklabels([])
     
     # 合并图例（左Y轴和右Y轴的数据）
     lines1, labels1 = ax1.get_legend_handles_labels()
@@ -137,18 +196,18 @@ def plot_scale_overview(
     # 为了匹配图例，我们添加这些项但不绘制
     from matplotlib.lines import Line2D
     legend_elements = [
-        Line2D([0], [0], color=color1, marker='o', markersize=6, 
+        Line2D([0], [0], color=color1, marker='', markersize=6, 
                linewidth=2, label='资产规模', markerfacecolor='white',
                markeredgecolor=color1, markeredgewidth=1.5),
-        Line2D([0], [0], color=color2, marker='o', markersize=6, 
-               linewidth=2, label='份额', markerfacecolor='white', 
+        Line2D([0], [0], color=color2, marker='', markersize=6, 
+               linewidth=2, label='份额', markerfacecolor=color2,
                markeredgecolor=color2, markeredgewidth=1.5),
         Line2D([0], [0], marker='s', color='red', linewidth=0, 
                markersize=8, label='申购'),
         Line2D([0], [0], marker='s', color='yellow', linewidth=0, 
                markersize=8, label='赎回'),
-        Line2D([0], [0], color=color1, marker='o', markersize=6, 
-               linewidth=2, label='净申购额', markerfacecolor=color1)
+        Line2D([0], [0],  marker='s', color='green', linewidth=0, 
+               markersize=8,label='净申购额')
     ]
     
     ax1.legend(handles=legend_elements, loc='upper center', 

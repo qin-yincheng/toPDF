@@ -197,20 +197,21 @@ def plot_stock_holding_nodes_chart(
     
     # 设置左Y轴范围
     max_market_value = max(market_values) if market_values else 180
-    ax1.set_ylim(0, max_market_value * 1.1)
-    # 设置左Y轴刻度（0, 30, 60, 90, 120, 150, 180）
-    ax1.set_yticks(np.arange(0, max_market_value * 1.1 + 30, 30))
-    
+    # ax1.set_ylim(0, max_market_value * 1.1)
+    # # 设置左Y轴刻度（0, 30, 60, 90, 120, 150, 180）
+    # ax1.set_yticks(np.arange(0, max_market_value * 1.1 + 30, 30))
+    ax1.margins(y=0.1)
+
     # 绘制柱状图（占比，右Y轴，浅绿色）
     bars2 = ax2.bar(x + (width + gap)/2, proportions, width=width, color='#91cc75', alpha=0.7, label='占比')
     ax2.set_ylabel('占比(%)', fontsize=11, color='black')
     ax2.tick_params(axis='y', labelcolor='black')
     
-    # 设置右Y轴范围（0%到100%）
-    ax2.set_ylim(0, 100)
-    # 设置右Y轴刻度（0%, 20%, 40%, 60%, 80%, 100%）
-    ax2.set_yticks(np.arange(0, 101, 20))
-    
+    # # 设置右Y轴范围（0%到100%）
+    # ax2.set_ylim(0, 100)
+    # # 设置右Y轴刻度（0%, 20%, 40%, 60%, 80%, 100%）
+    # ax2.set_yticks(np.arange(0, 101, 20))
+    ax2.margins(y=0.1)
     # 设置X轴
     ax1.set_xticks(x)
     ax1.set_xticklabels(nodes, rotation=0, ha='center')

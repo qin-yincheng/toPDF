@@ -209,7 +209,8 @@ def plot_stock_profit_chart(
     
     # 设置左Y轴范围
     max_profit = max(profit_amounts) if profit_amounts else 12
-    ax1.set_ylim(0, max_profit * 1.1)
+    # ax1.set_ylim(0, max_profit * 1.1)
+    ax1.margins(y=0.1)
     
     # 绘制折线图（权重，右Y轴，绿色）- 后绘制，确保在上层
     ax2.plot(x, weights, color='#91cc75', marker='o', 
@@ -219,8 +220,8 @@ def plot_stock_profit_chart(
     
     # 设置右Y轴范围
     max_weight = max(weights) if weights else 7
-    ax2.set_ylim(0, max_weight * 1.2)
-    
+    # ax2.set_ylim(0, max_weight * 1.2)
+    ax2.margins(y=0.1)
     # 设置X轴
     ax1.set_xticks(x)
     ax1.set_xticklabels(stock_names, rotation=45, ha='right')
@@ -442,8 +443,8 @@ def plot_stock_loss_chart(
     # 设置左Y轴范围（负数范围）
     min_profit = min(profit_amounts) if profit_amounts else -5
     max_profit = max(profit_amounts) if profit_amounts else 0
-    ax1.set_ylim(min_profit * 1.1, max_profit * 1.1)
-    
+    # ax1.set_ylim(min_profit * 1.1, max_profit * 1.1)
+    ax1.margins(y=0.1)
     # 绘制折线图（权重，右Y轴，绿色）- 后绘制，确保在上层
     ax2.plot(x, weights, color='#91cc75', marker='o', 
              markersize=5, linewidth=2, label='权重', zorder=10)
@@ -452,8 +453,8 @@ def plot_stock_loss_chart(
     
     # 设置右Y轴范围
     max_weight = max(weights) if weights else 3
-    ax2.set_ylim(0, max_weight * 1.2)
-    
+    # ax2.set_ylim(0, max_weight * 1.2)
+    ax2.margins(y=0.1)
     # 设置X轴
     ax1.set_xticks(x)
     ax1.set_xticklabels(stock_names, rotation=45, ha='right')

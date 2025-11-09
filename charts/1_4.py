@@ -108,8 +108,9 @@ def plot_daily_return_chart(
     
     ax.set_xlabel('日期')
     ax.set_ylabel('收益率(%)', color='black')
-    ax.set_ylim(-12, 12)
-    ax.set_yticks([-10, -5, 0, 5, 10])
+    # ax.set_ylim(-12, 12)
+    # ax.set_yticks([-10, -5, 0, 5, 10])
+    ax.margins(y=0.1)
     ax.tick_params(axis='y', labelcolor='black')
     ax.grid(True, alpha=0.3, linestyle='--', zorder=0)
     
@@ -149,15 +150,16 @@ def plot_daily_return_chart(
     # 右Y轴：累计收益率（折线图）
     ax2 = ax.twinx()
     color_line = '#afb0b2'  # 浅灰色
-    line = ax2.plot(dates, cumulative_returns, color=color_line, marker='o', 
+    line = ax2.plot(dates, cumulative_returns, color=color_line, marker='', 
                    markersize=3, linewidth=2, label='累计收益率',
                    markerfacecolor='white', markeredgecolor=color_line, markeredgewidth=1.5)
     
     ax2.set_ylabel('累计收益率(%)', color='black')
     # 根据数据动态设置Y轴范围，留出一些空间
     max_cum_value = max(cumulative_returns) if cumulative_returns else 90
-    ax2.set_ylim(-20, max(100, max_cum_value + 10))  # 至少到100，或最大值+10
-    ax2.set_yticks([-20, 0, 20, 40, 60, 80, 100])  # 包含100的刻度
+    # ax2.set_ylim(-20, max(100, max_cum_value + 10))  # 至少到100，或最大值+10
+    # ax2.set_yticks([-20, 0, 20, 40, 60, 80, 100])  # 包含100的刻度
+    ax.margins(y=0.1)
     ax2.tick_params(axis='y', labelcolor='black')
     
     # 标注累计收益率的最大值点

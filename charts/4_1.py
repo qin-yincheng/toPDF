@@ -102,12 +102,12 @@ def plot_brinson_attribution(
     fig, ax = plt.subplots(figsize=figsize)
     
     # 绘制选择收益折线图（深蓝色，带圆形标记）
-    ax.plot(dates, selection_returns, color='#082868', marker='o', 
+    ax.plot(dates, selection_returns, color='#082868', marker='', 
             markersize=4, linewidth=1.5, label='选择收益',markerfacecolor='white', markeredgecolor='#082868',
             markeredgewidth=1.5)
     
     # 绘制配置收益折线图（浅灰色，带圆形标记）
-    ax.plot(dates, allocation_returns, color='#afb0b2', marker='o', 
+    ax.plot(dates, allocation_returns, color='#afb0b2', marker='', 
             markersize=4, linewidth=1.5, label='配置收益',markerfacecolor='white', markeredgecolor='#afb0b2',
             markeredgewidth=1.5)
     

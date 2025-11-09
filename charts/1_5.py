@@ -215,8 +215,9 @@ def plot_return_comparison_chart(
         ax.set_title('产品收益率对比', fontsize=14, fontweight='bold', pad=20)
     ax.set_xticks(x)
     ax.set_xticklabels(periods, rotation=0, ha='center')
-    ax.set_ylim(-20, 50)
-    ax.set_yticks([-20, -10, 0, 10, 20, 30, 40, 50])
+    # ax.set_ylim(-20, 50)
+    # ax.set_yticks([-20, -10, 0, 10, 20, 30, 40, 50])
+    ax.margins(y=0.1)
     ax.grid(True, alpha=0.3, linestyle='--', axis='y')
     
     # 设置边框：只保留左边框，删除其他边框
