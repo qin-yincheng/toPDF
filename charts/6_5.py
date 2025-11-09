@@ -196,9 +196,10 @@ def plot_period_transaction_chart(
     ax.set_ylabel('万元', fontsize=11)
     max_amount = max(max(buy_amounts) if buy_amounts else 0, 
                      max(sell_amounts) if sell_amounts else 0)
-    ax.set_ylim(0, max_amount * 1.1)
-    # 设置Y轴刻度（0, 300, 600, 900, 1200, 1500）
-    ax.set_yticks(np.arange(0, max_amount * 1.1 + 300, 300))
+    # ax.set_ylim(0, max_amount * 1.1)
+    # # 设置Y轴刻度（0, 300, 600, 900, 1200, 1500）
+    # ax.set_yticks(np.arange(0, max_amount * 1.1 + 300, 300))
+    ax.margins(y=0.1)
     
     # 设置X轴
     ax.set_xticks(x)

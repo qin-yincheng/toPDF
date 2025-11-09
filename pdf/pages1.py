@@ -1039,12 +1039,12 @@ def generate_page1(
         y_cursor -= h + 10
     except Exception as e:
         print(f"  期间交易图表生成失败: {e}")
-
+    
     # 添加页脚
     footer_y = bottom_margin
     c.setFont("Helvetica", 8)
     c.drawString(margin, footer_y, "请务必阅读正文后的免责声明")
-
+    
     # 保存 PDF
     c.save()
 

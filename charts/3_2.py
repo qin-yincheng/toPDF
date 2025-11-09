@@ -158,9 +158,10 @@ def plot_industry_proportion_timeseries(
     
     # 设置Y轴
     ax.set_ylabel('占比(%)', fontsize=11)
-    ax.set_ylim(0, 100)
-    ax.set_yticks([0, 20, 40, 60, 80, 100])
-    ax.set_yticklabels(['0.00%', '20.00%', '40.00%', '60.00%', '80.00%', '100.00%'])
+    # ax.set_ylim(0, 100)
+    # ax.set_yticks([0, 20, 40, 60, 80, 100])
+    # ax.set_yticklabels(['0.00%', '20.00%', '40.00%', '60.00%', '80.00%', '100.00%'])
+    ax.margins(y=0.1)
     ax.grid(True, alpha=0.3, linestyle='--', axis='y')
     
     # 设置X轴

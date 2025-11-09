@@ -72,7 +72,7 @@ def plot_liquidity_asset_chart(
     
     # 绘制流动性资产比例面积图（左Y轴，蓝色填充，带圆形标记）
     ax1.fill_between(dates, liquidity_ratios, 0, alpha=1, color='#526895', label='流动性资产比例')
-    ax1.plot(dates, liquidity_ratios, color='#082868', marker='o', 
+    ax1.plot(dates, liquidity_ratios, color='#082868', marker='', 
              markersize=4, linewidth=1.5, alpha=1,markerfacecolor='white', markeredgecolor='#082868',
                      markeredgewidth=1.5)
     ax1.set_ylabel('占比(%)', fontsize=11)
@@ -84,7 +84,7 @@ def plot_liquidity_asset_chart(
     ax1.set_xlabel('日期', fontsize=11)
     
     # 绘制沪深300折线图（右Y轴，灰色，带圆形标记）
-    ax2.plot(dates, csi300_values, color='#afb0b2', marker='o', 
+    ax2.plot(dates, csi300_values, color='#afb0b2', marker='', 
              markersize=4, linewidth=1.5, label='沪深300',
              markerfacecolor='white', markeredgecolor='#afb0b2',
             markeredgewidth=1.5)
