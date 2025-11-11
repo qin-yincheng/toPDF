@@ -353,9 +353,35 @@ def calculate_date_tick_params(
     # 生成刻度索引
     tick_indices = list(range(0, n_points, tick_interval))
     
-    # 确保最后一个日期显示
+    # 计算最小间隔，避免标签重叠
+    # 最小间隔应该至少是刻度间隔的1/3，但至少为2个数据点
+    min_interval = max(2, tick_interval // 3)
+    
+    # 确保最后一个日期显示，但要检查是否与倒数第二个刻度太接近
     if tick_indices[-1] != n_points - 1:
+        # 检查最后一个日期与倒数第二个刻度的距离
+        last_tick = tick_indices[-1]
+        distance_to_end = n_points - 1 - last_tick
+        
+        # 如果最后一个日期与倒数第二个刻度的距离太近，移除倒数第二个刻度
+        if len(tick_indices) > 1:
+            distance_between_last_two = last_tick - tick_indices[-2]
+            
+            # 如果倒数第二个刻度与最后一个刻度的距离小于最小间隔，
+            # 或者最后一个日期与倒数第二个刻度的距离小于最小间隔，
+            # 则移除倒数第二个刻度
+            if distance_between_last_two < min_interval or distance_to_end < min_interval:
+                tick_indices = tick_indices[:-1]  # 移除倒数第二个刻度
+        
+        # 添加最后一个日期
         tick_indices.append(n_points - 1)
+    else:
+        # 如果最后一个刻度已经是最后一个日期，检查它与倒数第二个的距离
+        if len(tick_indices) > 1:
+            last_distance = tick_indices[-1] - tick_indices[-2]
+            if last_distance < min_interval:
+                # 移除倒数第二个刻度，只保留最后一个
+                tick_indices = tick_indices[:-2] + [tick_indices[-1]]
     
     # 生成刻度标签
     tick_labels = [dates[i].strftime('%Y-%m-%d') for i in tick_indices]

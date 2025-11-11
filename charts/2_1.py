@@ -213,7 +213,7 @@ def plot_dynamic_drawdown_table(
         colLabels=['指标', '数值'],
         cellLoc='left',
         loc='center',
-        bbox=[0.1, 0.1, 0.8, 0.8]
+        bbox=[0.1, 0.1, 1, 0.8]
     )
     
     # 设置表格样式
