@@ -260,7 +260,7 @@ def plot_average_market_value_bar_chart(
                 ha='left', va='center', fontsize=9)
     
     # 添加网格线
-    ax.grid(True, alpha=0.3, linestyle='--', axis='x')
+    ax.grid(True, alpha=0.5, linestyle='--', axis='x')
     
     # 设置标题（左对齐）
     if show_title:

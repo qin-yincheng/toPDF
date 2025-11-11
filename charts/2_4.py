@@ -93,7 +93,7 @@ def plot_stock_position_chart(
     ax1.set_yticks([0, 20, 40, 60, 80, 100])
     ax1.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
-    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     ax1.set_xlabel('日期', fontsize=11)
     
     # 绘制TOP10折线图（左Y轴，灰色，带圆形标记）

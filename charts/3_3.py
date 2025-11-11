@@ -134,7 +134,7 @@ def plot_industry_deviation_timeseries(
     # ax.set_yticklabels([f'{y:.2f}%' for y in y_tickss])
     ax.margins(y=0.1)
     # 添加网格线
-    ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     
     # 设置X轴刻度和标签
     ax.set_xlabel('日期', fontsize=11)

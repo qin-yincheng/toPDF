@@ -215,7 +215,7 @@ def plot_stock_profit_chart(
     ax1.set_xlabel('股票名称', fontsize=11)
     
     # 添加网格线
-    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     
     # 合并图例
     lines1, labels1 = ax1.get_legend_handles_labels()
@@ -448,7 +448,7 @@ def plot_stock_loss_chart(
     ax1.set_xlabel('股票名称', fontsize=11)
     
     # 添加网格线
-    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     
     # 合并图例
     lines1, labels1 = ax1.get_legend_handles_labels()
