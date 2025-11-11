@@ -928,11 +928,11 @@ def judge_risk_characteristic(annualized_return: float, volatility: float) -> st
         str: 收益风险特征描述
     """
     if annualized_return > 20 and volatility > 30:
-        return "绝对收益风险类型属于 高收益高风险"
+        return "高收益高风险"
     elif annualized_return > 10 and volatility < 20:
-        return "绝对收益风险类型属于 中等收益中等风险"
+        return "中等收益中等风险"
     else:
-        return "绝对收益风险类型属于 低收益低风险"
+        return "低收益低风险"
 
 
 def calculate_period_returns(

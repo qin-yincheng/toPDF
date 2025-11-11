@@ -17,6 +17,7 @@ import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
 from calc.utils import is_trading_day
+from charts.utils import calculate_xlim, calculate_date_tick_params
 
 
 
@@ -123,25 +124,23 @@ def plot_asset_allocation_chart(
     
     # 设置X轴（使用数值索引，但显示日期标签）
     ax.set_xlabel('日期')
-    # 设置X轴范围，在两端留出一些边距
-    if len(x_positions) > 0:
-        ax.set_xlim(x_positions[0] - 0.5, x_positions[-1] + 0.5)
-    
-    # 设置X轴刻度为日期
-    # 工作日数据点很多，需要合理设置日期刻度
-    if len(dates) <= 30:
-        # 数据点较少时，显示所有日期
-        ax.set_xticks(x_positions)
-        ax.set_xticklabels([date.strftime('%Y-%m-%d') for date in dates], rotation=45, ha='right')
-    else:
-        # 数据点较多时，每10-15个工作日一个刻度，避免标签重叠
-        # 计算大约每2-3周显示一个日期标签
-        tick_interval = max(1, len(dates) // 15)  # 大约显示15个日期标签
-        tick_indices = list(range(0, len(dates), tick_interval))
-        if tick_indices[-1] != len(dates) - 1:
-            tick_indices.append(len(dates) - 1)  # 确保最后一个日期显示
+    # 使用工具函数自动计算合适的刻度间隔
+    if len(dates) > 0:
+        # 使用工具函数计算日期刻度参数
+        tick_indices, tick_labels = calculate_date_tick_params(dates)
+        
+        # 设置刻度位置（使用索引位置）
         ax.set_xticks([x_positions[i] for i in tick_indices])
-        ax.set_xticklabels([dates[i].strftime('%Y-%m-%d') for i in tick_indices], rotation=45, ha='right')
+        
+        # 设置刻度标签为对应的日期
+        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        
+        # 使用工具函数自动计算X轴范围
+        x_min, x_max = calculate_xlim(x_positions, padding_ratio=0.02, is_date=False)
+        ax.set_xlim(x_min, x_max)
+    else:
+        ax.set_xticks([])
+        ax.set_xticklabels([])
 
 
     ax.spines['top'].set_visible(False)
