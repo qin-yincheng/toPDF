@@ -243,7 +243,7 @@ def plot_industry_proportion_timeseries(
     active_industries = []
     for industry in industry_names:
         max_value = max(industry_data[industry]) if industry_data[industry] else 0.0
-        if max_value > 0.1:  # 至少有一个时间点占比大于0.1%
+        if max_value > 3:  # 至少有一个时间点占比大于0.1%
             active_industries.append(industry)
     
     # 如果没有活跃行业，使用所有行业
@@ -261,9 +261,10 @@ def plot_industry_proportion_timeseries(
     current_bottom = np.zeros(len(dates))
     
     # 按行业顺序绘制堆叠柱状图（只绘制活跃行业）
-    # 按最大占比排序，确保大占比行业在底部（更稳定）
+    # 按平均占比排序，确保大占比行业在底部（更稳定）
+    # 使用平均占比而不是最大占比，能更准确地反映行业的整体重要性
     active_industries_sorted = sorted(active_industries, 
-                                      key=lambda ind: max(industry_data[ind]) if industry_data[ind] else 0.0, 
+                                      key=lambda ind: np.mean(industry_data[ind]) if industry_data[ind] else 0.0, 
                                       reverse=True)
     
     for i, industry in enumerate(active_industries_sorted):
@@ -273,6 +274,21 @@ def plot_industry_proportion_timeseries(
         ax.bar(x_positions, values, width=bar_width, bottom=current_bottom,
                label=industry, color=colors[original_idx], edgecolor='white', linewidth=0.5)
         current_bottom += values
+    
+    # 补齐残差到100%：活跃行业外的占比合并到“其他”
+    # current_bottom 为活跃行业累计占比，单位为百分比
+    residual = np.maximum(0, 100 - current_bottom)
+    if np.any(residual > 0.001):
+        ax.bar(
+            x_positions,
+            residual,
+            width=bar_width,
+            bottom=current_bottom,
+            label='其他',
+            color='#d3d3d3',
+            edgecolor='white',
+            linewidth=0.5
+        )
     
     # 设置Y轴
     ax.set_ylabel('占比(%)', fontsize=11)
@@ -308,7 +324,7 @@ def plot_industry_proportion_timeseries(
     
     # 添加图例（在顶部，多列显示）
     # 根据活跃行业数量动态调整列数
-    n_legend_cols = min(len(active_industries_sorted), 15)  # 最多15列，避免图例太宽
+    n_legend_cols = min(len(active_industries_sorted), 25)  # 最多15列，避免图例太宽
     # 增加图例与图表的距离，从1.15增加到1.25，并增加padding
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), 
               ncol=n_legend_cols, frameon=True, fontsize=8, 
@@ -321,8 +337,8 @@ def plot_industry_proportion_timeseries(
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     # 调整布局，为图例留出更多空间（从0.90增加到0.85，给图例更多空间）
-    plt.tight_layout(rect=[0, 0.05, 1, 0.8])
-    plt.subplots_adjust(top=0.75)
+    plt.tight_layout(rect=[0.01, 0.05, 1, 0.78])
+    plt.subplots_adjust(left=0.02, right=0.98, top=0.70)
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
