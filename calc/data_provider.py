@@ -28,8 +28,6 @@ from calc.position import (
     calculate_daily_asset_distribution,
     _read_csv,
     _parse_dates,
-    _fetch_close_prices_tushare,
-    _build_price_from_trades,
     _ts_code,
 )
 
@@ -136,10 +134,10 @@ def _calculate_daily_holdings(
                 股票代码(6位字符串): {
                     quantity: 持股数量,
                     avg_cost: 持仓平均成本(元),
-                    market_value: 当日收盘市值(元),
-                    previous_market_value: 前一交易日收盘市值(元),
+                    market_value: 当日持仓市值(按成本价计算)(元),
+                    previous_market_value: 前一交易日持仓市值(元),
                     net_cash_flow: 当日净现金流(元，买入为正),
-                    close_price: 当日收盘价(元),
+                    close_price: 持仓成本价(元),
                     name: 股票名称
                 }
             }
@@ -198,20 +196,8 @@ def _calculate_daily_holdings(
         return {}
 
     codes = sorted(df["code"].dropna().unique().tolist())
-    price_df = pd.DataFrame()
-
-    if codes:
-        price_df = _fetch_close_prices_tushare(codes, date_strs[0], date_strs[-1])
-        if price_df.empty:
-            price_df = _build_price_from_trades(df, codes, pd.Index(date_strs))
-        else:
-            price_df = price_df.reindex(index=date_strs, columns=codes)
-
-    if price_df.empty:
-        price_df = pd.DataFrame(0.0, index=date_strs, columns=codes)
-    else:
-        price_df = price_df.reindex(index=date_strs, columns=codes, fill_value=0.0)
-    price_df = price_df.ffill().bfill().fillna(0.0)
+    
+    # 不再需要获取收盘价，直接使用持仓成本计算市值
 
     buy_df = df[df["buy_dt"].notna()].copy()
     buy_df["date"] = buy_df["buy_dt"].dt.strftime("%Y-%m-%d")
@@ -321,11 +307,8 @@ def _calculate_daily_holdings(
             )
             avg_cost_map[code] = avg_cost
 
-            price = 0.0
-            if code in price_df.columns and date_str in price_df.index:
-                price = float(price_df.at[date_str, code] or 0.0)
-            if price <= 0.0:
-                price = avg_cost
+            # 直接使用持仓成本作为价格，不再使用收盘价
+            price = avg_cost
 
             market_value = float(quantity) * price
             previous_value = prev_market_values.get(code, 0.0)
@@ -338,7 +321,7 @@ def _calculate_daily_holdings(
                 "previous_market_value": previous_value,
                 "begin_market_value": previous_value,
                 "net_cash_flow": net_cash,
-                "close_price": price,
+                "close_price": price,  # 保持字段名，但值为持仓成本
                 "name": name,
             }
 

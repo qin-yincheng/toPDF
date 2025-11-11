@@ -21,7 +21,7 @@ from calc.data_provider import (
 )
 from calc.report_bridge import build_page1_data
 from pdf.pages import generate_page1
-from config import DOCS_DIR, CSV_FILE
+from config import DOCS_DIR, CSV_FILE, EXCEL_FILE
 
 
 def convert_daily_positions_to_nav(daily_positions):
@@ -95,9 +95,8 @@ def main():
     print("=" * 70)
 
     # 0. 检查并转换Excel到CSV（如果需要）
-    csv_path = os.path.join(DOCS_DIR, "交割单_2024-11-04-2025-11-04.csv")
-    csv_path = os.path.join(DOCS_DIR, "交割单_2024-11-04-2025-11-04.csv")
-    xlsx_path = os.path.join(DOCS_DIR, "交割单.xlsx")
+    csv_path = str(CSV_FILE)
+    xlsx_path = str(EXCEL_FILE)
 
     if not os.path.exists(csv_path):
         if os.path.exists(xlsx_path):

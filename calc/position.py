@@ -97,7 +97,7 @@ def calculate_daily_asset_distribution(
 
     核心逻辑：
     - 先按天计算每只股票的期末持仓股数（累计买入股数 - 累计卖出股数，卖出当日不计入持仓）。
-    - 调用Tushare获取区间每日收盘价，计算当日股票市值 = Σ(持仓股数 × 收盘价)。
+    - 使用持仓成本计算当日股票市值 = Σ(持仓股数 × 持仓平均成本)。
     - 当日现金 = 初始资金 - 截止当日累计买入金额 + 累计卖出金额。
     - 当日总资产 = 股票市值 + 现金。
     - 占比：股票占比=股票市值/总资产，现金占比=现金/总资产。
@@ -188,31 +188,26 @@ def calculate_daily_asset_distribution(
     cum_sell_qty = sell_qty_daily.cumsum()
     holdings_qty = (cum_buy_qty - cum_sell_qty).clip(lower=0.0)
 
-    # 使用 Tushare 获取收盘价（不复权）
-    codes_list = list(holdings_qty.columns)
-    price_df = _fetch_close_prices_tushare(codes_list, date_range[0], date_range[-1])
+    # 计算每只股票的持仓成本（加权平均成本）
+    # 按日期和代码聚合买入金额
+    buys_money = (
+        df.dropna(subset=["buy_dt"]).groupby([df["buy_dt"].dt.strftime("%Y-%m-%d"), code_col])[buy_money_col].sum()
+    )
+    buy_money_daily = buys_money.unstack(fill_value=0.0).reindex(date_range, fill_value=0.0)
     
-    # 对齐日期和代码
-    price_df = price_df.reindex(index=date_range, columns=codes_list)
+    # 累计买入金额和买入数量
+    cum_buy_money = buy_money_daily.cumsum()
     
-    # 前向填充缺失值（非交易日使用最近的收盘价）
-    price_df = price_df.ffill()
+    # 计算加权平均成本（累计买入金额 / 累计买入数量）
+    # 避免除零错误
+    avg_cost = cum_buy_money.copy()
+    for col in avg_cost.columns:
+        mask = cum_buy_qty[col] > 0
+        avg_cost.loc[mask, col] = cum_buy_money.loc[mask, col] / cum_buy_qty.loc[mask, col]
+        avg_cost.loc[~mask, col] = 0.0
     
-    # 如果某些股票没有价格数据，回退使用交易价格
-    missing_codes = price_df.columns[price_df.isna().all()].tolist()
-    if missing_codes:
-        print(f"  警告：{len(missing_codes)} 只股票无法从 Tushare 获取价格，将使用交易价格")
-        trade_prices = _build_price_from_trades(df, missing_codes, date_range)
-        for code in missing_codes:
-            if code in trade_prices.columns:
-                price_df[code] = trade_prices[code]
-    
-    # 填充剩余的 NaN（如果还有）
-    price_df = price_df.bfill()
-    price_df = price_df.fillna(0.0)
-
-    # 股票市值 = Σ(持仓×收盘价)
-    stock_value = (holdings_qty * price_df).sum(axis=1)
+    # 股票市值 = Σ(持仓数量 × 平均成本)
+    stock_value = (holdings_qty * avg_cost).sum(axis=1)
     # 现金 = 初始资金 - 累计买入金额 + 累计卖出金额
     cash_value = ini - cum_buy + cum_sell
     
