@@ -1,6 +1,8 @@
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from datetime import datetime, timedelta
 import numpy as np
+import math
+import pandas as pd
 
 from calc.utils import generate_date_range, is_trading_day
 
@@ -181,19 +183,119 @@ def calculate_daily_returns(nav_data: List[Dict[str, Any]]) -> List[float]:
     计算公式:
         日收益率 = (当日净值 - 前一日净值) / 前一日净值
     """
-    daily_returns = []
+    return [ret for _, ret in _get_daily_returns_with_dates(nav_data)]
+
+
+def _get_daily_returns_with_dates(
+    nav_data: List[Dict[str, Any]],
+) -> List[Tuple[str, float]]:
+    """
+    获取日收益率及其对应日期。
+
+    返回:
+        List[Tuple[date, return]]
+    """
+    daily_returns: List[Tuple[str, float]] = []
 
     for i in range(1, len(nav_data)):
-        nav_today = nav_data[i]["nav"]
-        nav_yesterday = nav_data[i - 1]["nav"]
+        current = nav_data[i]
+        previous = nav_data[i - 1]
+
+        date = current.get("date")
+        nav_today = current.get("nav")
+        nav_yesterday = previous.get("nav")
+
+        if date is None:
+            continue
+
+        try:
+            nav_today = float(nav_today)
+            nav_yesterday = float(nav_yesterday)
+        except (TypeError, ValueError):
+            continue
 
         if nav_yesterday > 0:
             daily_return = (nav_today - nav_yesterday) / nav_yesterday
-            daily_returns.append(daily_return)
         else:
-            daily_returns.append(0.0)
+            daily_return = 0.0
+
+        daily_returns.append((date, daily_return))
 
     return daily_returns
+
+
+def _align_return_series(
+    product_series: List[Tuple[str, float]],
+    benchmark_returns: List[float],
+    benchmark_dates: Optional[List[str]] = None,
+    date_range: Optional[Tuple[str, str]] = None,
+) -> Tuple[List[float], List[float]]:
+    """
+    根据日期对齐产品和基准的收益序列。
+
+    返回:
+        Tuple[product_returns, benchmark_returns]
+    """
+
+    if not product_series or not benchmark_returns:
+        return [], []
+
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    if date_range:
+        start_date, end_date = date_range
+
+    def _within_range(date_str: str) -> bool:
+        if start_date and date_str < start_date:
+            return False
+        if end_date and date_str > end_date:
+            return False
+        return True
+
+    filtered_product = [
+        (date, ret) for date, ret in product_series if _within_range(date)
+    ]
+
+    if benchmark_dates and len(benchmark_dates) == len(benchmark_returns):
+        bench_map: Dict[str, float] = {}
+        for date, ret in zip(benchmark_dates, benchmark_returns):
+            if not _within_range(date):
+                continue
+            try:
+                ret_val = float(ret)
+            except (TypeError, ValueError):
+                continue
+            if math.isnan(ret_val):
+                continue
+            bench_map[date] = ret_val
+
+        aligned_product: List[float] = []
+        aligned_benchmark: List[float] = []
+        for date, ret in filtered_product:
+            bench_ret = bench_map.get(date)
+            if bench_ret is None:
+                continue
+            try:
+                ret_val = float(ret)
+            except (TypeError, ValueError):
+                continue
+            if math.isnan(ret_val):
+                continue
+            aligned_product.append(ret_val)
+            aligned_benchmark.append(bench_ret)
+
+        if len(aligned_product) >= 1 and len(aligned_product) == len(aligned_benchmark):
+            return aligned_product, aligned_benchmark
+
+    # 回退：按原逻辑截取最短长度
+    product_values = [ret for _, ret in filtered_product]
+    benchmark_values = list(benchmark_returns)
+
+    min_len = min(len(product_values), len(benchmark_values))
+    if min_len == 0:
+        return [], []
+
+    return product_values[:min_len], benchmark_values[:min_len]
 
 
 def calculate_max_drawdown(nav_data: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -598,8 +700,63 @@ def calculate_monthly_returns(nav_data: List[Dict[str, Any]]) -> List[Dict[str, 
     return monthly_returns
 
 
+def _nav_list_to_dataframe(nav_data: List[Dict[str, Any]]) -> pd.DataFrame:
+    """
+    将净值字典列表转换为按日期排序的 DataFrame。
+    """
+    if not nav_data:
+        return pd.DataFrame()
+
+    try:
+        df = pd.DataFrame(nav_data)
+    except ValueError:
+        return pd.DataFrame()
+
+    required_columns = {"date", "nav"}
+    if not required_columns.issubset(df.columns):
+        return pd.DataFrame()
+
+    df = df.dropna(subset=["date", "nav"]).copy()
+    if df.empty:
+        return df
+
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date").drop_duplicates(subset="date")
+
+    try:
+        df["nav"] = df["nav"].astype(float)
+    except (TypeError, ValueError):
+        df["nav"] = pd.to_numeric(df["nav"], errors="coerce")
+        df = df.dropna(subset=["nav"])
+
+    df = df.set_index("date")
+    return df
+
+
+def _calculate_return_from_series(nav_series: pd.Series) -> float:
+    """
+    根据净值序列计算区间收益率（%）。
+    """
+    nav_series = nav_series.dropna()
+    if nav_series.empty:
+        return 0.0
+
+    start_nav = nav_series.iloc[0]
+    end_nav = nav_series.iloc[-1]
+
+    if not np.isfinite(start_nav) or start_nav <= 0:
+        return 0.0
+    if not np.isfinite(end_nav):
+        return 0.0
+
+    return ((end_nav / start_nav) - 1.0) * 100.0
+
+
 def calculate_beta(
-    nav_data: List[Dict[str, Any]], benchmark_returns: List[float]
+    nav_data: List[Dict[str, Any]],
+    benchmark_returns: List[float],
+    benchmark_dates: Optional[List[str]] = None,
+    date_range: Optional[Tuple[str, str]] = None,
 ) -> float:
     """
     注意：
@@ -618,20 +775,28 @@ def calculate_beta(
     计算公式:
         β = Cov(产品收益率, 基准收益率) / Var(基准收益率)
     """
-    # 获取产品每日收益率序列
-    product_returns = calculate_daily_returns(nav_data)
+    product_series = _get_daily_returns_with_dates(nav_data)
+    if date_range:
+        start_date, end_date = date_range
+        product_series = [
+            (date, ret)
+            for date, ret in product_series
+            if (start_date is None or date >= start_date)
+            and (end_date is None or date <= end_date)
+        ]
 
-    # 确保长度一致（取最小长度）
-    min_len = min(len(product_returns), len(benchmark_returns))
-    if min_len < 2:
-        return 1.0  # 数据不足，返回中性值
+    product_aligned, benchmark_aligned = _align_return_series(
+        product_series,
+        benchmark_returns,
+        benchmark_dates=benchmark_dates,
+        date_range=date_range,
+    )
 
-    product_returns = product_returns[:min_len]
-    benchmark_returns = benchmark_returns[:min_len]
+    if len(product_aligned) < 2:
+        return 1.0
 
-    # 计算协方差和方差
-    cov = np.cov(product_returns, benchmark_returns)[0][1]
-    var = np.var(benchmark_returns)
+    cov = np.cov(product_aligned, benchmark_aligned)[0][1]
+    var = np.var(benchmark_aligned)
 
     # 计算β值
     if var > 0:
@@ -674,7 +839,7 @@ def calculate_active_return(
             "active_return": 0.0,
             "annualized_active_return": 0.0,
         }
-    
+
     # 主动收益
     active_return = product_period_return - benchmark_period_return
 
@@ -699,7 +864,10 @@ def calculate_active_return(
 
 
 def calculate_tracking_error(
-    nav_data: List[Dict[str, Any]], benchmark_returns: List[float]
+    nav_data: List[Dict[str, Any]],
+    benchmark_returns: List[float],
+    benchmark_dates: Optional[List[str]] = None,
+    date_range: Optional[Tuple[str, str]] = None,
 ) -> float:
     """
     注意：
@@ -718,21 +886,28 @@ def calculate_tracking_error(
     计算公式:
         跟踪误差 = std(产品收益率 - 基准收益率) × sqrt(252) × 100%
     """
-    # 获取产品每日收益率序列
-    product_returns = calculate_daily_returns(nav_data)
+    product_series = _get_daily_returns_with_dates(nav_data)
+    if date_range:
+        start_date, end_date = date_range
+        product_series = [
+            (date, ret)
+            for date, ret in product_series
+            if (start_date is None or date >= start_date)
+            and (end_date is None or date <= end_date)
+        ]
 
-    # 确保长度一致（取最小长度）
-    min_len = min(len(product_returns), len(benchmark_returns))
-    if min_len < 2:
+    product_aligned, benchmark_aligned = _align_return_series(
+        product_series,
+        benchmark_returns,
+        benchmark_dates=benchmark_dates,
+        date_range=date_range,
+    )
+
+    if len(product_aligned) < 2:
         return 0.0
 
-    product_returns = product_returns[:min_len]
-    benchmark_returns = benchmark_returns[:min_len]
+    excess_returns = [p - b for p, b in zip(product_aligned, benchmark_aligned)]
 
-    # 计算超额收益率
-    excess_returns = [p - b for p, b in zip(product_returns, benchmark_returns)]
-
-    # 计算跟踪误差
     tracking_error = np.std(excess_returns) * np.sqrt(252) * 100
 
     return round(tracking_error, 2)
@@ -916,23 +1091,262 @@ def calculate_drawdown_recovery_period(
         }
 
 
-def judge_risk_characteristic(annualized_return: float, volatility: float) -> str:
+def _safe_float(value: Any) -> Optional[float]:
     """
-    判断收益风险特征
+    将输入安全转换为浮点数，过滤None、NaN、无穷大等异常值。
+    """
+    if value is None:
+        return None
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(result) or math.isinf(result):
+        return None
+    return result
+
+
+def _score_metric(
+    value: Any,
+    bands: List[Tuple[Optional[float], int, str]],
+) -> Tuple[int, str]:
+    """
+    根据阈值区间为指标打分。
 
     参数:
-        annualized_return: 年化收益率（%）
-        volatility: 年化波动率（%）
+        value: 指标值
+        bands: [(upper_bound, score, label), ...] 按顺序排列，upper_bound为None表示无上限
 
     返回:
-        str: 收益风险特征描述
+        Tuple[int, str]: (分值, 分组描述)
     """
-    if annualized_return > 20 and volatility > 30:
-        return "高收益高风险"
-    elif annualized_return > 10 and volatility < 20:
-        return "中等收益中等风险"
+    val = _safe_float(value)
+    if val is None:
+        return 1, "数据缺失或无效"
+
+    for upper_bound, score, label in bands:
+        if upper_bound is None or val <= upper_bound:
+            return score, label
+
+    # 理论上不会触发，保险返回最后一档
+    last_score, last_label = bands[-1][1], bands[-1][2]
+    return last_score, last_label
+
+
+def classify_risk_characteristic(
+    annualized_return: Optional[float],
+    volatility: Optional[float],
+    max_drawdown: Optional[float],
+    downside_volatility: Optional[float],
+    beta: Optional[float],
+    tracking_error: Optional[float],
+    sharpe_ratio: Optional[float],
+    sortino_ratio: Optional[float],
+    calmar_ratio: Optional[float],
+) -> Dict[str, Any]:
+    """
+    基于多维指标的实盘风险分级模型。
+
+    模型思路:
+        1. 以波动率、最大回撤、下行波动率、Beta、跟踪误差为基础风险因子，各自0/1/2分。
+        2. 夏普、索提诺、卡玛等风险调整收益指标作为加减项。
+        3. 设置极端阈值的强制升级规则，确保符合合规视角。
+    """
+    score_breakdown: List[Dict[str, Any]] = []
+    base_score = 0
+
+    def add_base_metric(
+        name: str,
+        value: Optional[float],
+        bands: List[Tuple[Optional[float], int, str]],
+        description: str,
+    ):
+        nonlocal base_score
+        val = _safe_float(value)
+        if val is None:
+            score, band_desc = 0, "数据缺失或无效"
+        else:
+            score, band_desc = _score_metric(val, bands)
+            base_score += score
+        score_breakdown.append(
+            {
+                "metric": name,
+                "value": value,
+                "score": score,
+                "band": band_desc,
+                "type": "base",
+                "description": description,
+            }
+        )
+
+    add_base_metric(
+        "volatility",
+        volatility,
+        [(10, 0, "≤10%"), (20, 1, "10%-20%"), (None, 2, ">20%")],
+        "年化波动率",
+    )
+    add_base_metric(
+        "max_drawdown",
+        max_drawdown,
+        [(10, 0, "≤10%"), (20, 1, "10%-20%"), (None, 2, ">20%")],
+        "最大回撤",
+    )
+    add_base_metric(
+        "downside_volatility",
+        downside_volatility,
+        [(7, 0, "≤7%"), (14, 1, "7%-14%"), (None, 2, ">14%")],
+        "下行年化波动率",
+    )
+    add_base_metric(
+        "beta",
+        beta,
+        [(0.8, 0, "≤0.8"), (1.2, 1, "0.8-1.2"), (None, 2, ">1.2")],
+        "相对市场Beta",
+    )
+    add_base_metric(
+        "tracking_error",
+        tracking_error,
+        [(6, 0, "≤6%"), (12, 1, "6%-12%"), (None, 2, ">12%")],
+        "年化跟踪误差",
+    )
+
+    adjustments = 0
+
+    def add_adjustment(
+        name: str,
+        value: Optional[float],
+        thresholds: List[Tuple[Optional[float], int, str]],
+        description: str,
+    ):
+        nonlocal adjustments
+        val = _safe_float(value)
+        if val is None:
+            score, band_desc = 0, "数据缺失或无效"
+        else:
+            score, band_desc = _score_metric(val, thresholds)
+            adjustments += score
+        score_breakdown.append(
+            {
+                "metric": name,
+                "value": value,
+                "score": score,
+                "band": band_desc,
+                "type": "adjustment",
+                "description": description,
+            }
+        )
+
+    # 夏普、索提诺、卡玛：高值降低风险评分，低值增加风险评分
+    add_adjustment(
+        "sharpe_ratio",
+        sharpe_ratio,
+        [(0.5, 1, "<=0.5"), (1.0, 0, "0.5-1.0"), (None, -1, ">1.0")],
+        "夏普比率",
+    )
+    add_adjustment(
+        "sortino_ratio",
+        sortino_ratio,
+        [(0.7, 1, "<=0.7"), (1.2, 0, "0.7-1.2"), (None, -1, ">1.2")],
+        "索提诺比率",
+    )
+    add_adjustment(
+        "calmar_ratio",
+        calmar_ratio,
+        [(0.5, 1, "<=0.5"), (1.0, 0, "0.5-1.0"), (None, -1, ">1.0")],
+        "卡玛比率",
+    )
+
+    # 调整项可能带来负分，确保总分不为负
+    raw_score = base_score + adjustments
+    risk_score = max(0, raw_score)
+
+    # 极端风险触发强制升级
+    override_reasons: List[str] = []
+    extreme_rules = [
+        ("max_drawdown", 30.0, "最大回撤≥30%"),
+        ("volatility", 35.0, "年化波动率≥35%"),
+        ("downside_volatility", 20.0, "下行波动率≥20%"),
+    ]
+    metric_map = {
+        "volatility": _safe_float(volatility),
+        "max_drawdown": _safe_float(max_drawdown),
+        "downside_volatility": _safe_float(downside_volatility),
+    }
+    for metric_name, threshold, reason in extreme_rules:
+        value = metric_map.get(metric_name)
+        if value is not None and value >= threshold:
+            override_reasons.append(reason)
+
+    if override_reasons:
+        risk_level = "高风险（进取型）"
+    elif risk_score <= 3:
+        risk_level = "低风险（稳健型）"
+    elif risk_score <= 6:
+        risk_level = "中风险（平衡型）"
     else:
-        return "低收益低风险"
+        risk_level = "高风险（进取型）"
+
+    # 收益等级（独立于风险打分，用于组合标签）
+    return_level = "收益待评估"
+    return_level_code: Optional[int] = None
+    annualized_ret_val = _safe_float(annualized_return)
+    if annualized_ret_val is not None:
+        return_bands: List[Tuple[Optional[float], int, str]] = [
+            (0.0, 0, "亏损型"),
+            (8.0, 1, "低收益"),
+            (15.0, 2, "中收益"),
+            (None, 3, "高收益"),
+        ]
+        for upper_bound, band_code, band_label in return_bands:
+            if upper_bound is None or annualized_ret_val <= upper_bound:
+                return_level_code = band_code
+                return_level = band_label
+                break
+
+    risk_level_short = {
+        "低风险（稳健型）": "低风险",
+        "中风险（平衡型）": "中风险",
+        "高风险（进取型）": "高风险",
+    }.get(risk_level, risk_level)
+
+    if override_reasons:
+        combined_level = f"{risk_level_short}高风险预警"
+    elif return_level_code is None:
+        combined_level = risk_level_short
+    else:
+        combined_level = f"{risk_level_short}{return_level}"
+
+    return {
+        "level": combined_level,
+        "risk_level": risk_level,
+        "risk_level_short": risk_level_short,
+        "return_level": return_level,
+        "return_level_code": return_level_code,
+        "score": risk_score,
+        "base_score": base_score,
+        "adjustments": adjustments,
+        "score_breakdown": score_breakdown,
+        "override_reasons": override_reasons,
+        "annualized_return": annualized_return,
+    }
+
+
+def judge_risk_characteristic(annualized_return: float, volatility: float) -> str:
+    """
+    保留旧接口以兼容历史调用，默认使用基础分类逻辑。
+    """
+    classification = classify_risk_characteristic(
+        annualized_return=annualized_return,
+        volatility=volatility,
+        max_drawdown=None,
+        downside_volatility=None,
+        beta=None,
+        tracking_error=None,
+        sharpe_ratio=None,
+        sortino_ratio=None,
+        calmar_ratio=None,
+    )
+    return f"绝对收益风险类型属于 {classification['level']}"
 
 
 def calculate_period_returns(
@@ -961,13 +1375,11 @@ def calculate_period_returns(
     """
     period_returns = {}
 
-    for period_name, (start_date, end_date) in periods.items():
-        # 筛选该时间段的净值数据
-        period_nav_data = [
-            data for data in nav_data if start_date <= data["date"] <= end_date
-        ]
+    product_df = _nav_list_to_dataframe(nav_data)
+    benchmark_df = _nav_list_to_dataframe(benchmark_data or [])
 
-        if len(period_nav_data) < 2:
+    for period_name, (start_date, end_date) in periods.items():
+        if product_df.empty:
             period_returns[period_name] = {
                 "product_return": 0.0,
                 "annualized_return": 0.0,
@@ -976,39 +1388,45 @@ def calculate_period_returns(
             }
             continue
 
-        # 计算产品期间收益率
-        start_nav = period_nav_data[0]["nav"]
-        end_nav = period_nav_data[-1]["nav"]
-        product_return = ((end_nav - start_nav) / start_nav) * 100
+        period_product_df = product_df.loc[
+            (product_df.index >= start_date) & (product_df.index <= end_date)
+        ]
 
-        # 计算实际天数
+        if period_product_df.empty:
+            period_returns[period_name] = {
+                "product_return": 0.0,
+                "annualized_return": 0.0,
+                "benchmark_return": 0.0,
+                "excess_return": 0.0,
+            }
+            continue
+
+        product_return = _calculate_return_from_series(period_product_df["nav"])
+
         start_dt = datetime.strptime(start_date, "%Y-%m-%d")
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
         days = (end_dt - start_dt).days + 1
 
-        # 计算年化收益率
         if days > 0:
             annualized_return = ((1 + product_return / 100) ** (365 / days) - 1) * 100
         else:
             annualized_return = 0.0
 
-        # 计算基准收益率（如果有基准数据）
         benchmark_return = 0.0
-        if benchmark_data:
-            period_benchmark_data = [
-                data
-                for data in benchmark_data
-                if start_date <= data["date"] <= end_date
+        if not benchmark_df.empty:
+            # 先限制在配置范围内，再按产品日期对齐并填充
+            benchmark_period_df = benchmark_df.loc[
+                (benchmark_df.index >= start_date) & (benchmark_df.index <= end_date)
             ]
-            if len(period_benchmark_data) >= 2:
-                bench_start_nav = period_benchmark_data[0]["nav"]
-                bench_end_nav = period_benchmark_data[-1]["nav"]
-                if bench_start_nav > 0:
-                    benchmark_return = (
-                        (bench_end_nav - bench_start_nav) / bench_start_nav
-                    ) * 100
+            benchmark_period_df = benchmark_period_df.reindex(
+                period_product_df.index
+            ).ffill()
+            benchmark_period_df = benchmark_period_df.bfill()
 
-        # 计算超额收益率
+            benchmark_nav_series = benchmark_period_df["nav"].dropna()
+            if not benchmark_nav_series.empty:
+                benchmark_return = _calculate_return_from_series(benchmark_nav_series)
+
         excess_return = product_return - benchmark_return
 
         period_returns[period_name] = {
@@ -1027,6 +1445,7 @@ def calculate_period_metrics(
     risk_free_rate: float = 0.03,
     benchmark_returns: List[float] = None,
     benchmark_period_returns: Dict[str, float] = None,
+    benchmark_return_dates: Optional[List[str]] = None,
 ) -> Dict[str, Dict[str, Any]]:
     """
     计算多时间段的所有指标
@@ -1081,12 +1500,24 @@ def calculate_period_metrics(
                 "beta": 1.0,
                 "active_return": 0.0,
                 "annualized_active_return": 0.0,
+                "max_dd_start_date": "",
+                "max_dd_end_date": "",
+                "peak_date": "",
+                "peak_nav": 0.0,
+                "recovery_period": None,
+                "recovery_date": None,
+                "is_recovered": False,
             }
             continue
 
         # 计算所有指标
         returns_info = calculate_returns(period_nav_data)
         drawdown_info = calculate_max_drawdown(period_nav_data)
+        recovery_info = calculate_drawdown_recovery_period(
+            period_nav_data,
+            drawdown_info.get("max_dd_start_date", ""),
+            drawdown_info.get("max_dd_end_date", ""),
+        )
         volatility = calculate_volatility(period_nav_data)
         sharpe_ratio = calculate_sharpe_ratio(
             returns_info["annualized_return"], volatility, risk_free_rate
@@ -1111,11 +1542,18 @@ def calculate_period_metrics(
         active_return_info = {"active_return": 0.0, "annualized_active_return": 0.0}
 
         if benchmark_returns:
-            # 筛选对应时间段的基准收益率（简化：假设已对齐）
             tracking_error = calculate_tracking_error(
-                period_nav_data, benchmark_returns
+                period_nav_data,
+                benchmark_returns,
+                benchmark_dates=benchmark_return_dates,
+                date_range=(start_date, end_date),
             )
-            beta = calculate_beta(period_nav_data, benchmark_returns)
+            beta = calculate_beta(
+                period_nav_data,
+                benchmark_returns,
+                benchmark_dates=benchmark_return_dates,
+                date_range=(start_date, end_date),
+            )
 
         if benchmark_period_returns and period_name in benchmark_period_returns:
             benchmark_ret = benchmark_period_returns[period_name]
@@ -1137,6 +1575,13 @@ def calculate_period_metrics(
             "annualized_return": returns_info["annualized_return"],
             "volatility": volatility,
             "max_drawdown": drawdown_info["max_drawdown"],
+            "max_dd_start_date": drawdown_info.get("max_dd_start_date", ""),
+            "max_dd_end_date": drawdown_info.get("max_dd_end_date", ""),
+            "peak_date": drawdown_info.get("peak_date", ""),
+            "peak_nav": drawdown_info.get("peak_nav", 0.0),
+            "recovery_period": recovery_info.get("recovery_period"),
+            "recovery_date": recovery_info.get("recovery_date"),
+            "is_recovered": recovery_info.get("is_recovered", False),
             "sharpe_ratio": sharpe_ratio,
             "calmar_ratio": calmar_ratio,
             "tracking_error": tracking_error,
@@ -1156,6 +1601,7 @@ def calculate_all_metrics(
     risk_free_rate: float = 0.03,
     benchmark_returns: List[float] = None,
     benchmark_period_return: float = None,
+    benchmark_return_dates: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     计算所有指标
@@ -1198,7 +1644,11 @@ def calculate_all_metrics(
     # 新增指标计算
     beta = 1.0
     if benchmark_returns:
-        beta = calculate_beta(nav_data, benchmark_returns)
+        beta = calculate_beta(
+            nav_data,
+            benchmark_returns,
+            benchmark_dates=benchmark_return_dates,
+        )
 
     active_return_info = {"active_return": 0.0, "annualized_active_return": 0.0}
     if benchmark_period_return is not None:
@@ -1210,7 +1660,11 @@ def calculate_all_metrics(
 
     tracking_error = 0.0
     if benchmark_returns:
-        tracking_error = calculate_tracking_error(nav_data, benchmark_returns)
+        tracking_error = calculate_tracking_error(
+            nav_data,
+            benchmark_returns,
+            benchmark_dates=benchmark_return_dates,
+        )
 
     downside_volatility = calculate_downside_volatility(nav_data)
 
@@ -1231,10 +1685,19 @@ def calculate_all_metrics(
         drawdown_info["max_dd_end_date"],
     )
 
-    # 判断收益风险特征
-    risk_characteristic = judge_risk_characteristic(
-        returns["annualized_return"], volatility
+    # 判断收益风险特征（多维分类）
+    risk_classification = classify_risk_characteristic(
+        annualized_return=returns["annualized_return"],
+        volatility=volatility,
+        max_drawdown=drawdown_info["max_drawdown"],
+        downside_volatility=downside_volatility,
+        beta=beta,
+        tracking_error=tracking_error,
+        sharpe_ratio=sharpe_ratio,
+        sortino_ratio=sortino_ratio,
+        calmar_ratio=calmar_ratio,
     )
+    risk_characteristic = f"{risk_classification['level']}"
 
     return {
         # 原有指标
@@ -1262,6 +1725,7 @@ def calculate_all_metrics(
         "recovery_date": recovery_info["recovery_date"],
         "is_recovered": recovery_info["is_recovered"],
         "risk_characteristic": risk_characteristic,
+        "risk_classification": risk_classification,
         # 日期信息
         "start_date": returns["start_date"],
         "end_date": returns["end_date"],

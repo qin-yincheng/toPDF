@@ -86,7 +86,9 @@ def convert_benchmark_data_to_nav(benchmark_daily_data, report_year=None):
         year_data = df[df["date"].str.startswith(report_year)]
         if not year_data.empty:
             initial_close = year_data["close"].iloc[0]
-            print(f"   📊 基准归一化基准点: {year_data['date'].iloc[0]} (收盘价: {initial_close:.2f})")
+            print(
+                f"   📊 基准归一化基准点: {year_data['date'].iloc[0]} (收盘价: {initial_close:.2f})"
+            )
         else:
             # 如果没有该年数据，使用全部数据的第一天
             initial_close = df["close"].iloc[0]
@@ -94,11 +96,39 @@ def convert_benchmark_data_to_nav(benchmark_daily_data, report_year=None):
     else:
         # 归一化到第一天
         initial_close = df["close"].iloc[0]
-    
+
     df["nav"] = df["close"] / initial_close
 
     # 转换为字典列表
     return df[["date", "nav", "close"]].to_dict("records")
+
+
+def align_benchmark_to_product(nav_data, benchmark_nav_data):
+    """
+    将基准净值序列按产品日期对齐，并使用前向/后向填充补齐缺失值。
+    """
+    if not nav_data or not benchmark_nav_data:
+        return benchmark_nav_data or []
+
+    import pandas as pd
+
+    product_dates = [item.get("date") for item in nav_data if item.get("date")]
+    if not product_dates:
+        return benchmark_nav_data
+
+    benchmark_df = pd.DataFrame(benchmark_nav_data)
+    if benchmark_df.empty or "date" not in benchmark_df.columns:
+        return benchmark_nav_data
+
+    benchmark_df = benchmark_df.drop_duplicates(subset="date").set_index("date")
+    aligned = benchmark_df.reindex(product_dates)
+    if aligned.empty:
+        return benchmark_nav_data
+
+    aligned = aligned.ffill().bfill()
+    aligned = aligned.dropna(subset=["nav"])
+
+    return aligned.reset_index().to_dict("records")
 
 
 def main():
@@ -173,18 +203,20 @@ def main():
     # 尝试获取行业权重和收益（可能失败）
     benchmark_industry_weights = None
     benchmark_industry_returns = None
-    
+
     # 使用报告期末日期或备用日期获取行业权重
     # 注意：对于历史年份（如2015），tushare可能没有当时的行业权重数据
     # 这种情况下使用较新的日期作为参考（假设行业结构变化不大）
     weight_date = latest_date
     fallback_dates = ["2024-11-01", "2024-10-01", "2024-09-01", "2023-12-31"]
-    
+
     try:
         benchmark_industry_weights = get_benchmark_industry_weights(
             index_code, weight_date
         )
-        print(f"   ✓ 基准行业权重: {len(benchmark_industry_weights)} 个行业 (日期: {weight_date})")
+        print(
+            f"   ✓ 基准行业权重: {len(benchmark_industry_weights)} 个行业 (日期: {weight_date})"
+        )
     except Exception as e:
         print(f"   ⚠️  获取 {weight_date} 行业权重失败: {e}")
         # 尝试使用备用日期
@@ -193,7 +225,9 @@ def main():
                 benchmark_industry_weights = get_benchmark_industry_weights(
                     index_code, fallback_date
                 )
-                print(f"   ✓ 基准行业权重: {len(benchmark_industry_weights)} 个行业 (备用日期: {fallback_date})")
+                print(
+                    f"   ✓ 基准行业权重: {len(benchmark_industry_weights)} 个行业 (备用日期: {fallback_date})"
+                )
                 weight_date = fallback_date  # 更新为实际使用的日期
                 break
             except:
@@ -239,7 +273,8 @@ def main():
     # 7. 数据转换
     print("\n7️⃣  转换数据格式...")
     nav_data = convert_daily_positions_to_nav(daily_positions)
-    benchmark_nav_data = convert_benchmark_data_to_nav(benchmark_daily_df, report_year=REPORT_YEAR)
+    benchmark_nav_data = convert_benchmark_data_to_nav(benchmark_daily_df)
+    benchmark_nav_data = align_benchmark_to_product(nav_data, benchmark_nav_data)
     print(f"   ✓ 产品净值数据: {len(nav_data)} 天")
     print(f"   ✓ 基准净值数据: {len(benchmark_nav_data)} 天")
 
@@ -277,6 +312,7 @@ def main():
         benchmark_returns=benchmark_returns_data.get("daily_returns", []),
         benchmark_period_return=benchmark_period_return,
         benchmark_period_returns=benchmark_returns_data.get("period_returns", {}),
+        benchmark_return_dates=benchmark_returns_data.get("daily_dates", []),
         benchmark_industry_weights=benchmark_industry_weights,
         benchmark_industry_returns=benchmark_industry_returns,
     )

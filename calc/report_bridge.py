@@ -66,6 +66,7 @@ def build_performance_overview_data(
     risk_free_rate: float = 0.03,
     benchmark_returns: Optional[List[float]] = None,
     benchmark_period_return: Optional[float] = None,
+    benchmark_return_dates: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """组装产品表现总览表格所需数据。"""
 
@@ -77,6 +78,7 @@ def build_performance_overview_data(
         risk_free_rate=risk_free_rate,
         benchmark_returns=benchmark_returns,
         benchmark_period_return=benchmark_period_return,
+        benchmark_return_dates=benchmark_return_dates,
     )
 
     info: Dict[str, Any] = {}
@@ -161,6 +163,7 @@ def build_nav_performance_data(
     benchmark_nav_data: Optional[List[Dict[str, Any]]] = None,
     benchmark_returns: Optional[List[float]] = None,
     benchmark_period_returns: Optional[Dict[str, float]] = None,
+    benchmark_return_dates: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """整合单位净值、日收益、期间收益及指标分析相关数据。"""
 
@@ -219,6 +222,7 @@ def build_nav_performance_data(
         periods,
         benchmark_returns=benchmark_returns,
         benchmark_period_returns=benchmark_period_returns,
+        benchmark_return_dates=benchmark_return_dates,
     )
 
     return {
@@ -318,6 +322,7 @@ def build_indicator_analysis_data(
     risk_free_rate: float = 0.03,
     benchmark_returns: Optional[List[float]] = None,
     benchmark_period_returns: Optional[Dict[str, float]] = None,
+    benchmark_return_dates: Optional[List[str]] = None,
 ) -> Dict[str, Dict[str, Any]]:
     """根据多时间段指标输出 chart1_6 期望的嵌套结构。"""
 
@@ -328,6 +333,7 @@ def build_indicator_analysis_data(
             risk_free_rate=risk_free_rate,
             benchmark_returns=benchmark_returns,
             benchmark_period_returns=benchmark_period_returns,
+            benchmark_return_dates=benchmark_return_dates,
         )
     if not period_metrics:
         return {}
@@ -1203,6 +1209,7 @@ def build_page1_data(
     benchmark_returns: Optional[List[float]] = None,
     benchmark_period_return: Optional[float] = None,
     benchmark_period_returns: Optional[Dict[str, float]] = None,
+    benchmark_return_dates: Optional[List[str]] = None,
     benchmark_industry_weights: Optional[Dict[str, Any]] = None,
     benchmark_industry_returns: Optional[Dict[str, Any]] = None,
     asset_classes: Optional[List[str]] = None,
@@ -1232,6 +1239,7 @@ def build_page1_data(
         risk_free_rate=risk_free_rate,
         benchmark_returns=benchmark_returns,
         benchmark_period_return=benchmark_period_return,
+        benchmark_return_dates=benchmark_return_dates,
     )
     result["nav_performance"] = build_nav_performance_data(
         nav_data,
@@ -1239,6 +1247,7 @@ def build_page1_data(
         benchmark_nav_data=benchmark_nav_data,
         benchmark_returns=benchmark_returns,
         benchmark_period_returns=benchmark_period_returns,
+        benchmark_return_dates=benchmark_return_dates,
     )
     result["drawdown"] = build_drawdown_data(
         nav_data,
@@ -1251,6 +1260,7 @@ def build_page1_data(
         risk_free_rate=risk_free_rate,
         benchmark_returns=benchmark_returns,
         benchmark_period_returns=benchmark_period_returns,
+        benchmark_return_dates=benchmark_return_dates,
     )
     result["end_holdings"] = build_end_holdings_data(
         position_details,
