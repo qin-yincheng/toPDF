@@ -87,6 +87,34 @@ def convert_benchmark_data_to_nav(benchmark_daily_data):
     return df[["date", "nav", "close"]].to_dict("records")
 
 
+def align_benchmark_to_product(nav_data, benchmark_nav_data):
+    """
+    将基准净值序列按产品日期对齐，并使用前向/后向填充补齐缺失值。
+    """
+    if not nav_data or not benchmark_nav_data:
+        return benchmark_nav_data or []
+
+    import pandas as pd
+
+    product_dates = [item.get("date") for item in nav_data if item.get("date")]
+    if not product_dates:
+        return benchmark_nav_data
+
+    benchmark_df = pd.DataFrame(benchmark_nav_data)
+    if benchmark_df.empty or "date" not in benchmark_df.columns:
+        return benchmark_nav_data
+
+    benchmark_df = benchmark_df.drop_duplicates(subset="date").set_index("date")
+    aligned = benchmark_df.reindex(product_dates)
+    if aligned.empty:
+        return benchmark_nav_data
+
+    aligned = aligned.ffill().bfill()
+    aligned = aligned.dropna(subset=["nav"])
+
+    return aligned.reset_index().to_dict("records")
+
+
 def main():
     """主函数：生成PDF报告"""
 
@@ -203,6 +231,7 @@ def main():
     print("\n7️⃣  转换数据格式...")
     nav_data = convert_daily_positions_to_nav(daily_positions)
     benchmark_nav_data = convert_benchmark_data_to_nav(benchmark_daily_df)
+    benchmark_nav_data = align_benchmark_to_product(nav_data, benchmark_nav_data)
     print(f"   ✓ 产品净值数据: {len(nav_data)} 天")
     print(f"   ✓ 基准净值数据: {len(benchmark_nav_data)} 天")
 
@@ -240,6 +269,7 @@ def main():
         benchmark_returns=benchmark_returns_data.get("daily_returns", []),
         benchmark_period_return=benchmark_period_return,
         benchmark_period_returns=benchmark_returns_data.get("period_returns", {}),
+        benchmark_return_dates=benchmark_returns_data.get("daily_dates", []),
         benchmark_industry_weights=benchmark_industry_weights,
         benchmark_industry_returns=benchmark_industry_returns,
     )
