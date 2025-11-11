@@ -273,7 +273,7 @@ def main():
     # 7. 数据转换
     print("\n7️⃣  转换数据格式...")
     nav_data = convert_daily_positions_to_nav(daily_positions)
-    benchmark_nav_data = convert_benchmark_data_to_nav(benchmark_daily_df)
+    benchmark_nav_data = convert_benchmark_data_to_nav(benchmark_daily_df, report_year=REPORT_YEAR)
     benchmark_nav_data = align_benchmark_to_product(nav_data, benchmark_nav_data)
     print(f"   ✓ 产品净值数据: {len(nav_data)} 天")
     print(f"   ✓ 基准净值数据: {len(benchmark_nav_data)} 天")
