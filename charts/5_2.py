@@ -205,7 +205,7 @@ def plot_stock_holding_nodes_chart(
     ax1.set_xlabel('节点', fontsize=11)
     
     # 添加网格线
-    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     
     # 合并图例，位置在顶部中心
     lines1, labels1 = ax1.get_legend_handles_labels()

@@ -226,7 +226,7 @@ def plot_industry_attribution_profit_chart(
     ax1.set_xlabel('行业', fontsize=11)
     
     # 添加网格线
-    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     
     # 合并图例
     lines1, labels1 = ax1.get_legend_handles_labels()
@@ -467,7 +467,7 @@ def plot_industry_attribution_loss_chart(
     ax1.set_xlabel('行业', fontsize=11)
     
     # 添加网格线
-    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     
     # 合并图例
     lines1, labels1 = ax1.get_legend_handles_labels()

@@ -147,7 +147,7 @@ def plot_brinson_attribution(
     ax.margins(y=0.1)
 
     # 添加网格线（水平虚线，灰色）
-    ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     
     # 设置X轴刻度和标签
     ax.set_xlabel('日期', fontsize=11)
@@ -397,7 +397,7 @@ def plot_brinson_industry_bar_chart(
     ax.set_xticklabels(industries, rotation=45, ha='right')
     
     # 添加网格线（先添加，这样零轴线会在网格线之上）
-    ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y', zorder=0)
+    ax.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y', zorder=0)
     
     # 添加零轴线（在网格线之后，确保零轴线在最上层，与0%刻度对齐）
     if y_min < 0 < y_max:
