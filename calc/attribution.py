@@ -323,9 +323,19 @@ def calculate_industry_attribution(
     - ``net_cash_flow``：期间净流入（万元），买入为正，卖出为负
 
     若缺少期初市值，则该行业收益率退化为 0，仅用于占位展示。
+    
+    注意: 权重和贡献度基于股票资产计算,不包含现金。
     """
 
-    if not position_details or total_assets <= 0:
+    if not position_details:
+        return []
+    
+    # 计算股票总市值和总收益(用于权重和贡献度计算)
+    active_positions = [p for p in position_details if p.get("market_value", 0.0) > 0]
+    total_stock_value = sum(p.get("market_value", 0.0) for p in active_positions)
+    total_stock_profit = sum(p.get("profit_loss", 0.0) for p in position_details)
+    
+    if total_stock_value <= 0:
         return []
 
     industry_data: Dict[str, Dict[str, float]] = {}
@@ -371,10 +381,11 @@ def calculate_industry_attribution(
     )
 
     for industry, data in industry_data.items():
-        weight = data["end_value"] / total_assets if total_assets > 0 else 0.0
+        # 使用股票总市值和总收益作为基准
+        weight = data["end_value"] / total_stock_value if total_stock_value > 0 else 0.0
         weight_pct = weight * 100
         contribution_pct = (
-            data["profit_loss"] / total_profit * 100 if total_profit != 0 else 0.0
+            data["profit_loss"] / total_stock_profit * 100 if total_stock_profit != 0 else 0.0
         )
 
         begin_value = data["begin_value"]
@@ -424,9 +435,20 @@ def calculate_stock_performance(
     total_assets: float,
     total_profit: float,
 ) -> List[Dict[str, Any]]:
-    """计算个股绩效指标。"""
+    """计算个股绩效指标。
+    
+    注意: 权重和贡献度基于股票资产计算,不包含现金。
+    """
 
-    if not position_details or total_assets <= 0:
+    if not position_details:
+        return []
+    
+    # 计算股票总市值和总收益(用于权重和贡献度计算)
+    active_positions = [p for p in position_details if p.get("market_value", 0.0) > 0]
+    total_stock_value = sum(p.get("market_value", 0.0) for p in active_positions)
+    total_stock_profit = sum(p.get("profit_loss", 0.0) for p in position_details)
+    
+    if total_stock_value <= 0:
         return []
 
     results: List[Dict[str, Any]] = []
@@ -434,9 +456,11 @@ def calculate_stock_performance(
     for pos in position_details:
         market_value = float(pos.get("market_value", 0.0))
         profit_loss = float(pos.get("profit_loss", 0.0))
-        weight_pct = market_value / total_assets * 100 if total_assets > 0 else 0.0
+        
+        # 使用股票总市值和总收益作为基准
+        weight_pct = market_value / total_stock_value * 100 if total_stock_value > 0 else 0.0
         contribution_pct = (
-            profit_loss / total_profit * 100 if total_profit != 0 else 0.0
+            profit_loss / total_stock_profit * 100 if total_stock_profit != 0 else 0.0
         )
 
         results.append(
@@ -457,16 +481,23 @@ def calculate_position_nodes(
     position_details: List[Dict[str, Any]],
     total_assets: float,
 ) -> List[Dict[str, Any]]:
-    """计算持仓节点数据。"""
+    """计算持仓节点数据。
+    
+    注意: 百分比基于股票资产计算,不包含现金。
+    """
 
-    if not position_details or total_assets <= 0:
+    # 只使用期末持仓(market_value > 0)
+    active_positions = [p for p in position_details if p.get("market_value", 0.0) > 0]
+    total_stock_value = sum(p.get("market_value", 0.0) for p in active_positions)
+    
+    if not active_positions or total_stock_value <= 0:
         nodes = ["TOP1", "TOP2", "TOP3", "TOP5", "TOP10", "TOP50", "TOP100"]
         return [
             {"node": node, "market_value": 0.0, "percentage": 0.0} for node in nodes
         ]
 
     sorted_positions = sorted(
-        position_details,
+        active_positions,
         key=lambda pos: float(pos.get("market_value", 0.0)),
         reverse=True,
     )
@@ -488,8 +519,9 @@ def calculate_position_nodes(
         total_market_value = sum(
             float(pos.get("market_value", 0.0)) for pos in top_positions
         )
+        # 使用股票总市值作为基准
         percentage = (
-            total_market_value / total_assets * 100 if total_assets > 0 else 0.0
+            total_market_value / total_stock_value * 100 if total_stock_value > 0 else 0.0
         )
 
         results.append(
