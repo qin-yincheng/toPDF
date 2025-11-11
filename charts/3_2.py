@@ -216,6 +216,23 @@ def plot_industry_proportion_timeseries(
     # 为所有行业分配颜色
     colors = [color_map.get(ind, '#808080') for ind in industry_names]
     
+    # 对每个日期的数据进行归一化，确保总和为100%
+    for day_data in data:
+        # 计算该日期所有行业的占比总和
+        total = sum([day_data.get(industry, 0.0) for industry in industry_names])
+        if total > 0:
+            # 如果总和不为100%，进行归一化
+            if abs(total - 100.0) > 0.01:  # 允许0.01%的误差
+                factor = 100.0 / total
+                for industry in industry_names:
+                    # 确保所有行业都有值，即使原来不存在也要设置
+                    original_value = day_data.get(industry, 0.0)
+                    day_data[industry] = round(original_value * factor, 2)
+        else:
+            # 如果总和为0，说明数据有问题，将所有行业设为0
+            for industry in industry_names:
+                day_data[industry] = 0.0
+    
     # 提取每个行业的数据
     industry_data = {}
     for industry in industry_names:
