@@ -194,7 +194,7 @@ def plot_period_transaction_chart(
     ax.set_xlabel('资产分类', fontsize=11)
     
     # 添加网格线
-    ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5, axis='y')
+    ax.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
     
     # 图例在顶部中心
     ax.legend(loc='upper center', fontsize=10, ncol=2, frameon=False)

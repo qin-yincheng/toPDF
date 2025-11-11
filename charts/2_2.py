@@ -120,7 +120,7 @@ def plot_asset_allocation_chart(
     ax.set_ylim(0, 120)
     ax.set_yticks([0, 20, 40, 60, 80, 100, 120])
     ax.tick_params(axis='y', labelcolor='black')
-    ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+    ax.grid(True, alpha=0.5, linestyle='--', axis='y')
     
     # 设置X轴（使用数值索引，但显示日期标签）
     ax.set_xlabel('日期')
