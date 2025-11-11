@@ -6,15 +6,15 @@ from pathlib import Path
 import pandas as pd
 import tushare as ts
 
-from config import CSV_FILE, INITIAL_CAPITAL, DOCS_DIR
+from config import CSV_FILE, INITIAL_CAPITAL, DOCS_DIR, REPORT_YEAR
 
 import os
 TUSHARE_TOKEN = os.environ.get("TUSHARE_TOKEN", "")
 
-
-# 缓存目录
+# 注意：缓存功能已移除，因为现在使用持仓成本而非收盘价
+# CACHE_DIR 定义保留以避免错误，但不再主动创建目录
 CACHE_DIR = Path(DOCS_DIR) / ".cache"
-CACHE_DIR.mkdir(exist_ok=True)
+# CACHE_DIR.mkdir(exist_ok=True)  # 已注释：不再需要缓存功能
 
 
 def _ts_code(code: str) -> str:
@@ -91,13 +91,14 @@ def calculate_daily_asset_distribution(
     csv_path: Optional[str] = None,
     initial_capital: Optional[float] = None,
     max_days: Optional[int] = None,
+    report_year: Optional[str] = "AUTO",
 ) -> pd.DataFrame:
     """
     基于交割单（pair格式）计算每日资产分类占比（股票/现金）。
 
     核心逻辑：
     - 先按天计算每只股票的期末持仓股数（累计买入股数 - 累计卖出股数，卖出当日不计入持仓）。
-    - 调用Tushare获取区间每日收盘价，计算当日股票市值 = Σ(持仓股数 × 收盘价)。
+    - 使用持仓成本计算当日股票市值 = Σ(持仓股数 × 持仓平均成本)。
     - 当日现金 = 初始资金 - 截止当日累计买入金额 + 累计卖出金额。
     - 当日总资产 = 股票市值 + 现金。
     - 占比：股票占比=股票市值/总资产，现金占比=现金/总资产。
@@ -106,6 +107,8 @@ def calculate_daily_asset_distribution(
         csv_path: 交割单CSV路径，默认使用 config.CSV_FILE
         initial_capital: 初始资金（元），默认使用 config.INITIAL_CAPITAL
         max_days: 仅计算前N天的数据，用于加速演示
+        report_year: 报告年份（如"2015"），默认使用 config.REPORT_YEAR
+                    设置后只返回该年份的数据，但会正确计算期初持仓
 
     返回:
         pd.DataFrame: 每日资产分布数据，index=date(字符串格式 YYYY-MM-DD)
@@ -116,6 +119,9 @@ def calculate_daily_asset_distribution(
     """
     csv_path = str(csv_path or CSV_FILE)
     ini = float(initial_capital if initial_capital is not None else INITIAL_CAPITAL)
+    # report_year="AUTO" 表示使用config配置，None 表示不限制年份
+    if report_year == "AUTO":
+        report_year = REPORT_YEAR
     if ini <= 0:
         raise ValueError("initial_capital 必须为正数")
 
@@ -160,9 +166,10 @@ def calculate_daily_asset_distribution(
     )
 
     # 生成完整日期序列
+    # 使用买入和卖出日期的并集，确保所有交易都被统计
     all_dates = pd.to_datetime(list(set(buy_by_day.index).union(set(sell_by_day.index))))
     if len(all_dates) == 0:
-        return []
+        return pd.DataFrame()
     start = all_dates.min().date()
     end = all_dates.max().date()
     date_range = pd.date_range(start=start, end=end, freq="D").strftime("%Y-%m-%d")
@@ -188,31 +195,24 @@ def calculate_daily_asset_distribution(
     cum_sell_qty = sell_qty_daily.cumsum()
     holdings_qty = (cum_buy_qty - cum_sell_qty).clip(lower=0.0)
 
-    # 使用 Tushare 获取收盘价（不复权）
-    codes_list = list(holdings_qty.columns)
-    price_df = _fetch_close_prices_tushare(codes_list, date_range[0], date_range[-1])
+    # 计算持仓成本（使用简单的金额累加法，与参考脚本一致）
+    # 持仓成本 = 累计买入金额 - 已卖出股票的买入成本
+    # 
+    # 注意：这里按日期和代码聚合卖出金额（但实际上我们需要的是卖出股票的买入成本）
+    # 由于交割单是配对格式（每行包含买入和卖出），卖出时减去的是该笔交易的buy_money
     
-    # 对齐日期和代码
-    price_df = price_df.reindex(index=date_range, columns=codes_list)
+    # 按日期聚合：买入时增加持仓成本，卖出时减少持仓成本
+    sells_cost = (
+        df.dropna(subset=["sell_dt"]).groupby(df["sell_dt"].dt.strftime("%Y-%m-%d"))[buy_money_col].sum()
+    )
+    sells_cost_daily = sells_cost.reindex(date_range, fill_value=0.0)
     
-    # 前向填充缺失值（非交易日使用最近的收盘价）
-    price_df = price_df.ffill()
+    # 累计持仓成本 = 累计买入 - 累计卖出的买入成本
+    cum_position_cost = (buy_by_day.reindex(date_range, fill_value=0.0).cumsum() 
+                        - sells_cost_daily.cumsum())
     
-    # 如果某些股票没有价格数据，回退使用交易价格
-    missing_codes = price_df.columns[price_df.isna().all()].tolist()
-    if missing_codes:
-        print(f"  警告：{len(missing_codes)} 只股票无法从 Tushare 获取价格，将使用交易价格")
-        trade_prices = _build_price_from_trades(df, missing_codes, date_range)
-        for code in missing_codes:
-            if code in trade_prices.columns:
-                price_df[code] = trade_prices[code]
-    
-    # 填充剩余的 NaN（如果还有）
-    price_df = price_df.bfill()
-    price_df = price_df.fillna(0.0)
-
-    # 股票市值 = Σ(持仓×收盘价)
-    stock_value = (holdings_qty * price_df).sum(axis=1)
+    # 股票市值 = 持仓成本（使用买入成本，不使用市价）
+    stock_value = cum_position_cost
     # 现金 = 初始资金 - 累计买入金额 + 累计卖出金额
     cash_value = ini - cum_buy + cum_sell
     
@@ -237,15 +237,53 @@ def calculate_daily_asset_distribution(
     cash_pct = (cash_value / total_assets * 100.0).fillna(0.0).round(4)
 
     # 构建 DataFrame，date 作为索引
-    df = pd.DataFrame({
+    df_result = pd.DataFrame({
         'date': date_range,
         'total_assets': total_assets.fillna(0.0).round(2),  # 总资产，保留2位小数
         'stock_pct': stock_pct.values,
         'cash_pct': cash_pct.values,
     })
-    df.set_index('date', inplace=True)
-
-    return df
+    df_result.set_index('date', inplace=True)
+    
+    # 如果指定了报告年份，只返回该年份的数据
+    if report_year:
+        # 筛选该年份的日期
+        mask = df_result.index.str.startswith(report_year)
+        df_filtered = df_result[mask].copy()
+        
+        if len(df_filtered) > 0:
+            # 检查是否需要前一天的数据作为期初（跨年情况）
+            first_date = df_filtered.index[0]
+            if first_date.endswith('-01-01'):
+                # 这是新年第一天，尝试获取上一年最后一天的数据作为"期初日"
+                prev_year = str(int(report_year) - 1)
+                prev_last_date = f"{prev_year}-12-31"
+                
+                if prev_last_date in df_result.index:
+                    # 将上一年最后一天添加到结果中，作为期初参考
+                    prev_day_data = df_result.loc[[prev_last_date]].copy()
+                    # 将日期改为当年1月1日，但数据保持为上一年12月31日的值
+                    # 这样期初资产就是上一年的期末资产
+                    prev_day_data.index = [first_date]
+                    # 用上一年最后一天的数据覆盖当年第一天的数据（如果存在）
+                    df_filtered.loc[first_date] = prev_day_data.loc[first_date]
+                    print(f"  📅 报告年份限制为 {report_year}年")
+                    print(f"  期初资产使用 {prev_last_date} 数据: {prev_day_data.loc[first_date, 'total_assets']/10000:.2f}万元")
+                    print(f"  统计区间: {df_filtered.index[0]} 至 {df_filtered.index[-1]}")
+                else:
+                    print(f"  📅 报告年份限制为 {report_year}年")
+                    print(f"  ⚠️  未找到 {prev_last_date} 数据，使用当年第一天数据作为期初")
+                    print(f"  统计区间: {df_filtered.index[0]} 至 {df_filtered.index[-1]}")
+            else:
+                print(f"  📅 报告年份限制为 {report_year}年")
+                print(f"  统计区间: {df_filtered.index[0]} 至 {df_filtered.index[-1]}")
+            
+            return df_filtered
+        else:
+            print(f"  ⚠️  警告：{report_year}年无交易数据，返回全部数据")
+            return df_result
+    
+    return df_result
 
 
 def _ts_code(code: str) -> str:

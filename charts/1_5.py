@@ -205,7 +205,7 @@ def plot_return_comparison_chart(
     # ax.set_ylim(-20, 50)
     # ax.set_yticks([-20, -10, 0, 10, 20, 30, 40, 50])
     ax.margins(y=0.1)
-    ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+    ax.grid(True, alpha=0.5, linestyle='--', axis='y')
     
     # 设置边框：只保留左边框，删除其他边框
     ax.spines['top'].set_visible(False)

@@ -65,7 +65,12 @@ def plot_scale_overview(
     shares_raw = [d.get('shares', 0) for d in data]
     net_subscription_raw = [d.get('net_subscription', 0) for d in data]
     
-    # 只保留交易日的数据
+    # 保存第一天的数据作为"日历期初"（用于表格显示）
+    # 这样即使第一天不是交易日（如元旦），也能正确显示期初资产
+    calendar_start_asset = asset_scale_raw[0] if len(asset_scale_raw) > 0 else 0.0
+    calendar_start_shares = shares_raw[0] if len(shares_raw) > 0 else 0.0
+    
+    # 只保留交易日的数据（用于图表绘制）
     dates = []
     asset_scale = []
     shares = []
@@ -200,10 +205,13 @@ def plot_scale_overview(
     # 如果需要绘制右侧表格
     if include_right_table:
         # 计算指标
-        start_scale = float(asset_scale[0]) if len(asset_scale) > 0 else 0.0
+        # 期初资产使用"日历期初"（年度第一天），即使不是交易日也要使用
+        # 这样可以确保期初资产 = 上一年期末资产，保持跨年数据一致性
+        start_scale = float(calendar_start_asset) if calendar_start_asset else 0.0
+        start_shares = float(calendar_start_shares) if calendar_start_shares else 0.0
+        
+        # 期末资产使用最后一个交易日的数据
         end_scale = float(asset_scale[-1]) if len(asset_scale) > 0 else 0.0
-        # 份额按数据可得
-        start_shares = float(shares[0]) if len(shares) > 0 else 0.0
         end_shares = float(shares[-1]) if len(shares) > 0 else 0.0
         # 期间总申购与总赎回（根据净申购额的正负推断）
         # 如果净申购额为正，总申购 = 净申购额，总赎回 = 0

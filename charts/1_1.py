@@ -126,7 +126,7 @@ def plot_performance_overview_table(
     # 三列布局，每列宽度约为 0.28，间距 0.03
     col_width = 0.28
     col_spacing = 0.03
-    start_x = 0.05
+    start_x = 0.02
     y_start = 0.88
     row_height = 0.09
     

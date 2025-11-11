@@ -124,7 +124,7 @@ def plot_daily_return_chart(
     # ax.set_yticks([-10, -5, 0, 5, 10])
     ax.margins(y=0.1)
     ax.tick_params(axis='y', labelcolor='black')
-    ax.grid(True, alpha=0.3, linestyle='--', zorder=0)
+    ax.grid(True, alpha=0.5, linestyle='--', zorder=0)
     
     # 标注最大收益和最大亏损
     # 最大收益标注

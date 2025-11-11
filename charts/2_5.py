@@ -92,7 +92,7 @@ def plot_liquidity_asset_chart(
     ax1.set_yticks([0.13, 20, 40, 60, 80, 100])
     ax1.set_yticklabels(['0.13%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
-    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=1, axis='y')
+    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=1, axis='y')
     ax1.set_xlabel('日期', fontsize=11)
     
     # 绘制沪深300折线图（右Y轴，灰色，带圆形标记）
@@ -101,9 +101,19 @@ def plot_liquidity_asset_chart(
              markerfacecolor='white', markeredgecolor='#afb0b2',
             markeredgewidth=1.5)
     ax2.set_ylabel('沪深300', fontsize=11)
-    ax2.set_ylim(0.92, 1.24)
-    ax2.set_yticks([0.92, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.24])
-    ax2.set_yticklabels(['0.92', '0.95', '1', '1.05', '1.1', '1.15', '1.2', '1.24'])
+    
+    # 动态计算右Y轴范围（基准净值）
+    if csi300_values:
+        csi300_min = min(csi300_values)
+        csi300_max = max(csi300_values)
+        # 添加10%的边距
+        y_range = csi300_max - csi300_min
+        if y_range > 0:
+            padding = y_range * 0.1
+            ax2.set_ylim(csi300_min - padding, csi300_max + padding)
+        else:
+            # 如果所有值相同，设置默认范围
+            ax2.set_ylim(csi300_min - 0.1, csi300_max + 0.1)
     
     # 设置X轴刻度和标签
     # 使用工具函数自动计算合适的刻度间隔

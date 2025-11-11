@@ -21,7 +21,7 @@ from calc.data_provider import (
 )
 from calc.report_bridge import build_page1_data
 from pdf.pages import generate_page1
-from config import DOCS_DIR, CSV_FILE
+from config import DOCS_DIR, CSV_FILE, EXCEL_FILE, REPORT_YEAR
 
 
 def convert_daily_positions_to_nav(daily_positions):
@@ -60,12 +60,13 @@ def convert_daily_positions_to_nav(daily_positions):
     return nav_data
 
 
-def convert_benchmark_data_to_nav(benchmark_daily_data):
+def convert_benchmark_data_to_nav(benchmark_daily_data, report_year=None):
     """
     将基准日度数据转换为 nav_data 格式
 
     参数:
         benchmark_daily_data: DataFrame with columns ['trade_date', 'close']
+        report_year: 报告年份（如"2016"），如果指定，则净值归一化到该年第一个交易日
 
     返回:
         List[Dict]: [{"date": "2024-01-01", "nav": 1.0, ...}]
@@ -79,8 +80,23 @@ def convert_benchmark_data_to_nav(benchmark_daily_data):
     df = benchmark_daily_data.copy()
     df["date"] = pd.to_datetime(df["trade_date"]).dt.strftime("%Y-%m-%d")
 
-    # 计算净值（归一化到第一天）
-    initial_close = df["close"].iloc[0]
+    # 计算净值（归一化）
+    if report_year:
+        # 如果指定了报告年份，归一化到该年第一个交易日
+        year_data = df[df["date"].str.startswith(report_year)]
+        if not year_data.empty:
+            initial_close = year_data["close"].iloc[0]
+            print(
+                f"   📊 基准归一化基准点: {year_data['date'].iloc[0]} (收盘价: {initial_close:.2f})"
+            )
+        else:
+            # 如果没有该年数据，使用全部数据的第一天
+            initial_close = df["close"].iloc[0]
+            print(f"   ⚠️  未找到{report_year}年数据，使用全部数据第一天归一化")
+    else:
+        # 归一化到第一天
+        initial_close = df["close"].iloc[0]
+
     df["nav"] = df["close"] / initial_close
 
     # 转换为字典列表
@@ -123,9 +139,8 @@ def main():
     print("=" * 70)
 
     # 0. 检查并转换Excel到CSV（如果需要）
-    csv_path = os.path.join(DOCS_DIR, "交割单_2024-11-04-2025-11-04.csv")
-    csv_path = os.path.join(DOCS_DIR, "交割单_2024-11-04-2025-11-04.csv")
-    xlsx_path = os.path.join(DOCS_DIR, "交割单.xlsx")
+    csv_path = str(CSV_FILE)
+    xlsx_path = str(EXCEL_FILE)
 
     if not os.path.exists(csv_path):
         if os.path.exists(xlsx_path):
@@ -155,7 +170,7 @@ def main():
 
     # 2. 获取统计区间
     print("\n2️⃣  获取统计区间配置...")
-    periods = get_periods_config()
+    periods = get_periods_config(report_year=REPORT_YEAR)
     print(f"   ✓ 配置 {len(periods)} 个统计区间")
     for name, (start, end) in periods.items():
         print(f"     • {name}: {start} 至 {end}")
@@ -174,7 +189,7 @@ def main():
     print("\n5️⃣  获取基准数据（沪深300）...")
     index_code = "000300.SH"
     benchmark_daily_df = get_benchmark_daily_data(index_code)
-    benchmark_returns_data = get_benchmark_returns(index_code)
+    benchmark_returns_data = get_benchmark_returns(index_code, periods=periods)
     print(f"   ✓ 基准日度数据: {len(benchmark_daily_df)} 天")
 
     # 获取最新可用日期（用于行业权重）
@@ -188,27 +203,55 @@ def main():
     # 尝试获取行业权重和收益（可能失败）
     benchmark_industry_weights = None
     benchmark_industry_returns = None
+
+    # 使用报告期末日期或备用日期获取行业权重
+    # 注意：对于历史年份（如2015），tushare可能没有当时的行业权重数据
+    # 这种情况下使用较新的日期作为参考（假设行业结构变化不大）
+    weight_date = latest_date
+    fallback_dates = ["2024-11-01", "2024-10-01", "2024-09-01", "2023-12-31"]
+
     try:
-        # 使用一个较早的日期（例如2024-11-01）
-        weight_date = "2024-11-01"
         benchmark_industry_weights = get_benchmark_industry_weights(
             index_code, weight_date
         )
-        print(f"   ✓ 基准行业权重: {len(benchmark_industry_weights)} 个行业")
+        print(
+            f"   ✓ 基准行业权重: {len(benchmark_industry_weights)} 个行业 (日期: {weight_date})"
+        )
     except Exception as e:
-        print(f"   ⚠️  获取行业权重失败: {e}")
+        print(f"   ⚠️  获取 {weight_date} 行业权重失败: {e}")
+        # 尝试使用备用日期
+        for fallback_date in fallback_dates:
+            try:
+                benchmark_industry_weights = get_benchmark_industry_weights(
+                    index_code, fallback_date
+                )
+                print(
+                    f"   ✓ 基准行业权重: {len(benchmark_industry_weights)} 个行业 (备用日期: {fallback_date})"
+                )
+                weight_date = fallback_date  # 更新为实际使用的日期
+                break
+            except:
+                continue
+        if benchmark_industry_weights is None:
+            print(f"   ⚠️  所有日期均无法获取行业权重，将跳过相关图表")
 
     try:
-        # 获取近一年的行业收益
-        start_date = "2024-01-01"
-        end_date = "2024-11-01"
-        benchmark_industry_returns = get_benchmark_industry_returns(
-            index_code, start_date, end_date
-        )
-        period_industry_ret = benchmark_industry_returns.get("period_returns", {})
-        daily_industry_ret = benchmark_industry_returns.get("daily_returns", {})
-        print(f"   ✓ 基准行业收益: {len(period_industry_ret)} 个行业")
-        print(f"   ✓ 基准行业日度收益: {len(daily_industry_ret)} 天")
+        # 使用"成立以来"期间获取行业收益
+        # 如果成功获取了行业权重，使用相同的日期获取收益
+        start_date, end_date = periods.get("成立以来", (None, None))
+        if start_date and end_date and benchmark_industry_weights is not None:
+            # 传递 weight_date 以使用相同的权重基准日期
+            benchmark_industry_returns = get_benchmark_industry_returns(
+                index_code, start_date, end_date, weight_date=weight_date
+            )
+            period_industry_ret = benchmark_industry_returns.get("period_returns", {})
+            daily_industry_ret = benchmark_industry_returns.get("daily_returns", {})
+            print(f"   ✓ 基准行业收益: {len(period_industry_ret)} 个行业")
+            print(f"   ✓ 基准行业日度收益: {len(daily_industry_ret)} 天")
+        elif benchmark_industry_weights is None:
+            print(f"   ⚠️  跳过行业收益计算（无行业权重数据）")
+        else:
+            print(f"   ⚠️  无法确定统计区间，跳过行业收益")
     except Exception as e:
         print(f"   ⚠️  获取行业收益失败: {e}")
 
@@ -277,9 +320,12 @@ def main():
 
     # 9. 生成PDF
     print("\n9️⃣  生成PDF文件...")
-    # 根据CSV文件名生成PDF文件名
+    # 根据CSV文件名和报告年份生成PDF文件名
     csv_stem = CSV_FILE.stem  # 获取不带扩展名的文件名
-    output_path = f"私募基金报告_{csv_stem}.pdf"
+    if REPORT_YEAR and REPORT_YEAR != "AUTO":
+        output_path = f"私募基金报告_{csv_stem}_{REPORT_YEAR}.pdf"
+    else:
+        output_path = f"私募基金报告_{csv_stem}.pdf"
     result_path = generate_page1(output_path=output_path, data=page1_data)
 
     print("\n" + "=" * 70)

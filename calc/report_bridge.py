@@ -873,14 +873,27 @@ def build_asset_allocation_series(
     daily_positions: List[Dict[str, Any]],
     position_details: List[Dict[str, Any]],
     total_assets: float,
+    benchmark_nav_data: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     """
     构建大类资产配置时序数据
 
     从 daily_positions 中提取股票、现金、基金、逆回购等资产类别的时序数据
+    
+    参数:
+        daily_positions: 每日持仓数据
+        position_details: 持仓明细
+        total_assets: 总资产
+        benchmark_nav_data: 基准净值数据 [{"date": "2024-01-01", "nav": 1.0, ...}]
     """
     if not daily_positions:
         return []
+
+    # 构建基准数据字典，便于快速查找
+    benchmark_dict = {}
+    if benchmark_nav_data:
+        for item in benchmark_nav_data:
+            benchmark_dict[item["date"]] = item.get("nav", 1.0)
 
     series = []
     for pos in daily_positions:
@@ -903,6 +916,9 @@ def build_asset_allocation_series(
         # 流动性资产 = 现金 + 基金 + 逆回购
         liquidity_ratio = cash_ratio + fund_ratio + repo_ratio
 
+        # 获取该日期的基准净值
+        benchmark_nav = benchmark_dict.get(date, 1.0)
+
         series.append(
             {
                 "date": date,
@@ -916,7 +932,7 @@ def build_asset_allocation_series(
                 # 股票仓位时序图需要的字段
                 "stock_position": _round_value(stock_ratio),
                 "top10": _round_value(0),  # TODO: 需要从持仓明细中计算TOP10占比
-                "csi300": _round_value(1.0),  # TODO: 需要基准数据
+                "csi300": _round_value(benchmark_nav),  # 使用实际基准净值
                 # 流动性资产时序图需要的字段
                 "liquidity_ratio": _round_value(liquidity_ratio),
                 # 保留原始市值数据供其他用途
@@ -1292,6 +1308,7 @@ def build_page1_data(
         daily_positions,
         position_details,
         total_assets,
+        benchmark_nav_data=benchmark_nav_data,
     )
     result["industry_timeseries"] = build_industry_timeseries(
         daily_positions,

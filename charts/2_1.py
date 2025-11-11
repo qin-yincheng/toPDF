@@ -102,7 +102,7 @@ def plot_dynamic_drawdown_chart(
     # ax.set_ylim(y_min, 1)
     ax.set_ylabel('回撤(%)', color='black')
     ax.tick_params(axis='y', labelcolor='black')
-    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.grid(True, alpha=0.5, linestyle='--')
     
     # 设置X轴刻度和标签
     ax.set_xlabel('日期')
@@ -213,7 +213,7 @@ def plot_dynamic_drawdown_table(
         colLabels=['指标', '数值'],
         cellLoc='left',
         loc='center',
-        bbox=[0.1, 0.1, 0.8, 0.8]
+        bbox=[0.1, 0.1, 1, 0.8]
     )
     
     # 设置表格样式

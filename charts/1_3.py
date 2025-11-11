@@ -107,7 +107,7 @@ def plot_nav_performance(
     # 设置坐标轴
     ax.set_xlabel('日期')
     ax.set_ylabel('收益率(%)', color='black')
-    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.grid(True, alpha=0.5, linestyle='--')
     
     # 设置标题（如果启用）
     if show_title:

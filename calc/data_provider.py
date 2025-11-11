@@ -28,8 +28,6 @@ from calc.position import (
     calculate_daily_asset_distribution,
     _read_csv,
     _parse_dates,
-    _fetch_close_prices_tushare,
-    _build_price_from_trades,
     _ts_code,
 )
 
@@ -42,6 +40,7 @@ def get_daily_positions(
     initial_capital: Optional[float] = None,
     max_days: Optional[int] = None,
     include_positions: bool = False,
+    report_year: Optional[str] = "AUTO",
 ) -> List[Dict]:
     """
     获取每日持仓序列数据
@@ -59,12 +58,13 @@ def get_daily_positions(
         initial_capital: 初始资金（元）
         max_days: 仅计算前N天
         include_positions: 是否包含详细持仓列表（计算密集，默认False）
+        report_year: 报告年份（如"2015"），限定统计区间
 
     返回:
         List[Dict]: 每日持仓数据列表
     """
     # 获取资产分布数据
-    asset_df = calculate_daily_asset_distribution(csv_path, initial_capital, max_days)
+    asset_df = calculate_daily_asset_distribution(csv_path, initial_capital, max_days, report_year)
 
     # 如果需要持仓明细，计算每日持仓
     daily_holdings = {}
@@ -136,10 +136,10 @@ def _calculate_daily_holdings(
                 股票代码(6位字符串): {
                     quantity: 持股数量,
                     avg_cost: 持仓平均成本(元),
-                    market_value: 当日收盘市值(元),
-                    previous_market_value: 前一交易日收盘市值(元),
+                    market_value: 当日持仓市值(按成本价计算)(元),
+                    previous_market_value: 前一交易日持仓市值(元),
                     net_cash_flow: 当日净现金流(元，买入为正),
-                    close_price: 当日收盘价(元),
+                    close_price: 持仓成本价(元),
                     name: 股票名称
                 }
             }
@@ -198,20 +198,8 @@ def _calculate_daily_holdings(
         return {}
 
     codes = sorted(df["code"].dropna().unique().tolist())
-    price_df = pd.DataFrame()
-
-    if codes:
-        price_df = _fetch_close_prices_tushare(codes, date_strs[0], date_strs[-1])
-        if price_df.empty:
-            price_df = _build_price_from_trades(df, codes, pd.Index(date_strs))
-        else:
-            price_df = price_df.reindex(index=date_strs, columns=codes)
-
-    if price_df.empty:
-        price_df = pd.DataFrame(0.0, index=date_strs, columns=codes)
-    else:
-        price_df = price_df.reindex(index=date_strs, columns=codes, fill_value=0.0)
-    price_df = price_df.ffill().bfill().fillna(0.0)
+    
+    # 不再需要获取收盘价，直接使用持仓成本计算市值
 
     buy_df = df[df["buy_dt"].notna()].copy()
     buy_df["date"] = buy_df["buy_dt"].dt.strftime("%Y-%m-%d")
@@ -321,11 +309,8 @@ def _calculate_daily_holdings(
             )
             avg_cost_map[code] = avg_cost
 
-            price = 0.0
-            if code in price_df.columns and date_str in price_df.index:
-                price = float(price_df.at[date_str, code] or 0.0)
-            if price <= 0.0:
-                price = avg_cost
+            # 直接使用持仓成本作为价格，不再使用收盘价
+            price = avg_cost
 
             market_value = float(quantity) * price
             previous_value = prev_market_values.get(code, 0.0)
@@ -338,7 +323,7 @@ def _calculate_daily_holdings(
                 "previous_market_value": previous_value,
                 "begin_market_value": previous_value,
                 "net_cash_flow": net_cash,
-                "close_price": price,
+                "close_price": price,  # 保持字段名，但值为持仓成本
                 "name": name,
             }
 
@@ -711,39 +696,71 @@ def get_transactions(
     return transactions
 
 
-def get_periods_config() -> Dict[str, Tuple[str, str]]:
+def get_periods_config(
+    csv_path: Optional[str] = None,
+    report_year: Optional[str] = "AUTO",
+) -> Dict[str, Tuple[str, str]]:
     """
     获取统计区间配置
 
     返回格式: { "统计期间": ("起始日", "结束日") }
 
+    参数:
+        csv_path: 交割单CSV路径
+        report_year: 报告年份，用于限定统计区间
+                    "AUTO" - 使用 config.REPORT_YEAR
+                    "2015" - 限定为2015年
+                    None - 不限制年份
+
     返回:
         Dict: 统计期间配置
     """
+    from config import REPORT_YEAR as CONFIG_REPORT_YEAR
+    
+    # 处理 report_year 参数
+    if report_year == "AUTO":
+        report_year = CONFIG_REPORT_YEAR
+    
     # 从交割单读取日期范围
     from calc.utils import _read_csv_date_range
 
     try:
-        min_date, max_date = _read_csv_date_range()
+        min_date, max_date = _read_csv_date_range(csv_path)
     except:
         min_date, max_date = "2015-01-05", "2025-11-05"
 
+    # 如果指定了 report_year，限制日期范围
+    if report_year:
+        year_start = f"{report_year}-01-01"
+        year_end = f"{report_year}-12-31"
+        
+        # 限制 min_date 和 max_date
+        if min_date < year_start:
+            min_date = year_start
+        if max_date > year_end:
+            max_date = year_end
+        
+        # 确保 min_date 不晚于 max_date
+        if min_date > max_date:
+            min_date = max_date
+
     # 计算常用统计期间
     end_date = pd.to_datetime(max_date)
+    start_date = pd.to_datetime(min_date)
 
     periods = {
         "成立以来": (min_date, max_date),
-        "近一年": ((end_date - pd.DateOffset(years=1)).strftime("%Y-%m-%d"), max_date),
+        "近一年": (max((end_date - pd.DateOffset(years=1)), start_date).strftime("%Y-%m-%d"), max_date),
         "近六个月": (
-            (end_date - pd.DateOffset(months=6)).strftime("%Y-%m-%d"),
+            max((end_date - pd.DateOffset(months=6)), start_date).strftime("%Y-%m-%d"),
             max_date,
         ),
         "近三个月": (
-            (end_date - pd.DateOffset(months=3)).strftime("%Y-%m-%d"),
+            max((end_date - pd.DateOffset(months=3)), start_date).strftime("%Y-%m-%d"),
             max_date,
         ),
         "近一个月": (
-            (end_date - pd.DateOffset(months=1)).strftime("%Y-%m-%d"),
+            max((end_date - pd.DateOffset(months=1)), start_date).strftime("%Y-%m-%d"),
             max_date,
         ),
     }
@@ -1177,6 +1194,7 @@ def get_benchmark_industry_returns(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     csv_path: Optional[str] = None,
+    weight_date: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     获取基准指数各行业的期间收益率
@@ -1189,6 +1207,7 @@ def get_benchmark_industry_returns(
         start_date: 开始日期 YYYY-MM-DD（默认交割单起始日期）
         end_date: 结束日期 YYYY-MM-DD（默认交割单结束日期）
         csv_path: 交割单路径
+        weight_date: 权重查询日期（如果end_date无权重数据，可指定备用日期）
 
     返回:
         Dict[str, float]: {"行业名称": 收益率（小数）}
@@ -1206,6 +1225,7 @@ def get_benchmark_industry_returns(
         - 需要 TUSHARE_TOKEN 环境变量
         - 收益率为小数格式（符合文档要求）
         - 基于成分股权重计算加权平均收益
+        - 如果end_date无权重数据，可通过weight_date指定备用日期
     """
     try:
         import tushare as ts
@@ -1241,24 +1261,29 @@ def get_benchmark_industry_returns(
     # 转换为 YYYYMMDD
     s = start_date.replace("-", "")
     e = end_date.replace("-", "")
+    
+    # 优先使用 weight_date，否则使用 end_date
+    weight_query_date = weight_date if weight_date else end_date
+    w = weight_query_date.replace("-", "")
 
     # 获取期末的成分股权重
     ts.set_token(token)
     pro = ts.pro_api()
 
-    df_weight = pro.index_weight(index_code=index_code, trade_date=e)
+    df_weight = pro.index_weight(index_code=index_code, trade_date=w)
     if df_weight is None or df_weight.empty:
+        # 如果指定了weight_date但失败，尝试回溯
+        if weight_date:
+            print(f"   ⚠️  无法获取 {weight_date} 的权重数据，尝试回溯...")
         # 尝试获取最近一个交易日的权重
-        df_daily = pro.index_daily(ts_code=index_code, start_date=e, end_date=e)
-        if df_daily.empty:
-            raise ValueError(f"未获取到指数数据: {index_code} {end_date}")
         # 向前查找最近的权重数据
-        for i in range(30):  # 最多回溯30天
+        for i in range(60):  # 最多回溯60天
             check_date = (
-                datetime.strptime(end_date, "%Y-%m-%d") - timedelta(days=i)
+                datetime.strptime(weight_query_date, "%Y-%m-%d") - timedelta(days=i)
             ).strftime("%Y%m%d")
             df_weight = pro.index_weight(index_code=index_code, trade_date=check_date)
             if not df_weight.empty:
+                print(f"   ✓ 使用 {check_date[:4]}-{check_date[4:6]}-{check_date[6:]} 的权重数据")
                 break
         if df_weight.empty:
             raise ValueError(f"未找到有效的成分股权重数据: {index_code}")
