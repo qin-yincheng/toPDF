@@ -27,7 +27,7 @@ def _generate_mock_performance_data() -> Dict[str, Any]:
     """
     return {
         # 总体表现
-        'product_name': '阳光安盛多禾一号私募证券投资基金',
+        'product_name': '私募基金产品',
         'establishment_date': '2023-01-13',
         'current_scale': 154.55,  # 万元
         'investment_strategy': '无',
@@ -138,7 +138,7 @@ def plot_performance_overview_table(
                               facecolor='#1f77b4', edgecolor='none')
         ax.add_patch(rect1)
         ax.text(start_x + col_width/2, y_start + 0.05, section1_title, 
-                fontsize=12, fontweight='bold', ha='center', va='center')
+                fontsize=16, fontweight='bold', ha='center', va='center')
     
     table1 = ax.table(
         cellText=section1_data,
@@ -147,18 +147,18 @@ def plot_performance_overview_table(
         bbox=[start_x, y_start - len(section1_data) * row_height, col_width, len(section1_data) * row_height]
     )
     table1.auto_set_font_size(False)
-    table1.set_fontsize(12)
-    table1.scale(1, 1.5)
+    table1.set_fontsize(16)
+    # table1.scale(1, 1.5)
     
     # 设置第一部分表格样式
     for i in range(len(section1_data)):
         for j in range(2):
             cell = table1[(i, j)]
             if j == 0:
-                cell.set_text_props(ha='left', weight='normal')
+                cell.set_text_props(ha='left', weight='normal', fontsize=16)
                 cell.set_facecolor('#f8f8f8')
             else:
-                cell.set_text_props(ha='right')
+                cell.set_text_props(ha='right', fontsize=16)
                 cell.set_facecolor('#ffffff')
             # 移除边框，使表格更简洁
             cell.set_edgecolor('none')
@@ -169,7 +169,7 @@ def plot_performance_overview_table(
     if show_title:
         section2_title = '业绩统计'
         ax.text(x2 + col_width/2, y_start + 0.05, section2_title, 
-                fontsize=12, fontweight='bold', ha='center', va='center')
+                fontsize=16, fontweight='bold', ha='center', va='center')
     
     table2 = ax.table(
         cellText=section2_data,
@@ -178,7 +178,7 @@ def plot_performance_overview_table(
         bbox=[x2, y_start - len(section2_data) * row_height, col_width, len(section2_data) * row_height]
     )
     table2.auto_set_font_size(False)
-    table2.set_fontsize(12)
+    table2.set_fontsize(16)
     table2.scale(1, 1.5)
     
     # 设置第二部分表格样式
@@ -186,10 +186,10 @@ def plot_performance_overview_table(
         for j in range(2):
             cell = table2[(i, j)]
             if j == 0:
-                cell.set_text_props(ha='left', weight='normal')
+                cell.set_text_props(ha='left', weight='normal', fontsize=16)
                 cell.set_facecolor('#f8f8f8')
             else:
-                cell.set_text_props(ha='right')
+                cell.set_text_props(ha='right', fontsize=16)
                 cell.set_facecolor('#ffffff')
             # 移除边框，使表格更简洁
             cell.set_edgecolor('none')
@@ -200,7 +200,7 @@ def plot_performance_overview_table(
     if show_title:
         section3_title = '收益风险特征'
         ax.text(x3 + col_width/2, y_start + 0.05, section3_title, 
-                fontsize=12, fontweight='bold', ha='center', va='center')
+                fontsize=16, fontweight='bold', ha='center', va='center')
     
     table3 = ax.table(
         cellText=section3_data,
@@ -209,7 +209,7 @@ def plot_performance_overview_table(
         bbox=[x3, y_start - len(section3_data) * row_height, col_width, len(section3_data) * row_height]
     )
     table3.auto_set_font_size(False)
-    table3.set_fontsize(12)
+    table3.set_fontsize(16)
     table3.scale(1, 1.5)
     
     # 设置第三部分表格样式
@@ -217,14 +217,14 @@ def plot_performance_overview_table(
         for j in range(2):
             cell = table3[(i, j)]
             if j == 0:
-                cell.set_text_props(ha='left', weight='normal')
+                cell.set_text_props(ha='left', weight='normal', fontsize=16)
                 cell.set_facecolor('#f8f8f8')
             else:
                 # 前5行的数值设置为蓝色，后3行保持黑色
                 if i in section3_numeric_rows:
-                    cell.set_text_props(ha='right', color='#1f77b4')
+                    cell.set_text_props(ha='right', color='#1f77b4', fontsize=16)
                 else:
-                    cell.set_text_props(ha='right', color='black')
+                    cell.set_text_props(ha='right', color='black', fontsize=16)
                 cell.set_facecolor('#ffffff')
             # 移除边框，使表格更简洁
             cell.set_edgecolor('none')

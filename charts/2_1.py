@@ -84,7 +84,7 @@ def plot_dynamic_drawdown_chart(
     # 绘制产品回撤线（蓝色）
     color1 = '#5470c6'  # 深蓝色
     line1 = ax.plot(x_indices, product_drawdown, color=color1, marker='', 
-                     markersize=4, linewidth=2, label='阳光安盛多禾一号私募证券投资基金',
+                     markersize=4, linewidth=2, label='私募基金产品',
                      markerfacecolor='white', markeredgecolor=color1,
                      markeredgewidth=1.5)
     
@@ -159,7 +159,7 @@ def plot_dynamic_drawdown_table(
     figsize: tuple = (6, 6),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制动态回撤汇总表格
@@ -225,7 +225,7 @@ def plot_dynamic_drawdown_table(
     for i in range(2):
         cell = table[(0, i)]
         cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-        cell.set_text_props(weight='bold', ha='center')
+        cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
         cell.set_edgecolor('#f0f0f0')
         cell.set_linewidth(1)
     
@@ -235,9 +235,9 @@ def plot_dynamic_drawdown_table(
             cell = table[(i, j)]
             # 第一列（指标列）左对齐，第二列（数值列）左对齐
             if j == 0:
-                cell.set_text_props(ha='center')
+                cell.set_text_props(ha='center', fontsize=table_fontsize)
             else:
-                cell.set_text_props(ha='center')
+                cell.set_text_props(ha='center', fontsize=table_fontsize)
             
             # 交替行颜色
             if i % 2 == 0:

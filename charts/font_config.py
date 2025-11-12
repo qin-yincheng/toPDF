@@ -85,12 +85,16 @@ def setup_chinese_font() -> None:
     
     # 其他字体配置
     plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
-    plt.rcParams['font.size'] = 12
-    plt.rcParams['axes.titlesize'] = 16
-    plt.rcParams['axes.labelsize'] = 14
-    plt.rcParams['xtick.labelsize'] = 12
-    plt.rcParams['ytick.labelsize'] = 12
-    plt.rcParams['legend.fontsize'] = 10
+    plt.rcParams['font.size'] = 14
+    plt.rcParams['axes.titlesize'] = 18
+    plt.rcParams['axes.labelsize'] = 16
+    plt.rcParams['xtick.labelsize'] = 14
+    plt.rcParams['ytick.labelsize'] = 14
+    plt.rcParams['legend.fontsize'] = 12
+
+    # 专门为PDF优化的字体设置
+    plt.rcParams['pdf.fonttype'] = 42  # 最重要：输出TrueType字体
+    plt.rcParams['ps.fonttype'] = 42   # PostScript也使用TrueType
 
 
 def test_chinese_font():
