@@ -104,14 +104,14 @@ def plot_return_analysis_table(
     
     # 设置表格样式
     table.auto_set_font_size(False)
-    table.set_fontsize(12)
+    table.set_fontsize(16)
     table.scale(1, 2.2)
     
     # 设置表头样式
     for i in range(4):
         cell = table[(0, i)]
         cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-        cell.set_text_props(weight='bold', fontsize=12)
+        cell.set_text_props(weight='bold', fontsize=16)
         cell.set_edgecolor('#f0f0f0')
         cell.set_linewidth(1)
     
@@ -128,7 +128,7 @@ def plot_return_analysis_table(
                 cell.set_facecolor('#ffffff')  # 白色
             else:
                 cell.set_facecolor('#f8f8f8')  # 浅灰色
-            cell.set_text_props(ha='center', fontsize=12)
+            cell.set_text_props(ha='center', fontsize=16)
             
             cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(1)

@@ -150,7 +150,7 @@ def plot_indicator_analysis_table(
     save_path: Optional[str] = None,
     figsize: tuple = (18, 10),
     return_figure: bool = False,
-    table_fontsize: int = 12,
+    table_fontsize: int = 16,
     row_height_scale: float = 2.2
 ):
     """
@@ -186,7 +186,7 @@ def plot_indicator_analysis_table(
     ax.axis('off')
     
     # 准备表格数据
-    periods = ['统计期间', '近一个月', '近三个月', '近六个月', '近一年', '今年以来', '成立以来']
+    periods = ['近一个月', '近三个月', '近六个月', '近一年', '成立以来']
     indicators = [
         '*收益率(年化)', '*波动率(年化)', '*跟踪误差(年化)', '*下行波动率(年化)',
         '*夏普比率(年化)', '*索提诺比率(年化)', '*信息比率(年化)', '*最大回撤',
@@ -238,7 +238,7 @@ def plot_indicator_analysis_table(
     for i in range(len(table_data[0])):
         cell = table[(0, i)]
         cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-        cell.set_text_props(weight='bold', ha='center')
+        cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
         cell.set_edgecolor('#f0f0f0')
         cell.set_linewidth(1)
     
@@ -251,7 +251,7 @@ def plot_indicator_analysis_table(
             #     cell.set_text_props(ha='center', weight='bold')
             #     cell.set_facecolor('#ffffff')  # 浅灰色背景
             # else:
-            cell.set_text_props(ha='center')
+            cell.set_text_props(ha='center', fontsize=table_fontsize)
             # 交替行颜色
             if (i - 1) % 2 == 0:
                 cell.set_facecolor('#ffffff')  # 白色

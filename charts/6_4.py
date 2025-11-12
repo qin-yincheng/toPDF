@@ -17,7 +17,7 @@ def plot_turnover_rate_table(
     figsize: tuple = (16, 4),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制换手率 (年化) 表格
@@ -82,7 +82,7 @@ def plot_turnover_rate_table(
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
     table_width = 0.7   # 表格宽度为图形宽度的70%
     table_total_height = 0.7  # 表格总高度
-    table_fontsize = 12  # 字体大小统一为12
+    table_fontsize = 16  # 字体大小统一为16
     
     # 计算位置（居中）
     table_x = (1 - table_width) / 2
@@ -106,7 +106,7 @@ def plot_turnover_rate_table(
             cell = table[(i, j)]
             if i == 0:  # 表头
                 cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-                cell.set_text_props(weight='bold', ha='center')
+                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
             else:
                 # 交替行颜色：第一行数据（i=1，股票）白色，第二行（i=2，基金）浅灰，第三行（i=3，逆回购）白色
                 if (i - 1) % 2 == 0:  # 第一行和第三行数据（i=1, 3）白色
@@ -116,9 +116,9 @@ def plot_turnover_rate_table(
                 
                 # 第一列（资产分类）左对齐，其他列居中对齐
                 if j == 0:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                 else:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
             
             cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)

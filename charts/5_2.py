@@ -17,7 +17,7 @@ def plot_stock_holding_nodes_table(
     figsize: tuple = (10, 8),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制个股持仓节点表格
@@ -73,13 +73,13 @@ def plot_stock_holding_nodes_table(
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
     table_width = 0.7   # 表格宽度为图形宽度的70%
     table_total_height = 0.7  # 表格总高度
-    table_fontsize = 12  # 字体大小统一为12
+    table_fontsize = 16  # 字体大小统一为16
     
     # 计算位置（居中，但为标题留出空间）
     table_x = (1 - table_width) / 2
     if show_title:
         ax.text(0.5, 0.98, '个股持仓节点', transform=ax.transAxes,
-                ha='center', va='top', fontsize=12, fontweight='bold')
+                ha='center', va='top', fontsize=16, fontweight='bold')
         table_y = 0.10  # 顶部留出空间给标题
     else:
         table_y = (1 - table_total_height) / 2
@@ -102,15 +102,15 @@ def plot_stock_holding_nodes_table(
             cell = table[(i, j)]
             if i == 0:  # 表头
                 cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-                cell.set_text_props(weight='bold', ha='center')
+                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
             else:
                 # 所有数据行都是白色背景
                 cell.set_facecolor('#ffffff')
                 # 第一列左对齐，其他列居中
                 if j == 0:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                 else:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
             
             # 细灰色边框
             cell.set_edgecolor('#f0f0f0')

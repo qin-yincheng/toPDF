@@ -18,7 +18,7 @@ def plot_end_period_holdings_table(
     figsize: tuple = (16, 10),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制期末持仓表格
@@ -132,7 +132,7 @@ def plot_end_period_holdings_table(
     ax.add_patch(net_value_rect)
     ax.text(net_value_x + total_table_width / 2, y_top - net_value_height / 2, 
             net_value_text,
-            ha='center', va='center', fontsize=12, fontweight='bold')
+            ha='center', va='center', fontsize=16, fontweight='bold')
     
     # 绘制左侧资产明细表格（带标题）
     asset_title_y = table_y_start + asset_title_height  # 标题矩形顶部位置
@@ -147,7 +147,7 @@ def plot_end_period_holdings_table(
     ax.add_patch(asset_title_rect)
     ax.text(asset_x + asset_width / 2, asset_title_y - asset_title_height / 2,
             asset_title_text,
-            ha='center', va='center', fontsize=12, fontweight='bold')
+            ha='center', va='center', fontsize=16, fontweight='bold')
     
     # 资产明细表格
     asset_table = ax.table(
@@ -169,14 +169,14 @@ def plot_end_period_holdings_table(
             cell = asset_table[(i, j)]
             if i == 0:  # 表头
                 cell.set_facecolor('#f0f0f0')
-                cell.set_text_props(weight='bold', ha='center')
+                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
             else:
                 if j == 0:
                     # 资产名称列背景浅灰（所有行）
                     cell.set_facecolor('#f0f0f0')
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                 else:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                     # 交替行颜色：第一行数据（i=1）白色，第二行（i=2）浅灰，以此类推
                     # i=1 是奇数，应该是白色；i=2 是偶数，应该是浅灰
                     if (i - 1) % 2 == 0:  # 第一行数据（i=1）白色
@@ -199,7 +199,7 @@ def plot_end_period_holdings_table(
     ax.add_patch(liability_title_rect)
     ax.text(liability_x + liability_width / 2, liability_title_y - asset_title_height / 2,
             liability_title_text,
-            ha='center', va='center', fontsize=12, fontweight='bold')
+            ha='center', va='center', fontsize=16, fontweight='bold')
     
     # 计算资产表格的行高（用于对齐）
     # 资产表格有 len(asset_table_data) 行（包括表头）

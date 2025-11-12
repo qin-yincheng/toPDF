@@ -4,7 +4,7 @@
 直接调用各个图表生成函数，获取 figure 对象后统一生成 PDF
 """
 
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A3
 from reportlab.lib.units import cm, mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -103,6 +103,111 @@ def figure_to_image(fig, dpi: int = 200) -> BytesIO:
         print(f"  转换图片失败: {e}")
         plt.close(fig)
         raise
+
+
+def draw_header(
+    canvas_obj: canvas.Canvas,
+    page_width: float,
+    page_height: float,
+    top_margin: float,
+    chinese_font_name: str,
+    product_name: Optional[str] = None,
+    report_date: Optional[str] = None,
+    page_num: Optional[int] = None,
+) -> None:
+    """
+    绘制PDF页眉
+    
+    参数:
+        canvas_obj: reportlab Canvas 对象
+        page_width: 页面宽度（单位：点）
+        page_height: 页面高度（单位：点）
+        top_margin: 顶部边距（单位：点）
+        chinese_font_name: 中文字体名称
+        product_name: 产品名称（可选）
+        report_date: 报告日期（可选）
+        page_num: 页码（可选）
+    """
+    header_y = page_height - top_margin + 30  # 页眉位置
+    margin = 40
+    
+    try:
+        canvas_obj.setFont(chinese_font_name, 9)
+    except:
+        canvas_obj.setFont("Helvetica", 9)
+    
+    # # 左侧：产品名称或报告标题
+    # if product_name:
+    #     canvas_obj.drawString(margin, header_y, product_name)
+    # else:
+    #     canvas_obj.drawString(margin, header_y, "私募基金报告")
+    
+    # # 右侧：日期和页码
+    # right_text = ""
+    # if report_date:
+    #     right_text = report_date
+    # if page_num is not None:
+    #     if right_text:
+    #         right_text = f"{right_text}  |  第 {page_num} 页"
+    #     else:
+    #         right_text = f"第 {page_num} 页"
+    
+    # if right_text:
+    #     # 计算右对齐位置
+    #     canvas_obj.drawRightString(page_width - margin, header_y, right_text)
+    
+    # 绘制页眉分隔线
+    line_y = header_y
+    canvas_obj.setStrokeColorRGB(0, 0, 0)  # 浅灰色
+    canvas_obj.setLineWidth(0.5)
+    canvas_obj.line(margin-10, line_y, page_width - margin+10, line_y)
+
+
+def draw_footer(
+    canvas_obj: canvas.Canvas,
+    page_width: float,
+    bottom_margin: float,
+    chinese_font_name: str,
+    disclaimer: Optional[str] = None,
+    page_num: Optional[int] = None,
+    company_info: Optional[str] = None,
+) -> None:
+    """
+    绘制PDF页脚
+    
+    参数:
+        canvas_obj: reportlab Canvas 对象
+        page_width: 页面宽度（单位：点）
+        bottom_margin: 底部边距（单位：点）
+        chinese_font_name: 中文字体名称
+        disclaimer: 免责声明文本（可选）
+        page_num: 页码（可选）
+        company_info: 公司信息（可选）
+    """
+    footer_y = bottom_margin
+    margin = 40
+    
+    try:
+        canvas_obj.setFont(chinese_font_name, 8)
+    except:
+        canvas_obj.setFont("Helvetica", 8)
+    
+    # 左侧：免责声明或公司信息
+    left_text = disclaimer or "请务必阅读正文后的免责声明"
+    if company_info:
+        left_text = f"{company_info}  |  {left_text}"
+    canvas_obj.drawString(margin, footer_y, left_text)
+    
+    # # 右侧：页码
+    # if page_num is not None:
+    #     page_text = f"第 {page_num} 页"
+    #     canvas_obj.drawRightString(page_width - margin, footer_y, page_text)
+    
+    # # 绘制页脚分隔线
+    # line_y = footer_y + 12
+    # canvas_obj.setStrokeColorRGB(0.7, 0.7, 0.7)  # 浅灰色
+    # canvas_obj.setLineWidth(0.5)
+    # canvas_obj.line(margin, line_y, page_width - margin, line_y)
 
 
 def insert_figure(
@@ -340,7 +445,6 @@ def generate_page1(
     plot_liquidity_asset_chart = chart2_5.plot_liquidity_asset_chart
     plot_market_value_pie_chart = chart3_1.plot_market_value_pie_chart
     plot_average_market_value_bar_chart = chart3_1.plot_average_market_value_bar_chart
-    plot_industry_holding_table = chart3_1.plot_industry_holding_table
     plot_industry_proportion_timeseries = chart3_2.plot_industry_proportion_timeseries
     plot_industry_deviation_timeseries = chart3_3.plot_industry_deviation_timeseries
     plot_asset_performance_attribution_table = (
@@ -397,13 +501,40 @@ def generate_page1(
         final_output = f"{base}_new{ext}"
 
     # 创建 PDF 画布
-    c = canvas.Canvas(final_output, pagesize=A4)
-    page_width, page_height = A4
+    c = canvas.Canvas(final_output, pagesize=A3)
+    page_width, page_height = A3
 
     # 定义布局参数（单位：点，1 inch = 72 points）
-    margin = 20  # 边距
-    top_margin = 20
-    bottom_margin = 20
+    margin = 45  # 边距
+    top_margin = 80
+    bottom_margin = 40
+
+    # 提取产品信息用于页眉
+    product_name = None
+    report_date = None
+    if data:
+        # 从 performance_overview 中提取产品名称
+        perf_data = safe_get("performance_overview")
+        if perf_data and isinstance(perf_data, dict):
+            product_name = perf_data.get("product_name")
+        
+        # 从 performance_overview 中提取最新净值日期作为报告日期
+        if perf_data and isinstance(perf_data, dict):
+            latest_nav_date = perf_data.get("latest_nav_date")
+            if latest_nav_date:
+                report_date = latest_nav_date
+    
+    # 绘制页眉
+    draw_header(
+        canvas_obj=c,
+        page_width=page_width,
+        page_height=page_height,
+        top_margin=top_margin,
+        chinese_font_name=chinese_font_name,
+        product_name=product_name,
+        report_date=report_date,
+        page_num=1,
+    )
 
     # 计算可用区域
     usable_width = page_width - 2 * margin
@@ -414,11 +545,11 @@ def generate_page1(
         """在 y_top 处绘制左对齐标题与蓝色竖条，返回内容起始 y 坐标。"""
         try:
             # 使用已注册的中文字体
-            c.setFont(chinese_font_name, 8)
+            c.setFont(chinese_font_name, 16)
         except:
             # 后备字体
-            c.setFont("Helvetica-Bold", 8)
-        font_size = 8
+            c.setFont("Helvetica-Bold", 16)
+        font_size = 16
         # 文本字符高度（中文字符高度约为字体大小的0.85倍）
         text_height = font_size * 0.85
         # 竖条高度与文本高度一致
@@ -428,8 +559,8 @@ def generate_page1(
         # 蓝色竖条：以 center_y 为中心
         bar_x = margin - 3
         bar_y = center_y - bar_height / 2
-        c.setFillColorRGB(0.12, 0.47, 0.71)
-        c.rect(bar_x, bar_y, 3, bar_height, fill=1, stroke=0)
+        c.setFillColorRGB(0.1529, 0.2667, 0.8157) 
+        c.rect(bar_x, bar_y, 1.5, bar_height, fill=1, stroke=0)
         # 标题文本：计算基线位置，使文本中心与竖条中心对齐
         # 文本中心在基线上方约字体大小的0.4倍处
         text_baseline = center_y - font_size * 0.4
@@ -477,9 +608,32 @@ def generate_page1(
     y_cursor = page_height - top_margin  # 从顶部往下排版
 
     # 分页辅助函数
+    page_num = 1  # 当前页码
     def new_page() -> None:
-        nonlocal y_cursor
+        nonlocal y_cursor, page_num
+        # 为当前页添加页脚（包括第一页）
+        draw_footer(
+            canvas_obj=c,
+            page_width=page_width,
+            bottom_margin=bottom_margin,
+            chinese_font_name=chinese_font_name,
+            disclaimer="请务必阅读正文后的免责声明",
+            page_num=page_num,
+        )
+        # 创建新页面
         c.showPage()
+        page_num += 1
+        # 为新页面添加页眉
+        draw_header(
+            canvas_obj=c,
+            page_width=page_width,
+            page_height=page_height,
+            top_margin=top_margin,
+            chinese_font_name=chinese_font_name,
+            product_name=product_name,
+            report_date=report_date,
+            page_num=page_num,
+        )
         y_cursor = page_height - top_margin
 
     def ensure_space(needed_height: float) -> None:
@@ -520,7 +674,7 @@ def generate_page1(
             figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
             show_title=False,
             include_right_table=True,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig2, x_left, y_cursor - h, usable_width, h)
         y_cursor -= h + 10
@@ -609,7 +763,7 @@ def generate_page1(
             data=safe_get("indicator_analysis"),
             return_figure=True,
             figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
-            table_fontsize=12,
+            table_fontsize=16,
             row_height_scale=2.3,
         )
         insert_figure(c, fig8, x_left, y_cursor - h, usable_width, h)
@@ -674,7 +828,7 @@ def generate_page1(
             return_figure=True,
             figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
             show_title=False,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig12, x_left, y_cursor - h, usable_width, h)
         y_cursor -= h + 10
@@ -754,19 +908,6 @@ def generate_page1(
         )
 
         y_cursor -= h_charts + 10
-
-        # 行13：持股行业分析 - 表格（整行）
-        h_table = row_heights["industry_table"]
-        ensure_space(h_table + 10)
-        fig17 = plot_industry_holding_table(
-            data=safe_get("industry_attribution.industry_tables"),
-            return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h_table / 72 * 2.54),
-            show_title=True,
-            table_fontsize=12,
-        )
-        insert_figure(c, fig17, x_left, y_cursor - h_table, usable_width, h_table)
-        y_cursor -= h_table + 10
     except Exception as e:
         import traceback
 
@@ -829,7 +970,7 @@ def generate_page1(
             return_figure=True,
             figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
             show_title=False,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig20, x_left, y_cursor - h, usable_width, h)
         y_cursor -= h + 10
@@ -877,7 +1018,7 @@ def generate_page1(
             return_figure=True,
             figsize=(right_w / 72 * 2.54 * 0.7, h_bottom / 72 * 2.54 * 0.7),
             show_title=True,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(
             c, fig23, x_left + left_w + 5, y_cursor - h_bottom, right_w, h_bottom
@@ -899,7 +1040,7 @@ def generate_page1(
         y_cursor = draw_section_title(y_cursor, "股票行业归因")
 
         # 左侧表格占50%，右侧图表占50%
-        left_w = usable_width * 0.5
+        left_w = usable_width * 0.7
         right_w = usable_width - left_w - 5
 
         # 第一行：收益额排名前十（表格在左，图表在右）
@@ -909,7 +1050,7 @@ def generate_page1(
             return_figure=True,
             figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
             show_title=True,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig24_table, x_left, y_cursor - h, left_w, h)
 
@@ -931,7 +1072,7 @@ def generate_page1(
             return_figure=True,
             figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
             show_title=True,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig25_table, x_left, y_cursor - h, left_w, h)
 
@@ -960,7 +1101,7 @@ def generate_page1(
         y_cursor = draw_section_title(y_cursor, "股票绩效归因")
 
         # 左侧表格占50%，右侧图表占50%
-        left_w = usable_width * 0.5
+        left_w = usable_width * 0.4
         right_w = usable_width - left_w - 5
 
         # 第一行：盈利前十（表格在左，图表在右）
@@ -970,7 +1111,7 @@ def generate_page1(
             return_figure=True,
             figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
             show_title=True,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig26_table, x_left, y_cursor - h, left_w, h)
 
@@ -992,7 +1133,7 @@ def generate_page1(
             return_figure=True,
             figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
             show_title=True,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig27_table, x_left, y_cursor - h, left_w, h)
 
@@ -1037,7 +1178,7 @@ def generate_page1(
             return_figure=True,
             figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
             show_title=False,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig28_table, x_left + left_w + 5, y_cursor - h, right_w, h)
         y_cursor -= h + 10
@@ -1057,7 +1198,7 @@ def generate_page1(
             return_figure=True,
             figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
             show_title=True,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig29, x_left, y_cursor - h, usable_width, h)
         y_cursor -= h + 10
@@ -1084,7 +1225,7 @@ def generate_page1(
             return_figure=True,
             figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
             show_title=True,
-            table_fontsize=12,
+            table_fontsize=16,
         )
         insert_figure(c, fig30_table, x_left, y_cursor - h, left_w, h)
 
@@ -1100,13 +1241,15 @@ def generate_page1(
     except Exception as e:
         print(f"  期间交易图表生成失败: {e}")
     
-    # 添加页脚
-    footer_y = bottom_margin
-    try:
-        c.setFont(chinese_font_name, 8)
-    except:
-        c.setFont("Helvetica", 8)
-    c.drawString(margin, footer_y, "请务必阅读正文后的免责声明")
+    # 添加最后一页的页脚
+    draw_footer(
+        canvas_obj=c,
+        page_width=page_width,
+        bottom_margin=bottom_margin,
+        chinese_font_name=chinese_font_name,
+        disclaimer="请务必阅读正文后的免责声明",
+        page_num=page_num,
+    )
     
     # 保存 PDF
     c.save()
