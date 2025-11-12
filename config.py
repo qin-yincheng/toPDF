@@ -8,7 +8,7 @@ DOCS_DIR = ROOT_DIR / "docs"
 # 数据文件（统一存放在 docs/ 下）
 EXCEL_FILE = DOCS_DIR / "交割单.xlsx"
 CSV_FILE = DOCS_DIR / "交割单.csv"  # 完整交割单（2015-2025）
-# CSV_FILE = DOCS_DIR / "交割单_2015.csv"  # 仅2015年数据
+# CSV_FILE = DOCS_DIR / "交割单.csv"  # 仅2015年数据
 
 # CSV 编码
 CSV_ENCODING = "utf-8-sig"
