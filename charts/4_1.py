@@ -436,7 +436,7 @@ def plot_brinson_attribution_table(
     figsize: tuple = (4, 1.2),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制归因分析表格
@@ -475,7 +475,7 @@ def plot_brinson_attribution_table(
     ax.add_patch(title_rect)
     ax.text(table_x + table_width/2, table_y + table_total_height - title_height/2, 
             '归因分析',
-            ha='center', va='center', fontsize=12, fontweight='bold',
+            ha='center', va='center', fontsize=table_fontsize, fontweight='bold',
             transform=ax.transAxes)
     
     # 绘制数据表格（在标题行下方）
@@ -495,10 +495,10 @@ def plot_brinson_attribution_table(
             cell = table[(i, j)]
             if j == 0:
                 cell.set_facecolor('#ffffff')
-                cell.set_text_props(ha='center', weight='normal')
+                cell.set_text_props(ha='center', weight='normal', fontsize=table_fontsize)
             else:
                 cell.set_facecolor('#ffffff')
-                cell.set_text_props(ha='center')
+                cell.set_text_props(ha='center', fontsize=table_fontsize)
             cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
     

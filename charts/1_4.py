@@ -254,7 +254,8 @@ def plot_daily_return_table(
     save_path: Optional[str] = None,
     figsize: tuple = (6, 4),
     return_figure: bool = False,
-    show_title: bool = True
+    show_title: bool = True,
+    table_fontsize: int = 16
 ):
     """
     绘制日收益表现摘要表格
@@ -311,7 +312,7 @@ def plot_daily_return_table(
     
     # 设置表格样式
     table.auto_set_font_size(False)
-    table.set_fontsize(12)
+    table.set_fontsize(table_fontsize)
     table.scale(1, 2.5)
     
     # 设置表格单元格样式
@@ -319,10 +320,10 @@ def plot_daily_return_table(
         for j in range(2):
             cell = table[(i, j)]
             if j == 0:  # 第一列（标签）
-                cell.set_text_props(weight='bold', ha='center', fontsize=12)
+                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
                 cell.set_facecolor('#ffffff')
             else:  # 第二列（数值）
-                cell.set_text_props(ha='center', fontsize=12)
+                cell.set_text_props(ha='center', fontsize=table_fontsize)
                 if i == 0:  # 最大收益，绿色
                     cell.set_text_props(color='black')
                 else:  # 最大亏损，红色
@@ -334,7 +335,7 @@ def plot_daily_return_table(
     if show_title:
         ax.text(0.5, 0.9, '日收益表现摘要', 
                 transform=ax.transAxes,
-                fontsize=14, fontweight='bold',
+                fontsize=16, fontweight='bold',
                 ha='center', va='top')
     
     # 调整布局

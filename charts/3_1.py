@@ -1,14 +1,13 @@
 """
 持股行业分析图表生成
 使用 matplotlib 生成持股行业分析图表
-包含三个部分：饼图（期末市值占比）、横向柱状图（期间平均市值占产品净资产比）、数据表格（期末持股行业风格）
+包含两个部分：饼图（期末市值占比）、横向柱状图（期间平均市值占产品净资产比）
 """
 
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from charts.font_config import setup_chinese_font
-from matplotlib.patches import Rectangle
 import numpy as np
 
 
@@ -291,141 +290,6 @@ def plot_average_market_value_bar_chart(
         return fig
 
 
-def plot_industry_holding_table(
-    data: Optional[Dict[str, Any]] = None,
-    save_path: Optional[str] = None,
-    figsize: tuple = (16, 8),
-    return_figure: bool = False,
-    show_title: bool = True,
-    table_fontsize: int = 12
-):
-    """
-    绘制期末持股行业风格数据表格
-    
-    参数:
-        data: 数据字典，格式为：
-            {
-                'industry_data': [
-                    {
-                        'industry': '食品饮料',
-                        'combined_pe': -21.79,      # 组合PE
-                        'combined_pb': 2.01,        # 组合PB
-                        'industry_avg_pe': 21.10,    # 行业平均PE
-                        'industry_avg_pb': 4.65,    # 行业平均PB
-                        'market_value': 30.55,     # 持仓市值(万元)
-                        'proportion': 19.80         # 占比(%)
-                    },
-                    ...
-                ]
-            }
-            如果为None，则使用假数据
-        save_path: 保存路径
-        figsize: 图表大小（宽，高）
-        return_figure: 是否返回 figure 对象
-        show_title: 是否显示标题
-        table_fontsize: 表格字体大小
-    
-    返回:
-        figure 对象或保存的文件路径
-    """
-    # 配置中文字体
-    setup_chinese_font()
-    
-    # 如果没有提供数据，生成假数据
-    if data is None:
-        data = _generate_mock_industry_data()
-    
-    # 获取行业数据
-    industry_data = data.get('industry_data', [])
-    
-    # 准备表格数据
-    table_data = []
-    for item in industry_data:
-        table_data.append([
-            item.get('industry', ''),
-            f"{item.get('combined_pe', 0):.2f}",
-            f"{item.get('combined_pb', 0):.2f}",
-            f"{item.get('industry_avg_pe', 0):.2f}",
-            f"{item.get('industry_avg_pb', 0):.2f}",
-            f"{item.get('market_value', 0):.2f}",
-            f"{item.get('proportion', 0):.2f}"
-        ])
-    
-    # 如果没有数据，添加空行
-    if not table_data:
-        table_data = [['暂无数据', '-', '-', '-', '-', '-', '-']]
-    
-    # 表头
-    headers = ['分类', '组合PE', '组合PB', '行业平均PE', '行业平均PB', '持仓市值(万元)', '占比(%)']
-    
-    # 创建图表
-    fig, ax = plt.subplots(figsize=figsize)
-    ax.axis('off')
-    
-    # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 0.7   # 表格宽度为图形宽度的70%
-    table_total_height = 0.8  # 表格总高度
-    table_fontsize = 12  # 字体大小统一为12
-    
-    # 计算位置（居中，但为标题和脚注留出空间）
-    table_x = (1 - table_width) / 2
-    table_y = 0.1  # 底部留15%给脚注，顶部留15%给标题
-    
-    # 绘制表格
-    table = ax.table(
-        cellText=table_data,
-        colLabels=headers,
-        cellLoc='center',
-        loc='center',
-        bbox=[0, table_y, 1, table_total_height]
-    )
-    table.auto_set_font_size(False)
-    table.set_fontsize(table_fontsize)
-    table.scale(1, 1.5)  # 调整行高
-    
-    # 设置表格样式
-    for i in range(len(table_data) + 1):  # +1 包括表头
-        for j in range(len(headers)):
-            cell = table[(i, j)]
-            if i == 0:  # 表头
-                cell.set_facecolor('#f0f0f0')
-                cell.set_text_props(weight='bold', ha='center')
-            else:
-                # 交替行颜色
-                if (i - 1) % 2 == 0:
-                    cell.set_facecolor('#ffffff')
-                else:
-                    cell.set_facecolor('#f8f8f8')
-                cell.set_text_props(ha='center')
-            cell.set_edgecolor('#f0f0f0')
-            cell.set_linewidth(1)
-    
-    # 设置标题（在顶部，左对齐）
-    if show_title:
-        ax.text(0, 0.99, '期末持股行业风格', transform=ax.transAxes,
-                ha='left', va='top', fontsize=14, fontweight='bold')
-    
-    # 添加脚注（在底部，左对齐）
-    ax.text(0, 0.01, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,
-            ha='left', va='bottom', fontsize=8, style='italic')
-    
-    # 调整布局
-    plt.tight_layout()
-    
-    # 如果只需要返回 figure 对象，不保存
-    if return_figure:
-        return fig
-    
-    # 如果提供了保存路径，保存图表为 PDF（矢量格式，高清）
-    if save_path:
-        plt.savefig(save_path, format='pdf', bbox_inches='tight', dpi=300)
-        plt.close()
-        return save_path
-    else:
-        # 不保存，返回 figure 对象
-        return fig
-
-
 def _generate_mock_industry_data() -> Dict[str, Any]:
     """
     生成假数据用于测试持股行业分析图表
@@ -523,11 +387,6 @@ if __name__ == '__main__':
     print("  生成柱状图...")
     fig2 = plot_average_market_value_bar_chart()
     print(f"  柱状图已生成")
-    
-    # 测试表格
-    print("  生成表格...")
-    fig3 = plot_industry_holding_table()
-    print(f"  表格已生成")
     
     print("\n所有图表生成完成！")
 

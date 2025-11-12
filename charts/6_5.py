@@ -17,7 +17,7 @@ def plot_period_transaction_table(
     figsize: tuple = (10, 4),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制期间交易表格
@@ -73,7 +73,7 @@ def plot_period_transaction_table(
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
     table_width = 0.7   # 表格宽度为图形宽度的70%
     table_total_height = 0.7  # 表格总高度
-    table_fontsize = 12  # 字体大小统一为12
+    table_fontsize = 16  # 字体大小统一为16
     
     # 计算位置（居中）
     table_x = (1 - table_width) / 2
@@ -97,16 +97,16 @@ def plot_period_transaction_table(
             cell = table[(i, j)]
             if i == 0:  # 表头
                 cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-                cell.set_text_props(weight='bold', ha='center')
+                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
             else:
                 # 所有数据行都是白色背景
                 cell.set_facecolor('#ffffff')
                 
                 # 第一列（资产分类）左对齐，数值列右对齐
                 if j == 0:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                 else:
-                    cell.set_text_props(ha='center')  # 数值列右对齐
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)  # 数值列右对齐
             
             cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)

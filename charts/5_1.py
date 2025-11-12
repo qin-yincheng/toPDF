@@ -17,7 +17,7 @@ def plot_stock_profit_table(
     figsize: tuple = (10, 8),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制盈利前十的表格
@@ -77,13 +77,13 @@ def plot_stock_profit_table(
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
     table_width = 1   # 表格宽度为图形宽度的100%
     table_total_height = 0.7  # 表格总高度
-    table_fontsize = 12  # 字体大小统一为12
+    table_fontsize = 16  # 字体大小统一为16
     
     # 计算位置（左对齐，但为标题留出空间）
     table_x = 0  # 左边距0，使表格左对齐
     if show_title:
         ax.text(0, 0.92, '盈利前十', transform=ax.transAxes,
-                ha='left', va='top', fontsize=12, fontweight='bold')
+                ha='left', va='top', fontsize=16, fontweight='bold')
         # table_y 是表格底部位置，表格高度是 table_total_height
         # 如果希望表格顶部在 0.85，则底部 = 0.85 - table_total_height
         table_y = 0.85 - table_total_height  # 表格顶部在85%，与标题保持合理距离
@@ -108,7 +108,7 @@ def plot_stock_profit_table(
             cell = table[(i, j)]
             if i == 0:  # 表头
                 cell.set_facecolor('#f0f0f0')
-                cell.set_text_props(weight='bold', ha='center')
+                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
             else:
                 # 交替行颜色
                 if (i - 1) % 2 == 0:
@@ -117,9 +117,9 @@ def plot_stock_profit_table(
                     cell.set_facecolor('#f8f8f8')
                 # 第一列和第二列左对齐，其他列居中
                 if j in [0, 1]:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                 else:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
             
             cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)
@@ -250,7 +250,7 @@ def plot_stock_loss_table(
     figsize: tuple = (10, 8),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制亏损前十的表格
@@ -310,13 +310,13 @@ def plot_stock_loss_table(
     # 使用类似 4_1.py 的方式：缩小表格，放大字体
     table_width = 1   # 表格宽度为图形宽度的100%
     table_total_height = 0.7  # 表格总高度
-    table_fontsize = 12  # 字体大小统一为12
+    table_fontsize = 16  # 字体大小统一为16
     
     # 计算位置（左对齐，但为标题留出空间）
     table_x = 0  # 左边距0，使表格左对齐
     if show_title:
         ax.text(0, 0.92, '亏损前十', transform=ax.transAxes,
-                ha='left', va='top', fontsize=12, fontweight='bold')
+                ha='left', va='top', fontsize=16, fontweight='bold')
         # table_y 是表格底部位置，表格高度是 table_total_height
         # 如果希望表格顶部在 0.85，则底部 = 0.85 - table_total_height
         table_y = 0.85 - table_total_height  # 表格顶部在85%，与标题保持合理距离
@@ -341,7 +341,7 @@ def plot_stock_loss_table(
             cell = table[(i, j)]
             if i == 0:  # 表头
                 cell.set_facecolor('#f0f0f0')
-                cell.set_text_props(weight='bold', ha='center')
+                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
             else:
                 # 交替行颜色
                 if (i - 1) % 2 == 0:
@@ -350,9 +350,9 @@ def plot_stock_loss_table(
                     cell.set_facecolor('#f8f8f8')
                 # 第一列和第二列左对齐，其他列居中
                 if j in [0, 1]:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                 else:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
             
             cell.set_edgecolor('#f0f0f0')
             cell.set_linewidth(0.8)

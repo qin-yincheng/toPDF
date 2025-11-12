@@ -29,7 +29,7 @@ def plot_scale_overview(
     return_figure: bool = False,
     show_title: bool = True,
     include_right_table: bool = False,
-    table_fontsize: int = 12
+    table_fontsize: int = 16
 ):
     """
     绘制产品规模总览图（双Y轴折线图）
@@ -247,7 +247,7 @@ def plot_scale_overview(
         for j in range(2):
             header_cell = tbl[(0, j)]
             header_cell.set_facecolor('#f0f0f0')
-            header_cell.set_text_props(weight='bold', ha='center')
+            header_cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
             header_cell.set_edgecolor('#f0f0f0')
             header_cell.set_linewidth(1)
         # 数据行样式
@@ -256,9 +256,9 @@ def plot_scale_overview(
             for j in range(2):
                 cell = tbl[(i, j)]
                 if j == 0:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                 else:
-                    cell.set_text_props(ha='center')
+                    cell.set_text_props(ha='center', fontsize=table_fontsize)
                 cell.set_edgecolor('#f0f0f0')
                 cell.set_linewidth(1)
                 if i % 2 == 1:
