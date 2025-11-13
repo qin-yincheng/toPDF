@@ -18,8 +18,10 @@ from charts.font_config import setup_chinese_font
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
+from matplotlib.ticker import FixedLocator, FixedFormatter
+import matplotlib.ticker as ticker
 from calc.utils import is_trading_day
-from charts.utils import calculate_xlim, calculate_date_tick_params
+from charts.utils import calculate_date_tick_params
 
 
 
@@ -270,37 +272,44 @@ def plot_industry_proportion_timeseries(
         )
     
     # 设置Y轴 - 优化样式
-    ax.set_ylabel('占比(%)', fontsize=13, fontweight='bold', color='#1a1a1a', labelpad=12)
+    ax.set_ylabel('占比(%)', fontsize=7, fontweight='bold', color='#1a1a1a', labelpad=12)
     ax.set_ylim(0, 100)
     ax.set_yticks([0, 20, 40, 60, 80, 100])
     ax.set_yticklabels(['0.00%', '20.00%', '40.00%', '60.00%', '80.00%', '100.00%'],
-                       fontsize=11, color='#2c3e50')
+                       fontsize=7, color='#2c3e50')
     ax.grid(True, alpha=0.3, linestyle='-', axis='y', linewidth=0.8, color='#d0d0d0')
     ax.set_axisbelow(True)  # 网格线在柱子后面
     
     # 设置X轴刻度和标签 - 优化样式
-    ax.set_xlabel('日期', fontsize=13, fontweight='bold', color='#1a1a1a', labelpad=12)
+    ax.set_xlabel('日期', fontsize=7, fontweight='bold', color='#1a1a1a', labelpad=12)
     # 使用工具函数自动计算合适的刻度间隔
     if len(dates) > 0:
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
         
-        # 设置刻度位置（使用索引位置）
-        ax.set_xticks([x_positions[i] for i in tick_indices])
-        
-        # 设置刻度标签为对应的日期 - 优化可读性
-        ax.set_xticklabels(tick_labels, rotation=45, ha='right', fontsize=10, color='#2c3e50')
-        
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_positions, padding_ratio=0.02, is_date=False)
-        ax.set_xlim(x_min, x_max)
+        tick_pos = [x_positions[i] for i in tick_indices]
+
+        if len(tick_pos) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_pos = list(tick_pos)
+            tick_indices.pop(-2)
+            tick_labels.pop(-2)
+            tick_pos.pop(-2)
+
+        ax.xaxis.set_major_locator(ticker.FixedLocator(tick_pos))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+
+        plt.setp(ax.get_xticklabels(), ha='center', rotation=0, fontsize=7, color='#2c3e50')
+
+        ax.set_xlim(-0.5, len(dates) - 0.5)
     else:
         ax.set_xticks([])
         ax.set_xticklabels([])
     
     # 设置标题 - 恢复并优化
     if show_title:
-        ax.set_title('持股行业占比时序', fontsize=17, fontweight='bold', 
+        ax.set_title('持股行业占比时序', fontsize=8, fontweight='bold', 
                     pad=25, loc='center', color='#1a1a1a')
     
     # 优化图例 - 增大字体，优化布局，提高可读性
@@ -316,8 +325,8 @@ def plot_industry_proportion_timeseries(
                          for color in legend_colors]
         legend = ax.legend(legend_handles, legend_industries,
                  loc='upper center', bbox_to_anchor=(0.5, -0.12),
-                 ncol=5, frameon=True, fontsize=11,  # 增大字体
-                 title='主要行业分布', title_fontsize=14,  # 增大标题字体
+                 ncol=5, frameon=True, fontsize=6,  # 统一字体大小
+                 title='主要行业分布', title_fontsize=8,  # 统一标题字体大小
                  framealpha=0.98, edgecolor='#c0c0c0',
                  facecolor='#f8f8f8',
                  columnspacing=1.5, handletextpad=0.8,
@@ -326,7 +335,7 @@ def plot_industry_proportion_timeseries(
         if legend.get_title():
             legend.get_title().set_fontweight('bold')
             legend.get_title().set_color('#1a1a1a')
-            legend.get_title().set_fontsize(14)
+            legend.get_title().set_fontsize(8)
     else:
         # 行业数量不多，显示所有
         legend_colors = [colors[industry_names.index(ind)] if ind in industry_names 
@@ -336,8 +345,8 @@ def plot_industry_proportion_timeseries(
         n_legend_cols = min(len(active_industries_sorted), 5)  # 最多5列
         legend = ax.legend(legend_handles, active_industries_sorted,
                  loc='upper center', bbox_to_anchor=(0.5, -0.12),
-                 ncol=n_legend_cols, frameon=True, fontsize=11,  # 增大字体
-                 title='行业分布', title_fontsize=14,  # 增大标题字体
+                 ncol=n_legend_cols, frameon=True, fontsize=6,  # 统一字体大小
+                 title='行业分布', title_fontsize=8,  # 统一标题字体大小
                  framealpha=0.98, edgecolor='#c0c0c0',
                  facecolor='#f8f8f8',
                  columnspacing=1.5, handletextpad=0.8,
@@ -346,12 +355,12 @@ def plot_industry_proportion_timeseries(
         if legend.get_title():
             legend.get_title().set_fontweight('bold')
             legend.get_title().set_color('#1a1a1a')
-            legend.get_title().set_fontsize(14)
+            legend.get_title().set_fontsize(8)
     
     # 设置图例文字颜色
     for text in legend.get_texts():
         text.set_color('#2c3e50')
-        text.set_fontsize(11)
+        text.set_fontsize(6)
     
     # # 添加脚注
     # ax.text(0, -0.08, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,

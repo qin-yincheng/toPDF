@@ -16,9 +16,10 @@ from charts.font_config import setup_chinese_font
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
-from charts.utils import calculate_xlim, calculate_date_tick_params
+from charts.utils import calculate_date_tick_params
 from calc.utils import is_trading_day
 from matplotlib.ticker import MultipleLocator, FuncFormatter
+import matplotlib.ticker as ticker
 
 
 
@@ -122,15 +123,18 @@ def plot_dynamic_drawdown_chart(
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
         
-        # 设置刻度位置
-        ax.set_xticks(tick_indices)
-        
-        # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=0, ha='center', fontsize=7)
-        
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
-        ax.set_xlim(x_min, x_max)
+        if len(tick_indices) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_indices.pop(-2)
+            tick_labels.pop(-2)
+
+        ax.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+
+        plt.setp(ax.get_xticklabels(), ha='center', rotation=0, fontsize=7)
+
+        ax.set_xlim(-0.5, len(dates) - 0.5)
     else:
         ax.set_xticks([])
         ax.set_xticklabels([])
@@ -314,7 +318,7 @@ def plot_dynamic_drawdown_table(
     for i in range(2):
         cell = table[(0, i)]
         cell.set_facecolor('#f0f2f8')  # 浅灰色背景
-        cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize + 2)
+        cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
         cell.set_edgecolor('#f0f2f8')
         cell.set_linewidth(0)
     
@@ -324,11 +328,11 @@ def plot_dynamic_drawdown_table(
             cell = table[(i, j)]
             # 第一列（指标列）左对齐，第二列（数值列）左对齐
             if j == 0:
-                cell.set_text_props(ha='left', fontsize=table_fontsize, color='#2b2f36')
+                cell.set_text_props(ha='center', fontsize=table_fontsize, color='#2b2f36')
                 cell.set_facecolor('#f6f7fb')
-                cell.PAD = 0.3
+                # cell.PAD = 0.3
             else:
-                cell.set_text_props(ha='right', fontsize=table_fontsize, color='#1d2129')
+                cell.set_text_props(ha='center', fontsize=table_fontsize, color='#1d2129')
                 row_color = '#ffffff' if i % 2 == 0 else '#f9fafc'
                 cell.set_facecolor(row_color)
 

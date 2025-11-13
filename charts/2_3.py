@@ -16,7 +16,7 @@ def plot_end_period_holdings_table(
     figsize: tuple = (16, 10),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 20,
+    table_fontsize: int = 8,
 ):
     """
     绘制期末持仓表格
@@ -97,7 +97,7 @@ def plot_end_period_holdings_table(
             label,
             ha="center",
             va="center",
-            fontsize=table_fontsize - 2,
+            fontsize=table_fontsize,
             color="#495057",
             fontweight="bold",
         )
@@ -107,7 +107,7 @@ def plot_end_period_holdings_table(
             f"{value:,.2f} 万元",
             ha="center",
             va="center",
-            fontsize=table_fontsize + 4,
+            fontsize=table_fontsize,
             color="#1b1f2a",
             fontweight="bold",
         )
@@ -152,7 +152,7 @@ def plot_end_period_holdings_table(
         bbox=[-0.005, -0.06, 1.01, 1.02],
     )
     asset_table.auto_set_font_size(False)
-    asset_table.set_fontsize(table_fontsize - 2)
+    asset_table.set_fontsize(table_fontsize)
     asset_table.scale(1.04, 1.9)
 
     for i in range(len(asset_rows)):
@@ -192,7 +192,7 @@ def plot_end_period_holdings_table(
         bbox=[-0.005, -0.06, 1.01, 1.02],
     )
     liability_table.auto_set_font_size(False)
-    liability_table.set_fontsize(table_fontsize - 2)
+    liability_table.set_fontsize(table_fontsize)
     liability_table.scale(1.04, 1.9)
 
     for i in range(len(liability_rows)):

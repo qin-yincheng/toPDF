@@ -16,8 +16,9 @@ import matplotlib.pyplot as plt
 from charts.font_config import setup_chinese_font
 from datetime import datetime, timedelta
 import numpy as np
+import matplotlib.ticker as ticker
 from calc.utils import is_trading_day
-from charts.utils import calculate_xlim, calculate_date_tick_params
+from charts.utils import calculate_date_tick_params
 
 
 def plot_asset_allocation_chart(
@@ -171,15 +172,22 @@ def plot_asset_allocation_chart(
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
 
-        # 设置刻度位置（使用索引位置）
-        ax.set_xticks([x_positions[i] for i in tick_indices])
+        tick_pos = [x_positions[i] for i in tick_indices]
 
-        # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=30, ha="right")
+        if len(tick_pos) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_pos = list(tick_pos)
+            tick_indices.pop(-2)
+            tick_labels.pop(-2)
+            tick_pos.pop(-2)
 
-        # 使用工具函数自动计算X轴范围
-        x_min, x_max = calculate_xlim(x_positions, padding_ratio=0.02, is_date=False)
-        ax.set_xlim(x_min, x_max)
+        ax.xaxis.set_major_locator(ticker.FixedLocator(tick_pos))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+
+        plt.setp(ax.get_xticklabels(), ha="center", rotation=0)
+
+        ax.set_xlim(-0.5, len(dates) - 0.5)
     else:
         ax.set_xticks([])
         ax.set_xticklabels([])

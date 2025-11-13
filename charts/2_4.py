@@ -14,7 +14,8 @@ from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 from charts.font_config import setup_chinese_font
 from datetime import datetime, timedelta
-from charts.utils import calculate_xlim, calculate_date_tick_params
+import matplotlib.ticker as ticker
+from charts.utils import calculate_date_tick_params
 from calc.utils import is_trading_day
 
 
@@ -101,26 +102,26 @@ def plot_stock_position_chart(
     
     # 绘制股票仓位面积图（左Y轴，深灰色填充）
     ax1.fill_between(x_indices, stock_positions, 0, alpha=0.72, color='#5b7daa', label='股票仓位')
-    ax1.plot(x_indices, stock_positions, color='#304a6e', linewidth=1.6, label='_nolegend_')
-    ax1.set_ylabel('投资比例（%）', fontsize=12, color='#303133')
+    ax1.plot(x_indices, stock_positions, color='#304a6e', linewidth=1, label='_nolegend_')
+    ax1.set_ylabel('投资比例（%）', fontsize=7, color='#303133')
     ax1.set_ylim(0, 100)
     ax1.set_yticks([0, 20, 40, 60, 80, 100])
     ax1.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
     ax1.grid(True, alpha=0.6, linestyle='-', linewidth=0.6, axis='y', color='#e5e7ef')
-    ax1.set_xlabel('日期', fontsize=11, color='#303133')
+    ax1.set_xlabel('日期', fontsize=7, color='#303133')
     
     # 绘制TOP10折线图（左Y轴，灰色，带圆形标记）
     if any(top10_values):
-        ax1.plot(x_indices, top10_values, color='#8d97a5', marker='o',
-                 markersize=3.5, linewidth=1.4, label='TOP10', alpha=0.9,
+        ax1.plot(x_indices, top10_values, color='#8d97a5', marker='',
+                 markersize=3.5, linewidth=1, label='TOP10', alpha=0.9,
                  markerfacecolor='white', markeredgecolor='#8d97a5', markeredgewidth=1.0)
     
     # 绘制沪深300折线图（右Y轴，红色，带圆形标记）
     ax2.plot(x_indices, csi300_values, color='#d25c5c', marker='o',
-             markersize=3.5, linewidth=1.5, label='沪深300',
+             markersize=3.5, linewidth=1, label='沪深300',
              markerfacecolor='white', markeredgecolor='#d25c5c', markeredgewidth=1.0)
-    ax2.set_ylabel('沪深300 指数', fontsize=12, color='#303133')
+    ax2.set_ylabel('沪深300 指数', fontsize=7, color='#303133')
     
     # 动态计算右Y轴范围（基准净值）
     if csi300_values:
@@ -141,15 +142,22 @@ def plot_stock_position_chart(
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
         
-        # 设置刻度位置
-        ax1.set_xticks(tick_indices)
-        
-        # 设置刻度标签为对应的日期
-        ax1.set_xticklabels(tick_labels, rotation=45, ha='right')
-        
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
-        ax1.set_xlim(x_min, x_max)
+        if len(tick_indices) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_indices.pop(-2)
+            tick_labels.pop(-2)
+
+        ax1.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax1.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+        ax2.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax2.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+
+        plt.setp(ax1.get_xticklabels(), ha='center', rotation=0)
+        plt.setp(ax2.get_xticklabels(), ha='center', rotation=0)
+
+        ax1.set_xlim(-0.5, len(dates) - 0.5)
+        ax2.set_xlim(-0.5, len(dates) - 0.5)
     else:
         ax1.set_xticks([])
         ax1.set_xticklabels([])
@@ -174,7 +182,7 @@ def plot_stock_position_chart(
     
     # 添加标题（如果启用，但这里不显示，由 pages.py 统一绘制）
     if show_title:
-        ax1.set_title('股票仓位时序', fontsize=16, fontweight='bold', color='#162447', loc='left', pad=18)
+        ax1.set_title('股票仓位时序', fontsize=8, fontweight='bold', color='#162447', loc='left', pad=18)
     
     # 调整布局
     plt.tight_layout(rect=[0.02, 0.06, 0.98, 0.92])

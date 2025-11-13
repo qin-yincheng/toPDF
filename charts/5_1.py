@@ -35,7 +35,7 @@ def plot_stock_profit_table(
     figsize: tuple = (8, 6),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 16
+    table_fontsize: int = 8
 ):
     """
     绘制盈利前十的表格
@@ -100,13 +100,14 @@ def plot_stock_profit_table(
     is_narrow = figsize[0] < 10
     table_width = 0.96 if is_narrow else 0.97   # 更充分利用空间
     table_total_height = 0.82 if is_narrow else 0.80  # 增加高度利用率
-    table_fontsize = 12 if is_narrow else 13  # 增加字体大小，提升可读性
+    # 统一使用字体大小 8
+    # table_fontsize 参数已设置为默认值 8
     
     # 计算位置（居中，但为标题留出空间）
     table_x = (1 - table_width) / 2  # 居中
     if show_title:
         ax.text(0.5, 0.97, '盈利前十', transform=ax.transAxes,
-                ha='center', va='top', fontsize=16, fontweight='bold', 
+                ha='center', va='top', fontsize=8, fontweight='bold', 
                 color=COLOR_TEXT_PRIMARY, family='sans-serif')
         # table_y 是表格底部位置，表格高度是 table_total_height
         table_y = 0.89 - table_total_height  # 表格顶部在89%，与标题保持合理距离
@@ -339,7 +340,7 @@ def plot_stock_loss_table(
     figsize: tuple = (8, 6),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 16
+    table_fontsize: int = 8
 ):
     """
     绘制亏损前十的表格
@@ -404,13 +405,14 @@ def plot_stock_loss_table(
     is_narrow = figsize[0] < 10
     table_width = 0.95 if is_narrow else 0.96   # 较窄时更充分利用空间
     table_total_height = 0.80 if is_narrow else 0.78  # 较窄时增加高度利用率
-    table_fontsize = 11 if is_narrow else 12  # 较窄时使用更小字体
+    # 统一使用字体大小 8
+    # table_fontsize 参数已设置为默认值 8
     
     # 计算位置（居中，但为标题留出空间）
     table_x = (1 - table_width) / 2  # 居中
     if show_title:
         ax.text(0.5, 0.96, '亏损前十', transform=ax.transAxes,
-                ha='center', va='top', fontsize=15, fontweight='bold',
+                ha='center', va='top', fontsize=8, fontweight='bold',
                 color=COLOR_TEXT_PRIMARY)
         # table_y 是表格底部位置，表格高度是 table_total_height
         table_y = 0.88 - table_total_height  # 表格顶部在88%，与标题保持合理距离
