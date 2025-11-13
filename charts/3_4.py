@@ -16,7 +16,7 @@ def plot_asset_performance_attribution_table(
     figsize: tuple = (16, 4),
     return_figure: bool = False,
     show_title: bool = False,
-    table_fontsize: int = 16,
+    table_fontsize: int = 8,
 ):
     """
     绘制大类资产绩效归因表格
@@ -88,7 +88,8 @@ def plot_asset_performance_attribution_table(
     # 表格尺寸和字体设置
     table_width = 1.0  # 表格宽度
     table_total_height = 0.5  # 表格总高度
-    table_fontsize = 15  # 数据行字体大小
+    # 统一使用字体大小 8
+    # table_fontsize 参数已设置为默认值 8
 
     # 计算位置（居中）
     table_x = (1 - table_width) / 2

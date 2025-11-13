@@ -33,7 +33,7 @@ def plot_industry_attribution_profit_table(
     figsize: tuple = (14, 7),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 16
+    table_fontsize: int = 8
 ):
     """
     绘制按照收益额排名前十的表格
@@ -98,14 +98,14 @@ def plot_industry_attribution_profit_table(
     # 优化表格尺寸和字体 - 更专业的比例
     table_width = 0.96   # 表格宽度，留出适当的左右边距
     table_total_height = 0.75  # 表格高度，更合理的比例
-    table_fontsize = 12  # 字体大小 - 更精致，不会显得拥挤
+    # 如果需要自适应字体，可在外部传入
     
     # 计算位置（居中，留出边距）
     table_x = 0.02  # 左边距
     if show_title:
         # 标题放在axes外部
         title_text = ax.text(0.5, 1.02, '按照收益额排名前十', transform=ax.transAxes,
-                ha='center', va='bottom', fontsize=18, fontweight='bold',
+                ha='center', va='bottom', fontsize=8, fontweight='bold',
                 color=COLOR_TEXT_PRIMARY, family='sans-serif')
         # 表格在axes中居中，留出上下边距
         table_y = (1 - table_total_height) / 2 + 0.05  # 稍微上移，为标题留空间
@@ -238,13 +238,13 @@ def plot_industry_attribution_profit_chart(
             markeredgewidth=2.0, zorder=10, alpha=1.0)
     
     # 优化Y轴标签样式 - 专业清晰
-    ax1.set_ylabel('贡献度(%)', fontsize=13, color=COLOR_TEXT_PRIMARY, 
+    ax1.set_ylabel('贡献度(%)', fontsize=7, color=COLOR_TEXT_PRIMARY, 
                    fontweight='bold', labelpad=10)
-    ax1.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=10, 
+    ax1.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=7, 
                     width=0.8, length=4)
-    ax2.set_ylabel('权重(%)', fontsize=13, color=COLOR_TEXT_PRIMARY, 
+    ax2.set_ylabel('权重(%)', fontsize=7, color=COLOR_TEXT_PRIMARY, 
                    fontweight='bold', labelpad=10)
-    ax2.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=10,
+    ax2.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=7,
                     width=0.8, length=4)
     
     # 设置Y轴范围，让图表有适当的呼吸空间
@@ -261,7 +261,7 @@ def plot_industry_attribution_profit_chart(
     avg_label_len = np.mean([len(label) for label in industries]) if industries else 0
     rotation = 45 if (len(industries) >= 8 or avg_label_len > 4) else 0
     
-    ax1.set_xticklabels(industries, fontsize=10, color=COLOR_TEXT_SECONDARY, 
+    ax1.set_xticklabels(industries, fontsize=7, color=COLOR_TEXT_SECONDARY, 
                         rotation=rotation, ha='right' if rotation > 0 else 'center',
                         rotation_mode='anchor')
     ax1.set_xlabel('', fontsize=0)  # 不显示X轴标题
@@ -287,7 +287,7 @@ def plot_industry_attribution_profit_chart(
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines1 + lines2, labels1 + labels2,
-               loc='upper right', fontsize=11, frameon=True,
+               loc='upper right', fontsize=6, frameon=True,
                fancybox=False, shadow=False, framealpha=0.95,
                edgecolor=COLOR_TABLE_BORDER, facecolor='white',
                borderpad=0.8, labelspacing=0.6, handlelength=2.5)
@@ -300,7 +300,7 @@ def plot_industry_attribution_profit_chart(
     # 添加标题
     if show_title:
         ax1.text(0.5, 1.02, '按照收益额排名前十', transform=ax1.transAxes,
-                ha='center', va='bottom', fontsize=18, fontweight='bold',
+                ha='center', va='bottom', fontsize=8, fontweight='bold',
                 color=COLOR_TEXT_PRIMARY, family='sans-serif')
     
     # 调整布局 - 更合理的边距，与表格对齐
@@ -327,7 +327,7 @@ def plot_industry_attribution_loss_table(
     figsize: tuple = (14, 7),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 16
+    table_fontsize: int = 8
 ):
     """
     绘制按照亏损额排名前十的表格
@@ -392,14 +392,14 @@ def plot_industry_attribution_loss_table(
     # 优化表格尺寸和字体 - 更专业的比例
     table_width = 0.96   # 表格宽度，留出适当的左右边距
     table_total_height = 0.75  # 表格高度，更合理的比例
-    table_fontsize = 12  # 字体大小 - 更精致，不会显得拥挤
+    # 如果需要自适应字体，可在外部传入
     
     # 计算位置（居中，留出边距）
     table_x = 0.02  # 左边距
     if show_title:
         # 标题放在axes外部
         title_text = ax.text(0.5, 1.02, '按照亏损额排名前十', transform=ax.transAxes,
-                ha='center', va='bottom', fontsize=18, fontweight='bold',
+                ha='center', va='bottom', fontsize=8, fontweight='bold',
                 color=COLOR_TEXT_PRIMARY, family='sans-serif')
         # 表格在axes中居中，留出上下边距
         table_y = (1 - table_total_height) / 2 + 0.05  # 稍微上移，为标题留空间
@@ -532,13 +532,13 @@ def plot_industry_attribution_loss_chart(
             markeredgewidth=2.0, zorder=10, alpha=1.0)
     
     # 优化Y轴标签样式 - 专业清晰
-    ax1.set_ylabel('贡献度(%)', fontsize=13, color=COLOR_TEXT_PRIMARY, 
+    ax1.set_ylabel('贡献度(%)', fontsize=7, color=COLOR_TEXT_PRIMARY, 
                    fontweight='bold', labelpad=10)
-    ax1.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=10, 
+    ax1.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=7, 
                     width=0.8, length=4)
-    ax2.set_ylabel('权重(%)', fontsize=13, color=COLOR_TEXT_PRIMARY, 
+    ax2.set_ylabel('权重(%)', fontsize=7, color=COLOR_TEXT_PRIMARY, 
                    fontweight='bold', labelpad=10)
-    ax2.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=10,
+    ax2.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=7,
                     width=0.8, length=4)
     
     # 设置Y轴范围，让图表有适当的呼吸空间（负数范围）
@@ -558,7 +558,7 @@ def plot_industry_attribution_loss_chart(
     avg_label_len = np.mean([len(label) for label in industries]) if industries else 0
     rotation = 45 if (len(industries) >= 8 or avg_label_len > 4) else 0
     
-    ax1.set_xticklabels(industries, fontsize=10, color=COLOR_TEXT_SECONDARY, 
+    ax1.set_xticklabels(industries, fontsize=7, color=COLOR_TEXT_SECONDARY, 
                         rotation=rotation, ha='right' if rotation > 0 else 'center',
                         rotation_mode='anchor')
     ax1.set_xlabel('', fontsize=0)  # 不显示X轴标题
@@ -589,7 +589,7 @@ def plot_industry_attribution_loss_chart(
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines1 + lines2, labels1 + labels2,
-               loc='upper right', fontsize=11, frameon=True,
+               loc='upper right', fontsize=6, frameon=True,
                fancybox=False, shadow=False, framealpha=0.95,
                edgecolor=COLOR_TABLE_BORDER, facecolor='white',
                borderpad=0.8, labelspacing=0.6, handlelength=2.5)
@@ -602,7 +602,7 @@ def plot_industry_attribution_loss_chart(
     # 添加标题
     if show_title:
         ax1.text(0.5, 1.02, '按照亏损额排名前十', transform=ax1.transAxes,
-                ha='center', va='bottom', fontsize=18, fontweight='bold',
+                ha='center', va='bottom', fontsize=8, fontweight='bold',
                 color=COLOR_TEXT_PRIMARY, family='sans-serif')
     
     # 调整布局 - 更合理的边距，与表格对齐

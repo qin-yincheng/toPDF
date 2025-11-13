@@ -32,7 +32,7 @@ def plot_stock_holding_nodes_table(
     figsize: tuple = (10, 8),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 16
+    table_fontsize: int = 8
 ):
     """
     绘制个股持仓节点表格
@@ -91,13 +91,14 @@ def plot_stock_holding_nodes_table(
     is_narrow = figsize[0] < 10
     table_width = 0.96 if is_narrow else 0.97   # 更充分利用空间
     table_total_height = 0.82 if is_narrow else 0.80  # 增加高度利用率
-    table_fontsize = 12 if is_narrow else 13  # 根据宽度动态调整字体大小
+    # 统一使用字体大小 8
+    # table_fontsize 参数已设置为默认值 8
     
     # 计算位置（居中，但为标题留出空间）
     table_x = (1 - table_width) / 2  # 居中
     if show_title:
         ax.text(0.5, 0.97, '个股持仓节点', transform=ax.transAxes,
-                ha='center', va='top', fontsize=16, fontweight='bold', 
+                ha='center', va='top', fontsize=8, fontweight='bold', 
                 color=COLOR_TEXT_PRIMARY, family='sans-serif')
         # table_y 是表格底部位置，表格高度是 table_total_height
         table_y = 0.89 - table_total_height  # 表格顶部在89%，与标题保持合理距离

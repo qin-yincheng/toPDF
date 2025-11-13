@@ -28,6 +28,8 @@ REPORT_STYLE = {
     'axes.titleweight': 'bold',
     'axes.labelsize': 7,
     'axes.labelcolor': '#303030',
+    'xtick.labelsize': 7,
+    'ytick.labelsize': 7,
     'xtick.color': '#4d4d4d',
     'ytick.color': '#4d4d4d',
     'axes.edgecolor': '#d9d9d9',
@@ -161,8 +163,8 @@ def plot_nav_performance(
         ax.set_title('单位净值表现', pad=28)
         if n_points > 0:
             subtitle = f"期间：{dates[0].strftime('%Y-%m-%d')} 至 {dates[-1].strftime('%Y-%m-%d')}"
-            ax.text(0, 1.05, subtitle, transform=ax.transAxes, fontsize=13, color='#5c5c5c')
-        ax.text(0, 1.02, '单位：%', transform=ax.transAxes, fontsize=12, color='#7a7a7a')
+            ax.text(0, 1.05, subtitle, transform=ax.transAxes, fontsize=8, color='#5c5c5c')
+        ax.text(0, 1.02, '单位：%', transform=ax.transAxes, fontsize=7, color='#7a7a7a')
     
     # 设置X轴刻度和标签
     # 使用工具函数自动计算合适的刻度间隔

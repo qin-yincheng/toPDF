@@ -144,7 +144,7 @@ def plot_market_value_pie_chart(
     
     # 设置标题 - 更大更突出
     if show_title:
-        ax.set_title('期末市值占比', fontsize=18, fontweight='bold', 
+        ax.set_title('期末市值占比', fontsize=8, fontweight='bold', 
                     pad=25, loc='center', color='#1a1a1a')
     
     # 优化图例 - 更清晰的布局
@@ -177,8 +177,8 @@ def plot_market_value_pie_chart(
               bbox_to_anchor=(0.5, -0.10),
               ncol=n_legend_cols,
               frameon=True,
-              fontsize=12,  # 增大字体，提高可读性
-              title_fontsize=15,  # 增大标题字体
+              fontsize=6,  # 统一字体大小
+              title_fontsize=8,  # 统一标题字体大小
               framealpha=0.98,
               edgecolor='#d0d0d0',
               facecolor='#fafafa',
@@ -339,11 +339,11 @@ def plot_average_market_value_bar_chart(
     
     # 设置Y轴标签 - 优化样式
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(industries, fontsize=13, color='#2c3e50', fontweight='normal')
+    ax.set_yticklabels(industries, fontsize=7, color='#2c3e50', fontweight='normal')
     ax.invert_yaxis()  # 反转Y轴，使第一个行业在顶部
     
     # 设置X轴 - 优化样式
-    ax.set_xlabel('占比(%)', fontsize=14, fontweight='bold', color='#1a1a1a', labelpad=15)
+    ax.set_xlabel('占比(%)', fontsize=7, fontweight='bold', color='#1a1a1a', labelpad=15)
     ax.set_xlim(0, max(proportions) * 1.15 if proportions else 20)
     
     # 在柱状图上添加数值标签 - 优化可读性
@@ -355,12 +355,12 @@ def plot_average_market_value_bar_chart(
             # 小柱子，标签放在外部
             ax.text(width + max_prop * 0.02, bar.get_y() + bar.get_height()/2, 
                     f'{prop:.2f}%',
-                    ha='left', va='center', fontsize=11, fontweight='bold', color='#2c3e50')
+                    ha='left', va='center', fontsize=7, fontweight='bold', color='#2c3e50')
         else:
             # 大柱子，标签放在内部（白色文字）
             ax.text(width - max_prop * 0.02, bar.get_y() + bar.get_height()/2, 
                     f'{prop:.2f}%',
-                    ha='right', va='center', fontsize=11, fontweight='bold', color='white')
+                    ha='right', va='center', fontsize=7, fontweight='bold', color='white')
     
     # 添加网格线 - 更专业的样式
     ax.grid(True, alpha=0.25, linestyle='-', axis='x', linewidth=0.8, color='#d0d0d0')
@@ -368,7 +368,7 @@ def plot_average_market_value_bar_chart(
     
     # 设置标题 - 更大更突出
     if show_title:
-        ax.set_title('期间平均市值占产品净资产比', fontsize=18, fontweight='bold', 
+        ax.set_title('期间平均市值占产品净资产比', fontsize=8, fontweight='bold', 
                     pad=30, loc='center', color='#1a1a1a')
 
     # 优化边框样式
