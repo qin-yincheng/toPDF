@@ -80,7 +80,7 @@ def setup_chinese_fonts() -> None:
     return None
 
 
-def figure_to_image(fig, dpi: int = 200) -> BytesIO:
+def figure_to_image(fig, dpi: int = 300) -> BytesIO:
     """
     将 matplotlib figure 对象转换为 PNG 图片
 
@@ -217,7 +217,7 @@ def insert_figure(
     y: float,
     width: float,
     height: float,
-    dpi: int = 200,
+    dpi: int = 300,
     title: Optional[str] = None,
 ) -> bool:
     """
@@ -273,10 +273,11 @@ def generate_page1(
     # 导入各个图表生成函数
     import sys
 
-    # 添加 charts 目录到路径
-    charts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "charts")
-    if charts_dir not in sys.path:
-        sys.path.insert(0, charts_dir)
+    # 添加项目根目录到路径，以便图表模块可以导入 charts 包
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    charts_dir = os.path.join(project_root, "charts")
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
 
     # 直接导入各个模块
     import importlib.util
@@ -653,11 +654,11 @@ def generate_page1(
         fig1 = plot_performance_overview_table(
             data=safe_get("performance_overview"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig1, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  总体表现表格生成失败: {e}")
 
@@ -671,13 +672,13 @@ def generate_page1(
         fig2 = plot_scale_overview(
             data=safe_get("scale_overview.scale_series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
             include_right_table=True,
-            table_fontsize=16,
+
         )
         insert_figure(c, fig2, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  产品规模总览图表生成失败: {e}")
 
@@ -690,11 +691,11 @@ def generate_page1(
         fig3 = plot_nav_performance(
             data=safe_get("nav_performance.nav_series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig3, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  单位净值表现图表生成失败: {e}")
 
@@ -710,7 +711,7 @@ def generate_page1(
         fig4 = plot_daily_return_chart(
             data=safe_get("nav_performance.daily_returns"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig4, x_left, y_cursor - h, left_w, h)
@@ -718,11 +719,11 @@ def generate_page1(
         fig5 = plot_daily_return_table(
             data=safe_get("nav_performance.daily_returns"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72 ),
             show_title=False,
         )
         insert_figure(c, fig5, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 15  # 增加间距，确保与下一部分分离
+        y_cursor -= h + 30  # 增加间距，确保与下一部分分离
     except Exception as e:
         print(f"  日收益表现图表生成失败: {e}")
 
@@ -739,35 +740,35 @@ def generate_page1(
         fig6 = plot_return_analysis_table(
             data=safe_get("nav_performance.period_returns"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
         )
         insert_figure(c, fig6, x_left, y_cursor - h, left_w, h)
         fig7 = plot_return_comparison_chart(
             data=safe_get("nav_performance.period_returns"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig7, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  收益分析生成失败: {e}")
 
     # 行6：指标分析（整行）
     try:
         print("  生成指标分析表格...")
-        h = row_heights["indicator"]
+        h = row_heights["indicator"]*1.5
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "指标分析")
         fig8 = plot_indicator_analysis_table(
             data=safe_get("indicator_analysis"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
-            table_fontsize=16,
+            figsize=(usable_width / 72, h / 72),
+            table_fontsize=8,
             row_height_scale=2.3,
         )
         insert_figure(c, fig8, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  指标分析表格生成失败: {e}")
 
@@ -783,7 +784,7 @@ def generate_page1(
         fig9 = plot_dynamic_drawdown_chart(
             data=safe_get("drawdown.series"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig9, x_left, y_cursor - h, left_w, h)
@@ -791,11 +792,11 @@ def generate_page1(
         fig10 = plot_dynamic_drawdown_table(
             data=safe_get("drawdown.table"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig10, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  动态回撤生成失败: {e}")
 
