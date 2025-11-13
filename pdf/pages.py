@@ -832,11 +832,11 @@ def generate_page1(
         fig11 = plot_asset_allocation_chart(
             data=safe_get("asset_allocation_series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig11, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  大类持仓时序图表生成失败: {e}")
 
@@ -850,12 +850,12 @@ def generate_page1(
         fig12 = plot_end_period_holdings_table(
             data=safe_get("end_holdings.holdings_table"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
-            table_fontsize=16,
+            table_fontsize=8,
         )
         insert_figure(c, fig12, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  期末持仓表格生成失败: {e}")
 
@@ -868,11 +868,11 @@ def generate_page1(
         fig13 = plot_stock_position_chart(
             data=safe_get("asset_allocation_series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig13, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  股票仓位时序图表生成失败: {e}")
 
@@ -885,11 +885,11 @@ def generate_page1(
         fig14 = plot_liquidity_asset_chart(
             data=safe_get("asset_allocation_series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig14, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  流动性资产时序图表生成失败: {e}")
 
@@ -914,7 +914,7 @@ def generate_page1(
         fig15 = plot_market_value_pie_chart(
             data=safe_get("industry_attribution.end_holdings_distribution"),
             return_figure=True,
-            figsize=(pie_size / 72 * 2.54, pie_size / 72 * 2.54),  # 确保宽高相等
+            figsize=(pie_size / 72, pie_size / 72),  # 确保宽高相等
             show_title=True,
         )
         # 插入时也使用正方形尺寸，居中显示，并保持宽高比
@@ -926,7 +926,7 @@ def generate_page1(
         fig16 = plot_average_market_value_bar_chart(
             data=safe_get("industry_attribution.end_holdings_distribution"),
             return_figure=True,
-            figsize=(chart_width / 72 * 2.54, h_charts / 72 * 2.54),
+            figsize=(chart_width / 72, h_charts / 72),
             show_title=True,
         )
         insert_figure(
@@ -938,7 +938,7 @@ def generate_page1(
             h_charts,
         )
 
-        y_cursor -= h_charts + 10
+        y_cursor -= h_charts + 30
     except Exception as e:
         import traceback
 
@@ -964,11 +964,11 @@ def generate_page1(
         fig18 = plot_industry_proportion_timeseries(
             data=timeseries_data,
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=True,
         )
         insert_figure(c, fig18, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         import traceback
 
@@ -985,11 +985,11 @@ def generate_page1(
         fig19 = plot_industry_deviation_timeseries(
             data=safe_get("industry_timeseries.deviation_series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=True,
         )
         insert_figure(c, fig19, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  持股行业偏离度时序图表生成失败: {e}")
 
@@ -1002,12 +1002,12 @@ def generate_page1(
         fig20 = plot_asset_performance_attribution_table(
             data=safe_get("asset_class_attribution"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
-            table_fontsize=16,
+            table_fontsize=8,
         )
         insert_figure(c, fig20, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  大类资产绩效归因表格生成失败: {e}")
 
@@ -1022,11 +1022,11 @@ def generate_page1(
         fig21 = plot_brinson_attribution(
             data=safe_get("brinson.series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h_line / 72 * 2.54),
+            figsize=(usable_width / 72, h_line / 72),
             show_title=True,
         )
         insert_figure(c, fig21, x_left, y_cursor - h_line, usable_width, h_line)
-        y_cursor -= h_line + 10
+        y_cursor -= h_line + 30
 
         # 底部：柱状图（左侧）和表格（右侧）
         h_bottom = max(
@@ -1041,7 +1041,7 @@ def generate_page1(
         fig22 = plot_brinson_industry_bar_chart(
             data=safe_get("brinson"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h_bottom / 72 * 2.54),
+            figsize=(left_w / 72, h_bottom / 72),
             show_title=True,
         )
         insert_figure(c, fig22, x_left, y_cursor - h_bottom, left_w, h_bottom)
@@ -1051,14 +1051,14 @@ def generate_page1(
         fig23 = plot_brinson_attribution_table(
             data=safe_get("brinson"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h_bottom / 72 * 2.54),
+            figsize=(right_w / 72, h_bottom / 72),
             show_title=True,
-            table_fontsize=18,  # 增大字体，提高可读性
+            table_fontsize=8,
         )
         insert_figure(
             c, fig23, x_left + left_w + 5, y_cursor - h_bottom, right_w, h_bottom
         )
-        y_cursor -= h_bottom + 10
+        y_cursor -= h_bottom + 30
     except Exception as e:
         print(f"  Brinson归因图表生成失败: {e}")
 
@@ -1083,9 +1083,9 @@ def generate_page1(
         fig24_table = plot_industry_attribution_profit_table(
             data=safe_get("industry_attribution.industry_profit"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=True,
-            table_fontsize=16,
+            table_fontsize=8,
         )
         insert_figure(c, fig24_table, x_left, y_cursor - h, left_w, h)
 
@@ -1093,11 +1093,11 @@ def generate_page1(
         fig24_chart = plot_industry_attribution_profit_chart(
             data=safe_get("industry_attribution.industry_profit"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig24_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
 
         # 第二行：亏损额排名前十（表格在左，图表在右）
         ensure_space(h + 10)
@@ -1105,9 +1105,9 @@ def generate_page1(
         fig25_table = plot_industry_attribution_loss_table(
             data=safe_get("industry_attribution.industry_profit"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=True,
-            table_fontsize=16,
+            table_fontsize=8,
         )
         insert_figure(c, fig25_table, x_left, y_cursor - h, left_w, h)
 
@@ -1115,11 +1115,11 @@ def generate_page1(
         fig25_chart = plot_industry_attribution_loss_chart(
             data=safe_get("industry_attribution.industry_profit"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig25_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  股票行业归因图表生成失败: {e}")
 
@@ -1144,9 +1144,9 @@ def generate_page1(
         fig26_table = plot_stock_profit_table(
             data=safe_get("end_holdings.stock_performance"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=True,
-            table_fontsize=16,
+            table_fontsize=8,
         )
         insert_figure(c, fig26_table, x_left, y_cursor - h, left_w, h)
 
@@ -1157,14 +1157,14 @@ def generate_page1(
         fig26_chart = plot_stock_profit_chart(
             data=safe_get("end_holdings.stock_performance"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         # 图表向下偏移标题高度，使其与表格内容区域对齐
         insert_figure(
             c, fig26_chart, x_left + left_w + 5, y_cursor - h - title_height, right_w, h
         )
-        y_cursor -= h + 10
+        y_cursor -= h + 30
 
         # 第二行：亏损前十（表格在左，图表在右）
         ensure_space(h + 10)
@@ -1172,9 +1172,9 @@ def generate_page1(
         fig27_table = plot_stock_loss_table(
             data=safe_get("end_holdings.stock_performance"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=True,
-            table_fontsize=16,
+            table_fontsize=8,
         )
         insert_figure(c, fig27_table, x_left, y_cursor - h, left_w, h)
 
@@ -1185,14 +1185,14 @@ def generate_page1(
         fig27_chart = plot_stock_loss_chart(
             data=safe_get("end_holdings.stock_performance"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         # 图表向下偏移标题高度，使其与表格内容区域对齐
         insert_figure(
             c, fig27_chart, x_left + left_w + 5, y_cursor - h - title_height, right_w, h
         )
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  股票绩效归因图表生成失败: {e}")
 
@@ -1214,7 +1214,7 @@ def generate_page1(
         fig28_chart = plot_stock_holding_nodes_chart(
             data=safe_get("end_holdings.position_nodes"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig28_chart, x_left, y_cursor - h, left_w, h)
@@ -1223,12 +1223,12 @@ def generate_page1(
         fig28_table = plot_stock_holding_nodes_table(
             data=safe_get("end_holdings.position_nodes"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
-            table_fontsize=16,
+            table_fontsize=8,
         )
         insert_figure(c, fig28_table, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  个股持仓节点图表生成失败: {e}")
 
@@ -1243,12 +1243,12 @@ def generate_page1(
         fig29 = plot_turnover_rate_table(
             data=safe_get("turnover"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
-            table_fontsize=18,  # 增大字体，提高可读性
+            table_fontsize=8,
         )
         insert_figure(c, fig29, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  换手率 (年化) 表格生成失败: {e}")
 
@@ -1270,9 +1270,9 @@ def generate_page1(
         fig30_table = plot_period_transaction_table(
             data=safe_get("period_transaction"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=False,
-            table_fontsize=18,  # 增大字体，提高可读性
+            table_fontsize=8,
         )
         insert_figure(c, fig30_table, x_left, y_cursor - h, left_w, h)
 
@@ -1280,11 +1280,11 @@ def generate_page1(
         fig30_chart = plot_period_transaction_chart(
             data=safe_get("period_transaction"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig30_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  期间交易图表生成失败: {e}")
 
