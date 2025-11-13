@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import os
 
-from config import CSV_FILE, INITIAL_CAPITAL
+from config import CSV_FILE, INITIAL_CAPITAL, VALUATION_METHOD
 from collections import defaultdict
 
 from calc.position import (
@@ -64,7 +64,9 @@ def get_daily_positions(
         List[Dict]: 每日持仓数据列表
     """
     # 获取资产分布数据
-    asset_df = calculate_daily_asset_distribution(csv_path, initial_capital, max_days, report_year)
+    asset_df = calculate_daily_asset_distribution(
+        csv_path, initial_capital, max_days, report_year, valuation_method=VALUATION_METHOD
+    )
 
     # 如果需要持仓明细，计算每日持仓
     daily_holdings = {}
