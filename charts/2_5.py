@@ -14,7 +14,8 @@ from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 from charts.font_config import setup_chinese_font
 from datetime import datetime, timedelta
-from charts.utils import calculate_xlim, calculate_date_tick_params
+import matplotlib.ticker as ticker
+from charts.utils import calculate_date_tick_params
 from calc.utils import is_trading_day
 
 
@@ -97,21 +98,21 @@ def plot_liquidity_asset_chart(
     # 绘制流动性资产比例面积图（左Y轴，蓝色填充，带圆形标记）
     ax1.fill_between(x_indices, liquidity_ratios, 0, alpha=0.72, color='#5b7daa', label='流动性资产比例')
     ax1.plot(x_indices, liquidity_ratios, color='#304a6e', marker='', 
-             linewidth=1.6, alpha=1.0)
-    ax1.set_ylabel('资产比例（%）', fontsize=12, color='#303133')
+             linewidth=1, alpha=1.0)
+    ax1.set_ylabel('资产比例（%）', fontsize=7, color='#303133')
     ax1.set_ylim(0.13, 100)
     ax1.set_yticks([0.13, 20, 40, 60, 80, 100])
     ax1.set_yticklabels(['0.13%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
     ax1.grid(True, alpha=0.6, linestyle='-', linewidth=0.6, axis='y', color='#e5e7ef')
-    ax1.set_xlabel('日期', fontsize=11, color='#303133')
+    ax1.set_xlabel('日期', fontsize=7, color='#303133')
     
     # 绘制沪深300折线图（右Y轴，灰色，带圆形标记）
-    ax2.plot(x_indices, csi300_values, color='#9aa0a6', marker='o', 
-             markersize=3.5, linewidth=1.5, label='沪深300',
+    ax2.plot(x_indices, csi300_values, color='#9aa0a6', marker='', 
+             markersize=3.5, linewidth=1, label='沪深300',
              markerfacecolor='white', markeredgecolor='#9aa0a6',
             markeredgewidth=1.0)
-    ax2.set_ylabel('沪深300 指数', fontsize=12, color='#303133')
+    ax2.set_ylabel('沪深300 指数', fontsize=7, color='#303133')
     
     # 动态计算右Y轴范围（基准净值）
     if csi300_values:
@@ -132,15 +133,22 @@ def plot_liquidity_asset_chart(
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
         
-        # 设置刻度位置
-        ax1.set_xticks(tick_indices)
-        
-        # 设置刻度标签为对应的日期
-        ax1.set_xticklabels(tick_labels, rotation=45, ha='right')
-        
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
-        ax1.set_xlim(x_min, x_max)
+        if len(tick_indices) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_indices.pop(-2)
+            tick_labels.pop(-2)
+
+        ax1.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax1.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+        ax2.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax2.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+
+        plt.setp(ax1.get_xticklabels(), ha='center', rotation=0)
+        plt.setp(ax2.get_xticklabels(), ha='center', rotation=0)
+
+        ax1.set_xlim(-0.5, len(dates) - 0.5)
+        ax2.set_xlim(-0.5, len(dates) - 0.5)
     else:
         ax1.set_xticks([])
         ax1.set_xticklabels([])
@@ -167,7 +175,7 @@ def plot_liquidity_asset_chart(
     ax2.spines['top'].set_visible(False)
     # 添加标题（如果启用，但这里不显示，由 pages.py 统一绘制）
     if show_title:
-        ax1.set_title('流动性资产时序', fontsize=16, fontweight='bold', color='#162447', loc='left', pad=18)
+        ax1.set_title('流动性资产时序', fontsize=8, fontweight='bold', color='#162447', loc='left', pad=18)
     
     # 调整布局
     plt.tight_layout(rect=[0.02, 0.06, 0.98, 0.92])

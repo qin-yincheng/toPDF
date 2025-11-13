@@ -26,7 +26,7 @@ def plot_turnover_rate_table(
     figsize: tuple = (16, 4),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 16
+    table_fontsize: int = 8
 ):
     """
     绘制换手率 (年化) 表格
@@ -92,21 +92,14 @@ def plot_turnover_rate_table(
     is_narrow = figsize[0] < 10
     table_width = 0.96 if is_narrow else 0.97   # 更充分利用空间
     table_total_height = 0.85 if is_narrow else 0.83  # 增加高度利用率，使表格更饱满
-    # 根据图表大小动态调整字体，使其更易读和专业
-    if figsize[0] >= 20:
-        table_fontsize = 18  # 大图表使用大字体
-    elif figsize[0] >= 15:
-        table_fontsize = 16  # 中等图表
-    elif figsize[0] >= 10:
-        table_fontsize = 14  # 小图表
-    else:
-        table_fontsize = 12  # 很窄的图表
+    # 统一使用字体大小 8
+    # 不再根据图表大小动态调整，保持一致性
     
     # 计算位置（居中，但为标题留出空间）
     table_x = (1 - table_width) / 2  # 居中
     if show_title:
         ax.text(0.5, 0.97, '换手率 (年化)', transform=ax.transAxes,
-                ha='center', va='top', fontsize=16, fontweight='bold', 
+                ha='center', va='top', fontsize=8, fontweight='bold', 
                 color=COLOR_TEXT_PRIMARY, family='sans-serif')
         # table_y 是表格底部位置，表格高度是 table_total_height
         table_y = 0.89 - table_total_height  # 表格顶部在89%，与标题保持合理距离

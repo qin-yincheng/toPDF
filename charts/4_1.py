@@ -18,6 +18,8 @@ import matplotlib.dates as mdates
 from matplotlib.patches import Rectangle
 from datetime import datetime, timedelta
 import numpy as np
+from matplotlib.ticker import FixedLocator, FixedFormatter
+import matplotlib.ticker as ticker
 from charts.utils import calculate_xlim, calculate_date_tick_params
 from calc.utils import is_trading_day
 
@@ -131,14 +133,14 @@ def plot_brinson_attribution(
     
     # 绘制选择收益折线图（深蓝色，更粗的线条，提升视觉冲击力）
     ax.plot(x_indices, selection_returns, color=COLOR_PRIMARY, marker='', 
-            linewidth=3.0, label='选择收益', zorder=3, alpha=0.95)
+            linewidth=1, label='选择收益', zorder=3, alpha=0.95)
     
     # 绘制配置收益折线图（中性灰，更粗的线条）
     ax.plot(x_indices, allocation_returns, color=COLOR_SECONDARY, marker='', 
-            linewidth=3.0, label='配置收益', zorder=3, alpha=0.95)
+            linewidth=1, label='配置收益', zorder=3, alpha=0.95)
     
     # 设置Y轴标签（更大的字体，更好的位置）
-    ax.set_ylabel('累计收益率(%)', fontsize=14, color=COLOR_TEXT_PRIMARY, 
+    ax.set_ylabel('累计收益率(%)', fontsize=7, color=COLOR_TEXT_PRIMARY, 
                   fontweight='medium', labelpad=12)
     # 根据数据范围设置Y轴
     # all_values = selection_returns + allocation_returns
@@ -167,43 +169,45 @@ def plot_brinson_attribution(
             color=COLOR_GRID, zorder=0, which='major')
     
     # 设置X轴刻度和标签（更大的字体，更好的间距）
-    ax.set_xlabel('日期', fontsize=14, color=COLOR_TEXT_PRIMARY, 
+    ax.set_xlabel('日期', fontsize=7, color=COLOR_TEXT_PRIMARY, 
                   fontweight='medium', labelpad=10)
     # 使用工具函数自动计算合适的刻度间隔
     if n_points > 0:
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
         
-        # 设置刻度位置
-        ax.set_xticks(tick_indices)
-        
-        # 设置刻度标签为对应的日期（更大的字体，更好的颜色）
-        ax.set_xticklabels(tick_labels, rotation=45, ha='right', 
-                           fontsize=11, color=COLOR_TEXT_SECONDARY)
-        
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
-        ax.set_xlim(x_min, x_max)
+        if len(tick_indices) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_indices.pop(-2)
+            tick_labels.pop(-2)
+
+        ax.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+
+        plt.setp(ax.get_xticklabels(), ha='center', rotation=0, fontsize=7, color=COLOR_TEXT_SECONDARY)
+
+        ax.set_xlim(-0.5, len(dates) - 0.5)
     else:
         ax.set_xticks([])
         ax.set_xticklabels([])
     
     # 设置Y轴刻度标签样式（更大的字体，更好的颜色）
-    ax.tick_params(axis='y', labelsize=11, colors=COLOR_TEXT_SECONDARY, 
+    ax.tick_params(axis='y', labelsize=7, colors=COLOR_TEXT_SECONDARY, 
                    length=4, width=1, pad=6)
-    ax.tick_params(axis='x', labelsize=11, colors=COLOR_TEXT_SECONDARY, 
+    ax.tick_params(axis='x', labelsize=7, colors=COLOR_TEXT_SECONDARY, 
                    length=4, width=1, pad=6)
     
     # 优化坐标轴样式（更粗的线条，更清晰）
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color(COLOR_AXIS)
-    ax.spines['left'].set_linewidth(1.2)
+    ax.spines['left'].set_linewidth(1)
     ax.spines['bottom'].set_color(COLOR_AXIS)
-    ax.spines['bottom'].set_linewidth(1.2)
+    ax.spines['bottom'].set_linewidth(1.)
     
     # 添加图例（与表格风格协调的专业样式）
-    legend = ax.legend(loc='upper right', fontsize=12, 
+    legend = ax.legend(loc='upper right', fontsize=6, 
                       frameon=True, fancybox=False, shadow=False,
                       framealpha=0.98, facecolor='white', 
                       edgecolor=COLOR_TABLE_BORDER, borderpad=1.0,
@@ -434,7 +438,7 @@ def plot_brinson_industry_bar_chart(
     add_value_labels(bars2, ax, max_val, min_val)
     
     # 设置Y轴标签（更大的字体，更好的位置）
-    ax.set_ylabel('累计收益率(%)', fontsize=14, color=COLOR_TEXT_PRIMARY, 
+    ax.set_ylabel('累计收益率(%)', fontsize=7, color=COLOR_TEXT_PRIMARY, 
                   fontweight='medium', labelpad=12)
     # 根据数据范围设置Y轴
     all_values = selection_returns + allocation_returns
@@ -464,7 +468,7 @@ def plot_brinson_industry_bar_chart(
     # 设置X轴（更大的字体，更好的颜色）
     ax.set_xticks(x)
     ax.set_xticklabels(industries, rotation=45, ha='right', 
-                       fontsize=11, color=COLOR_TEXT_SECONDARY)
+                       fontsize=7, color=COLOR_TEXT_SECONDARY)
     
     # 添加网格线（实线，更清晰，更柔和）
     ax.grid(True, alpha=0.35, linestyle='-', linewidth=0.9, axis='y', 
@@ -472,30 +476,30 @@ def plot_brinson_industry_bar_chart(
     
     # 添加零轴线（更清晰的线条，更柔和的颜色）
     if y_min < 0 < y_max:
-        ax.axhline(y=0, color=COLOR_SECONDARY, linewidth=1.3, zorder=2, 
+        ax.axhline(y=0, color=COLOR_SECONDARY, linewidth=1, zorder=2, 
                   linestyle='-', alpha=0.75)
     
     # 设置标题（如果显示，更大的字体）
     if show_title:
-        ax.set_title('累计收益率(%)', fontsize=15, fontweight='bold', 
+        ax.set_title('累计收益率(%)', fontsize=8, fontweight='bold', 
                     pad=18, loc='left', color=COLOR_TEXT_PRIMARY)
 
     # 优化坐标轴样式（更粗的线条，更清晰）
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color(COLOR_AXIS)
-    ax.spines['left'].set_linewidth(1.2)
+    ax.spines['left'].set_linewidth(1)
     ax.spines['bottom'].set_color(COLOR_AXIS)
-    ax.spines['bottom'].set_linewidth(1.2)
+    ax.spines['bottom'].set_linewidth(1)
     
     # 设置Y轴刻度标签样式（更大的字体，更好的颜色）
-    ax.tick_params(axis='y', labelsize=11, colors=COLOR_TEXT_SECONDARY, 
+    ax.tick_params(axis='y', labelsize=7, colors=COLOR_TEXT_SECONDARY, 
                    length=4, width=1, pad=6)
-    ax.tick_params(axis='x', labelsize=11, colors=COLOR_TEXT_SECONDARY, 
+    ax.tick_params(axis='x', labelsize=7, colors=COLOR_TEXT_SECONDARY, 
                    length=4, width=1, pad=6)
     
     # 添加图例（与表格风格协调的专业样式）
-    legend = ax.legend(loc='upper right', fontsize=12, 
+    legend = ax.legend(loc='upper right', fontsize=6, 
                       frameon=True, fancybox=False, shadow=False,
                       framealpha=0.98, facecolor='white', 
                       edgecolor=COLOR_TABLE_BORDER, borderpad=1.0,
@@ -527,7 +531,7 @@ def plot_brinson_attribution_table(
     figsize: tuple = (4, 1.2),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 16
+    table_fontsize: int = 8
 ):
     """
     绘制归因分析表格

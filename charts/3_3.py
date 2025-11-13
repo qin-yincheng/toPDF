@@ -16,6 +16,8 @@ from charts.font_config import setup_chinese_font
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import numpy as np
+from matplotlib.ticker import FixedLocator, FixedFormatter
+import matplotlib.ticker as ticker
 from charts.utils import calculate_xlim, calculate_date_tick_params
 from calc.utils import is_trading_day
 
@@ -112,10 +114,10 @@ def plot_industry_deviation_timeseries(
     # 绘制折线图（使用专业的蓝色，增加线宽）
     line_color = '#2563eb'  # 更专业的蓝色
     ax.plot(x_indices, deviations, color=line_color, marker='', 
-            linewidth=2.5, label='持股行业偏离度', zorder=3)
+            linewidth=1, label='持股行业偏离度', zorder=3)
     
     # 设置Y轴标签（增大字体，使用专业颜色）
-    ax.set_ylabel('占比(%)', fontsize=13, color='#303030', fontweight='medium')
+    ax.set_ylabel('占比(%)', fontsize=7, color='#303030', fontweight='medium')
     # 根据数据范围设置Y轴
     min_val = min(deviations)
     max_val = max(deviations)
@@ -124,29 +126,31 @@ def plot_industry_deviation_timeseries(
     ax.margins(y=0.1)
     
     # 设置Y轴刻度样式（专业颜色和字体大小）
-    ax.tick_params(axis='y', colors='#4d4d4d', labelsize=12)
+    ax.tick_params(axis='y', colors='#4d4d4d', labelsize=7)
     
     # 添加专业网格线（仅Y轴，实线，专业颜色）
     ax.grid(True, alpha=0.6, linestyle='-', linewidth=0.8, axis='y', 
             color='#e5e5e5', zorder=0)
     
     # 设置X轴刻度和标签
-    ax.set_xlabel('日期', fontsize=13, color='#303030', fontweight='medium')
+    ax.set_xlabel('日期', fontsize=7, color='#303030', fontweight='medium')
     # 使用工具函数自动计算合适的刻度间隔
     if n_points > 0:
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
         
-        # 设置刻度位置
-        ax.set_xticks(tick_indices)
-        
-        # 设置刻度标签为对应的日期（专业样式）
-        ax.set_xticklabels(tick_labels, rotation=45, ha='right', 
-                          fontsize=12, color='#4d4d4d')
-        
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
-        ax.set_xlim(x_min, x_max)
+        if len(tick_indices) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_indices.pop(-2)
+            tick_labels.pop(-2)
+
+        ax.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
+
+        plt.setp(ax.get_xticklabels(), ha='center', rotation=0, fontsize=7, color='#4d4d4d')
+
+        ax.set_xlim(-0.5, len(dates) - 0.5)
     else:
         ax.set_xticks([])
         ax.set_xticklabels([])
@@ -160,7 +164,7 @@ def plot_industry_deviation_timeseries(
     ax.spines['bottom'].set_linewidth(1.0)
     
     # 添加专业图例（右上角，无边框）
-    ax.legend(loc='upper right', frameon=False, fontsize=12, 
+    ax.legend(loc='upper right', frameon=False, fontsize=6, 
               labelcolor='#303030', edgecolor='none')
     
     # # 添加脚注

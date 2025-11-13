@@ -42,4 +42,4 @@ REPORT_YEAR = (
 #     缺点：需要获取历史行情数据（通过Tushare API）
 #
 # 推荐设置：VALUATION_METHOD = "market"
-VALUATION_METHOD = "cost"  # 可选: "cost" 或 "market"
+VALUATION_METHOD = "market"  # 可选: "cost" 或 "market"

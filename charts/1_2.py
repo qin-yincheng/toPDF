@@ -254,10 +254,10 @@ def plot_scale_overview(
         if n_points > 0:
             subtitle = f"期间：{dates[0].strftime('%Y-%m-%d')} 至 {dates[-1].strftime('%Y-%m-%d')}"
             ax1.text(
-                0, 1.05, subtitle, transform=ax1.transAxes, fontsize=10, color="#5c5c5c"
+                0, 1.05, subtitle, transform=ax1.transAxes, fontsize=8, color="#5c5c5c"
             )
         ax1.text(
-            0, 1.02, "单位：万元", transform=ax1.transAxes, fontsize=10, color="#7a7a7a"
+            0, 1.02, "单位：万元", transform=ax1.transAxes, fontsize=7, color="#7a7a7a"
         )
 
     # 设置X轴刻度和标签
