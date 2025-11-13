@@ -39,6 +39,8 @@ except ImportError:
 
 # 保留 matplotlib 导入用于兼容
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator, FixedFormatter
+import matplotlib.ticker as ticker
 from charts.font_config import setup_chinese_font
 
 
@@ -127,12 +129,12 @@ def plot_daily_return_chart(
     # 添加零线
     ax.axhline(y=0, color='black', linestyle='-', linewidth=0.8, zorder=0)
     
-    ax.set_xlabel('日期')
+    # ax.set_xlabel('日期')
     ax.set_ylabel('收益率(%)', color='#333333')
     # ax.set_ylim(-12, 12)
     # ax.set_yticks([-10, -5, 0, 5, 10])
     ax.margins(y=0.1)
-    ax.tick_params(axis='both', labelcolor='#333333', labelsize=10)
+    ax.tick_params(axis='both', labelcolor='#333333', labelsize=7)
     ax.grid(
         True,
         alpha=0.35,
@@ -152,7 +154,7 @@ def plot_daily_return_chart(
         xytext=(max_x_pos, max_value + 1.5),
         ha='center',
         va='bottom',
-        fontsize=9,
+        fontsize=5,
         color=color_bar,
         weight='bold',
         arrowprops=dict(arrowstyle='->', color=color_bar, lw=1.5),
@@ -168,7 +170,7 @@ def plot_daily_return_chart(
         xytext=(min_x_pos, min_value - 1.5),
         ha='center',
         va='top',
-        fontsize=9,
+        fontsize=5,
         color=color_bar,
         weight='bold',
         arrowprops=dict(arrowstyle='->', color=color_bar, lw=1.5),
@@ -183,9 +185,9 @@ def plot_daily_return_chart(
         x_indices,
         cumulative_returns,
         color=color_line,
-        marker='o',
+        marker='',
         markersize=3.5,
-        linewidth=2.2,
+        linewidth=1,
         label='累计收益率',
         markerfacecolor='white',
         markeredgecolor=color_line,
@@ -203,8 +205,8 @@ def plot_daily_return_chart(
     max_cum_value = max(cumulative_returns) if cumulative_returns else 90
     # ax2.set_ylim(-20, max(100, max_cum_value + 10))  # 至少到100，或最大值+10
     # ax2.set_yticks([-20, 0, 20, 40, 60, 80, 100])  # 包含100的刻度
-    ax.tick_params(axis='x', labelsize=9, colors='#333333')
-    ax2.tick_params(axis='y', labelcolor='#333333', labelsize=10)
+    ax.tick_params(axis='x', labelsize=7, colors='#333333')
+    ax2.tick_params(axis='y', labelcolor='#333333', labelsize=7)
     
     # 标注累计收益率的最大值点
     # max_cum_idx = cumulative_returns.index(max(cumulative_returns))
@@ -226,7 +228,7 @@ def plot_daily_return_chart(
     
     # 设置标题（如果启用）
     if show_title:
-        ax.set_title('日收益表现', fontsize=16, fontweight='bold', pad=22, loc='left', color='#1f2933')
+        ax.set_title('日收益表现', fontsize=8, fontweight='bold', pad=22, loc='left', color='#1f2933')
     
     # 设置X轴刻度和标签
     # 使用工具函数自动计算合适的刻度间隔
@@ -234,15 +236,22 @@ def plot_daily_return_chart(
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
         
-        # 设置刻度位置
-        ax.set_xticks(tick_indices)
+        # 去掉倒数第二个刻度
+        if len(tick_indices) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_indices.pop(-2)  # 移除倒数第二个索引
+            tick_labels.pop(-2)  # 移除倒数第二个标签
         
-        # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=35, ha='right')
+        # 用 FixedLocator + FixedFormatter 明确绑定
+        ax.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
         
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
-        ax.set_xlim(x_min, x_max)
+        # 标签旋转与对齐
+        plt.setp(ax.get_xticklabels(), ha='center')
+        
+        # 确保范围覆盖所有索引
+        ax.set_xlim(-0.5, len(dates)-0.5)
     else:
         ax.set_xticks([])
         ax.set_xticklabels([])
@@ -272,25 +281,25 @@ def plot_daily_return_chart(
         bbox_to_anchor=(0.5, 1.18),
         ncol=2,
         frameon=False,
-        fontsize=10
+        fontsize=6
     )
 
-    if dates:
-        start_str = dates[0].strftime('%Y-%m-%d')
-        end_str = dates[-1].strftime('%Y-%m-%d')
-        max_cum_value = max(cumulative_returns) if cumulative_returns else 0
-        summary_text = (
-            f"区间：{start_str} ~ {end_str}｜样本量：{len(dates)}｜累计收益峰值：{max_cum_value:.2f}%"
-        )
-        fig.text(
-            0.02,
-            0.96,
-            summary_text,
-            fontsize=11,
-            color='#4d5766',
-            ha='left',
-            va='center'
-        )
+    # if dates:
+    #     start_str = dates[0].strftime('%Y-%m-%d')
+    #     end_str = dates[-1].strftime('%Y-%m-%d')
+    #     max_cum_value = max(cumulative_returns) if cumulative_returns else 0
+    #     summary_text = (
+    #         f"区间：{start_str} ~ {end_str}｜样本量：{len(dates)}｜累计收益峰值：{max_cum_value:.2f}%"
+    #     )
+    #     fig.text(
+    #         0.02,
+    #         0.96,
+    #         summary_text,
+    #         fontsize=11,
+    #         color='#4d5766',
+    #         ha='left',
+    #         va='center'
+    #     )
     
     # 调整布局，为图例留出更多空间
     plt.tight_layout(rect=[0, 0, 1, 0.96])  # 顶部留出4%的空间给图例
@@ -315,7 +324,7 @@ def plot_daily_return_table(
     figsize: tuple = (6, 4),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 16
+    table_fontsize: int = 8
 ):
     """
     绘制日收益表现摘要表格
@@ -403,7 +412,7 @@ def plot_daily_return_table(
             0.92,
             '日收益表现摘要',
             transform=ax.transAxes,
-            fontsize=16,
+            fontsize=8,
             fontweight='bold',
             color='#1f2933',
             ha='left',
@@ -414,7 +423,7 @@ def plot_daily_return_table(
             0.78,
             '概览：展示区间内的极值表现，用于快速传达风险与收益边界。',
             transform=ax.transAxes,
-            fontsize=11,
+            fontsize=8,
             color='#4d5766',
             ha='left'
         )
@@ -645,7 +654,7 @@ def plot_daily_return_chart_echarts(
             title_opts=opts.TitleOpts(
                 title="日收益表现",
                 title_textstyle_opts=opts.TextStyleOpts(
-                    font_size=14,
+                    font_size=8,
                     font_weight="bold"
                 ),
                 pos_left="left"
@@ -690,7 +699,7 @@ def plot_daily_return_chart_echarts(
             yaxis_index=1,  # 使用第二个Y轴
             color="#d3d3d3",
             symbol="circle",
-            symbol_size=6,
+            symbol_size=3.5,
             linestyle_opts=opts.LineStyleOpts(width=2),
             label_opts=opts.LabelOpts(is_show=False),
         )
