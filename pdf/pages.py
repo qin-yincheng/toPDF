@@ -24,7 +24,7 @@ def setup_chinese_fonts() -> None:
     返回注册成功的字体名称
     """
     system = platform.system()
-    
+
     if system == "Darwin":  # macOS
         # macOS 系统字体路径
         font_paths = [
@@ -33,7 +33,7 @@ def setup_chinese_fonts() -> None:
             ("/System/Library/Fonts/STHeiti Medium.ttc", "STHeiti"),
             ("/Library/Fonts/Songti.ttc", "Songti SC"),
         ]
-        
+
         for font_path, font_name in font_paths:
             if os.path.exists(font_path):
                 try:
@@ -42,7 +42,7 @@ def setup_chinese_fonts() -> None:
                     return font_name  # 返回成功注册的字体名
                 except Exception as e:
                     print(f"  ⚠️  注册字体失败 {font_name}: {e}")
-    
+
     elif system == "Windows":
         # Windows 系统字体路径
         font_paths = {
@@ -50,7 +50,7 @@ def setup_chinese_fonts() -> None:
             "SimHei": "C:/Windows/Fonts/simhei.ttf",
             "SimSun": "C:/Windows/Fonts/simsun.ttc",
         }
-        
+
         for font_name, font_path in font_paths.items():
             if os.path.exists(font_path):
                 try:
@@ -59,13 +59,13 @@ def setup_chinese_fonts() -> None:
                     return font_name  # 返回成功注册的字体名
                 except Exception as e:
                     print(f"  ⚠️  注册字体失败 {font_name}: {e}")
-    
+
     else:  # Linux
         font_paths = {
             "WenQuanYi Micro Hei": "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
             "Noto Sans CJK SC": "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
         }
-        
+
         for font_name, font_path in font_paths.items():
             if os.path.exists(font_path):
                 try:
@@ -74,7 +74,7 @@ def setup_chinese_fonts() -> None:
                     return font_name  # 返回成功注册的字体名
                 except Exception as e:
                     print(f"  ⚠️  注册字体失败 {font_name}: {e}")
-    
+
     # 如果所有字体都失败，返回None
     print(f"  ⚠️  未能注册任何中文字体")
     return None
@@ -96,16 +96,16 @@ def figure_to_image(fig, dpi: int = 200, preserve_aspect: bool = False) -> Bytes
         # 检查 fig 是否是有效的 figure 对象
         if fig is None:
             raise ValueError("figure 对象为 None")
-        if not hasattr(fig, 'savefig'):
-            raise ValueError(f"传入的对象不是有效的 matplotlib figure，类型: {type(fig)}")
-        
+        if not hasattr(fig, "savefig"):
+            raise ValueError(
+                f"传入的对象不是有效的 matplotlib figure，类型: {type(fig)}"
+            )
+
         img_io = BytesIO()
         if preserve_aspect:
             # 对于需要保持宽高比的图表（如饼图），不使用tight，保持固定边界
             # 省略 bbox_inches 参数来保持固定边界（使用默认值）
-            fig.savefig(
-                img_io, format="png", dpi=dpi, facecolor="white"
-            )
+            fig.savefig(img_io, format="png", dpi=dpi, facecolor="white")
         else:
             # 对于其他图表，使用tight以节省空间
             fig.savefig(
@@ -116,7 +116,7 @@ def figure_to_image(fig, dpi: int = 200, preserve_aspect: bool = False) -> Bytes
         return img_io
     except Exception as e:
         print(f"  转换图片失败: {e}")
-        if fig is not None and hasattr(fig, 'close'):
+        if fig is not None and hasattr(fig, "close"):
             try:
                 plt.close(fig)
             except:
@@ -136,7 +136,7 @@ def draw_header(
 ) -> None:
     """
     绘制PDF页眉
-    
+
     参数:
         canvas_obj: reportlab Canvas 对象
         page_width: 页面宽度（单位：点）
@@ -149,18 +149,18 @@ def draw_header(
     """
     header_y = page_height - top_margin + 30  # 页眉位置
     margin = 40
-    
+
     try:
         canvas_obj.setFont(chinese_font_name, 9)
     except:
         canvas_obj.setFont("Helvetica", 9)
-    
+
     # # 左侧：产品名称或报告标题
     # if product_name:
     #     canvas_obj.drawString(margin, header_y, product_name)
     # else:
     #     canvas_obj.drawString(margin, header_y, "私募基金报告")
-    
+
     # # 右侧：日期和页码
     # right_text = ""
     # if report_date:
@@ -170,16 +170,16 @@ def draw_header(
     #         right_text = f"{right_text}  |  第 {page_num} 页"
     #     else:
     #         right_text = f"第 {page_num} 页"
-    
+
     # if right_text:
     #     # 计算右对齐位置
     #     canvas_obj.drawRightString(page_width - margin, header_y, right_text)
-    
+
     # 绘制页眉分隔线
     line_y = header_y
     canvas_obj.setStrokeColorRGB(0, 0, 0)  # 浅灰色
     canvas_obj.setLineWidth(0.5)
-    canvas_obj.line(margin-10, line_y, page_width - margin+10, line_y)
+    canvas_obj.line(margin - 10, line_y, page_width - margin + 10, line_y)
 
 
 def draw_footer(
@@ -193,7 +193,7 @@ def draw_footer(
 ) -> None:
     """
     绘制PDF页脚
-    
+
     参数:
         canvas_obj: reportlab Canvas 对象
         page_width: 页面宽度（单位：点）
@@ -205,23 +205,23 @@ def draw_footer(
     """
     footer_y = bottom_margin
     margin = 40
-    
+
     try:
         canvas_obj.setFont(chinese_font_name, 8)
     except:
         canvas_obj.setFont("Helvetica", 8)
-    
+
     # 左侧：免责声明或公司信息
     left_text = disclaimer or "请务必阅读正文后的免责声明"
     if company_info:
         left_text = f"{company_info}  |  {left_text}"
     canvas_obj.drawString(margin, footer_y, left_text)
-    
+
     # # 右侧：页码
     # if page_num is not None:
     #     page_text = f"第 {page_num} 页"
     #     canvas_obj.drawRightString(page_width - margin, footer_y, page_text)
-    
+
     # # 绘制页脚分隔线
     # line_y = footer_y + 12
     # canvas_obj.setStrokeColorRGB(0.7, 0.7, 0.7)  # 浅灰色
@@ -236,7 +236,7 @@ def insert_figure(
     y: float,
     width: float,
     height: float,
-    dpi: int = 200,
+    dpi: int = 300,
     title: Optional[str] = None,
     preserve_aspect: bool = False,
 ) -> bool:
@@ -294,10 +294,11 @@ def generate_page1(
     # 导入各个图表生成函数
     import sys
 
-    # 添加 charts 目录到路径
-    charts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "charts")
-    if charts_dir not in sys.path:
-        sys.path.insert(0, charts_dir)
+    # 添加项目根目录到路径，以便图表模块可以导入 charts 包
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    charts_dir = os.path.join(project_root, "charts")
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
 
     # 直接导入各个模块
     import importlib.util
@@ -538,13 +539,13 @@ def generate_page1(
         perf_data = safe_get("performance_overview")
         if perf_data and isinstance(perf_data, dict):
             product_name = perf_data.get("product_name")
-        
+
         # 从 performance_overview 中提取最新净值日期作为报告日期
         if perf_data and isinstance(perf_data, dict):
             latest_nav_date = perf_data.get("latest_nav_date")
             if latest_nav_date:
                 report_date = latest_nav_date
-    
+
     # 绘制页眉
     draw_header(
         canvas_obj=c,
@@ -580,7 +581,7 @@ def generate_page1(
         # 蓝色竖条：以 center_y 为中心
         bar_x = margin - 3
         bar_y = center_y - bar_height / 2
-        c.setFillColorRGB(0.1529, 0.2667, 0.8157) 
+        c.setFillColorRGB(0.1529, 0.2667, 0.8157)
         c.rect(bar_x, bar_y, 1.5, bar_height, fill=1, stroke=0)
         # 标题文本：计算基线位置，使文本中心与竖条中心对齐
         # 文本中心在基线上方约字体大小的0.4倍处
@@ -621,8 +622,10 @@ def generate_page1(
         "stock_holding_nodes_table": usable_height * 0.25,
         "stock_holding_nodes_chart": usable_height * 0.25,
         "turnover_rate_table": usable_height * 0.18,  # 增加高度，使表格更饱满易读
-        "period_transaction_table": usable_height * 0.28,  # 增加高度，使表格和图表更协调
-        "period_transaction_chart": usable_height * 0.28,  # 增加高度，使表格和图表更协调
+        "period_transaction_table": usable_height
+        * 0.28,  # 增加高度，使表格和图表更协调
+        "period_transaction_chart": usable_height
+        * 0.28,  # 增加高度，使表格和图表更协调
     }
 
     x_left = margin
@@ -630,6 +633,7 @@ def generate_page1(
 
     # 分页辅助函数
     page_num = 1  # 当前页码
+
     def new_page() -> None:
         nonlocal y_cursor, page_num
         # 为当前页添加页脚（包括第一页）
@@ -674,11 +678,11 @@ def generate_page1(
         fig1 = plot_performance_overview_table(
             data=safe_get("performance_overview"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig1, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  总体表现表格生成失败: {e}")
 
@@ -692,13 +696,12 @@ def generate_page1(
         fig2 = plot_scale_overview(
             data=safe_get("scale_overview.scale_series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
             include_right_table=True,
-            table_fontsize=16,
         )
         insert_figure(c, fig2, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  产品规模总览图表生成失败: {e}")
 
@@ -711,11 +714,11 @@ def generate_page1(
         fig3 = plot_nav_performance(
             data=safe_get("nav_performance.nav_series"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
+            figsize=(usable_width / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig3, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  单位净值表现图表生成失败: {e}")
 
@@ -731,7 +734,7 @@ def generate_page1(
         fig4 = plot_daily_return_chart(
             data=safe_get("nav_performance.daily_returns"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig4, x_left, y_cursor - h, left_w, h)
@@ -739,11 +742,11 @@ def generate_page1(
         fig5 = plot_daily_return_table(
             data=safe_get("nav_performance.daily_returns"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig5, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 15  # 增加间距，确保与下一部分分离
+        y_cursor -= h + 30  # 增加间距，确保与下一部分分离
     except Exception as e:
         print(f"  日收益表现图表生成失败: {e}")
 
@@ -760,35 +763,35 @@ def generate_page1(
         fig6 = plot_return_analysis_table(
             data=safe_get("nav_performance.period_returns"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
         )
         insert_figure(c, fig6, x_left, y_cursor - h, left_w, h)
         fig7 = plot_return_comparison_chart(
             data=safe_get("nav_performance.period_returns"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig7, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  收益分析生成失败: {e}")
 
     # 行6：指标分析（整行）
     try:
         print("  生成指标分析表格...")
-        h = row_heights["indicator"]
+        h = row_heights["indicator"] * 1.5
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "指标分析")
         fig8 = plot_indicator_analysis_table(
             data=safe_get("indicator_analysis"),
             return_figure=True,
-            figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
-            table_fontsize=16,
+            figsize=(usable_width / 72, h / 72),
+            table_fontsize=8,
             row_height_scale=2.3,
         )
         insert_figure(c, fig8, x_left, y_cursor - h, usable_width, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  指标分析表格生成失败: {e}")
 
@@ -804,7 +807,7 @@ def generate_page1(
         fig9 = plot_dynamic_drawdown_chart(
             data=safe_get("drawdown.series"),
             return_figure=True,
-            figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(left_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig9, x_left, y_cursor - h, left_w, h)
@@ -812,11 +815,11 @@ def generate_page1(
         fig10 = plot_dynamic_drawdown_table(
             data=safe_get("drawdown.table"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
+            figsize=(right_w / 72, h / 72),
             show_title=False,
         )
         insert_figure(c, fig10, x_left + left_w + 5, y_cursor - h, right_w, h)
-        y_cursor -= h + 10
+        y_cursor -= h + 30
     except Exception as e:
         print(f"  动态回撤生成失败: {e}")
 
@@ -902,11 +905,11 @@ def generate_page1(
         # 饼图和柱状图并排显示
         h_charts = row_heights["industry_pie"]
         chart_width = (usable_width - 10) / 2  # 两个图表并排，留10点间距
-        
+
         # 关键修复：确保饼图是正方形，避免变形
         # 饼图必须保持1:1的宽高比才能显示为圆形
         pie_size = min(chart_width, h_charts)  # 取较小值确保是正方形
-        
+
         # 左侧：饼图 - 使用正方形尺寸
         fig15 = plot_market_value_pie_chart(
             data=safe_get("industry_attribution.end_holdings_distribution"),
@@ -953,7 +956,9 @@ def generate_page1(
         if timeseries_data:
             print(f"    数据条数: {len(timeseries_data)}")
             if len(timeseries_data) > 0:
-                print(f"    第一条数据keys: {list(timeseries_data[0].keys())[:5]}...")  # 只显示前5个key
+                print(
+                    f"    第一条数据keys: {list(timeseries_data[0].keys())[:5]}..."
+                )  # 只显示前5个key
         else:
             print("    警告: industry_timeseries.timeseries 数据为空")
         fig18 = plot_industry_proportion_timeseries(
@@ -966,6 +971,7 @@ def generate_page1(
         y_cursor -= h + 10
     except Exception as e:
         import traceback
+
         print(f"  持股行业占比时序图表生成失败: {e}")
         print(f"  错误详情: {traceback.format_exc()}")
 
@@ -1155,7 +1161,9 @@ def generate_page1(
             show_title=False,
         )
         # 图表向下偏移标题高度，使其与表格内容区域对齐
-        insert_figure(c, fig26_chart, x_left + left_w + 5, y_cursor - h - title_height, right_w, h)
+        insert_figure(
+            c, fig26_chart, x_left + left_w + 5, y_cursor - h - title_height, right_w, h
+        )
         y_cursor -= h + 10
 
         # 第二行：亏损前十（表格在左，图表在右）
@@ -1181,7 +1189,9 @@ def generate_page1(
             show_title=False,
         )
         # 图表向下偏移标题高度，使其与表格内容区域对齐
-        insert_figure(c, fig27_chart, x_left + left_w + 5, y_cursor - h - title_height, right_w, h)
+        insert_figure(
+            c, fig27_chart, x_left + left_w + 5, y_cursor - h - title_height, right_w, h
+        )
         y_cursor -= h + 10
     except Exception as e:
         print(f"  股票绩效归因图表生成失败: {e}")
@@ -1277,7 +1287,7 @@ def generate_page1(
         y_cursor -= h + 10
     except Exception as e:
         print(f"  期间交易图表生成失败: {e}")
-    
+
     # 添加最后一页的页脚
     draw_footer(
         canvas_obj=c,
@@ -1287,7 +1297,7 @@ def generate_page1(
         disclaimer="请务必阅读正文后的免责声明",
         page_num=page_num,
     )
-    
+
     # 保存 PDF
     c.save()
 

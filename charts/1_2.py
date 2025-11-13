@@ -14,7 +14,8 @@ if str(project_root) not in sys.path:
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, FixedLocator, FixedFormatter
+import matplotlib.ticker as ticker
 from datetime import datetime, timedelta
 import numpy as np
 from calc.utils import is_trading_day
@@ -22,11 +23,13 @@ from charts.utils import calculate_ylim, calculate_xlim, calculate_date_tick_par
 
 
 REPORT_STYLE = {
-    "font.size": 14,
-    "axes.titlesize": 22,
+    "font.size": 8,
+    "axes.titlesize": 8,
     "axes.titleweight": "bold",
-    "axes.labelsize": 16,
+    "axes.labelsize": 7,
     "axes.labelcolor": "#303030",
+    "xtick.labelsize": 7,
+    "ytick.labelsize": 7,
     "xtick.color": "#4d4d4d",
     "ytick.color": "#4d4d4d",
     "axes.edgecolor": "#d9d9d9",
@@ -34,7 +37,7 @@ REPORT_STYLE = {
     "grid.color": "#e5e5e5",
     "grid.linestyle": "-",
     "grid.linewidth": 1.0,
-    "legend.fontsize": 13,
+    "legend.fontsize": 6,
     "figure.facecolor": "white",
 }
 
@@ -97,7 +100,7 @@ def plot_scale_overview(
     return_figure: bool = False,
     show_title: bool = True,
     include_right_table: bool = False,
-    table_fontsize: int = 20,
+    table_fontsize: int = 8,
 ):
     """
     绘制产品规模总览图（双Y轴折线图）
@@ -186,21 +189,20 @@ def plot_scale_overview(
         x_indices,
         asset_scale,
         color=color1,
-        linewidth=3.0,
+        linewidth=1.0,
         label="资产规模",
     )
     ax1.plot(
         x_indices,
         shares,
         color=color2,
-        linewidth=2.6,
+        linewidth=1,
         linestyle="--",
         label="份额",
     )
-    ax1.set_xlabel("日期", labelpad=18)
-    ax1.set_ylabel("资产规模 / 份额（万元）", labelpad=18)
-    ax1.tick_params(axis="y", labelsize=13, colors="#4d4d4d", pad=10)
-    ax1.tick_params(axis="x", labelsize=13, pad=12)
+    ax1.set_ylabel("资产规模 / 份额（万元）", labelpad=3)
+    ax1.tick_params(axis="y", labelsize=7, colors="#4d4d4d", pad=6)
+    ax1.tick_params(axis="x", labelsize=7, pad=6)
     ax1.set_axisbelow(True)
     for spine in ["left", "bottom"]:
         ax1.spines[spine].set_color("#cfcfcf")
@@ -209,14 +211,14 @@ def plot_scale_overview(
     ax1.grid(visible=False, axis="x")
 
     # 基于数据特性自动计算左Y轴范围（资产规模和份额）
-    y_min_left, y_max_left = calculate_ylim(
-        [asset_scale, shares],
-        start_from_zero=False,
-        padding_ratio=0.1,
-        allow_negative=True,
-        round_to_nice_number=True,
-    )
-    ax1.set_ylim(y_min_left, y_max_left)
+    # y_min_left, y_max_left = calculate_ylim(
+    #     [asset_scale, shares],
+    #     start_from_zero=False,
+    #     padding_ratio=0.1,
+    #     allow_negative=True,
+    #     round_to_nice_number=True,
+    # )
+    # ax1.set_ylim(y_min_left, y_max_left)
 
     # 右Y轴：净申购额
     ax2 = ax1.twinx()
@@ -230,17 +232,17 @@ def plot_scale_overview(
         edgecolor="none",
     )
 
-    ax2.set_ylabel("净申购额（万元）", labelpad=18, color="#303030")
-    ax2.tick_params(axis="y", labelsize=13, colors="#4d4d4d", pad=10)
+    ax2.set_ylabel("净申购额（万元）", labelpad=9, color="#303030")
+    ax2.tick_params(axis="y", labelsize=7, colors="#4d4d4d", pad=6)
     # 基于数据特性自动计算右Y轴范围（净申购额）
-    y_min_right, y_max_right = calculate_ylim(
-        [net_subscription],
-        start_from_zero=True,
-        padding_ratio=0.15,  # 净申购额使用稍大的边距，因为数值较小
-        allow_negative=False,
-        round_to_nice_number=True,
-    )
-    ax2.set_ylim(y_min_right, y_max_right)
+    # y_min_right, y_max_right = calculate_ylim(
+    #     [net_subscription],
+    #     start_from_zero=True,
+    #     padding_ratio=0.15,  # 净申购额使用稍大的边距，因为数值较小
+    #     allow_negative=False,
+    #     round_to_nice_number=True,
+    # )
+    # ax2.set_ylim(y_min_right, y_max_right)
     ax2.spines["top"].set_visible(False)
     ax2.spines["left"].set_visible(False)
     ax2.spines["right"].set_color("#d9d9d9")
@@ -252,10 +254,10 @@ def plot_scale_overview(
         if n_points > 0:
             subtitle = f"期间：{dates[0].strftime('%Y-%m-%d')} 至 {dates[-1].strftime('%Y-%m-%d')}"
             ax1.text(
-                0, 1.05, subtitle, transform=ax1.transAxes, fontsize=13, color="#5c5c5c"
+                0, 1.05, subtitle, transform=ax1.transAxes, fontsize=10, color="#5c5c5c"
             )
         ax1.text(
-            0, 1.02, "单位：万元", transform=ax1.transAxes, fontsize=12, color="#7a7a7a"
+            0, 1.02, "单位：万元", transform=ax1.transAxes, fontsize=10, color="#7a7a7a"
         )
 
     # 设置X轴刻度和标签
@@ -264,15 +266,22 @@ def plot_scale_overview(
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
 
-        # 设置刻度位置
-        ax1.set_xticks(tick_indices)
+        # 去掉倒数第二个刻度
+        if len(tick_indices) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_indices.pop(-2)  # 移除倒数第二个索引
+            tick_labels.pop(-2)  # 移除倒数第二个标签
 
-        # 设置刻度标签为对应的日期
-        ax1.set_xticklabels(tick_labels, rotation=45, ha="right")
+        # 用 FixedLocator + FixedFormatter 明确绑定
+        ax1.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax1.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
 
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
-        ax1.set_xlim(x_min, x_max)
+        # 标签旋转与对齐
+        plt.setp(ax1.get_xticklabels(), ha='center')
+
+        # 确保范围覆盖所有索引
+        ax1.set_xlim(-1, len(dates))
     else:
         ax1.set_xticks([])
         ax1.set_xticklabels([])
@@ -337,7 +346,7 @@ def plot_scale_overview(
         _style_value_table(tbl, table_fontsize)
         table_ax.set_facecolor("#f3f6fd")
         table_ax.set_xlim(0, 1)
-        table_ax.set_ylim(0, 1)
+        # table_ax.set_ylim(0, 1)
 
     # 调整布局
     if include_right_table:

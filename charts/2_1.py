@@ -87,14 +87,14 @@ def plot_dynamic_drawdown_chart(
     # 绘制产品回撤线（蓝色）
     color1 = '#5470c6'  # 深蓝色
     line1 = ax.plot(
-        x_indices, product_drawdown, color=color1, linestyle='-', linewidth=2.2,
+        x_indices, product_drawdown, color=color1, linestyle='-', linewidth=1,
         label='私募基金产品'
     )
     
     # 绘制基准回撤线（绿色）
     color2 = '#91cc75'  # 绿色
     line2 = ax.plot(
-        x_indices, benchmark_drawdown, color=color2, linestyle='-', linewidth=2.0,
+        x_indices, benchmark_drawdown, color=color2, linestyle='-', linewidth=1,
         label='沪深300'
     )
     
@@ -108,15 +108,15 @@ def plot_dynamic_drawdown_chart(
     y_max = max(5, max_drawdown + 2)
     y_min = min(-25, min_drawdown - 2)
     ax.set_ylim(y_min, y_max)
-    ax.set_ylabel('回撤(%)', color='black', fontsize=13)
+    ax.set_ylabel('回撤(%)', color='black', fontsize=7)
     ax.yaxis.set_major_locator(MultipleLocator(2.5))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{y:.1f}%"))
-    ax.tick_params(axis='y', labelcolor='black', labelsize=12, length=4, pad=8)
+    ax.tick_params(axis='y', labelcolor='black', labelsize=7, length=4, pad=6)
     ax.axhline(0, color='#d8d9dd', linewidth=1.0)
     ax.grid(which='major', axis='y', linestyle='--', color='#d8d9dd', alpha=0.6)
     
     # 设置X轴刻度和标签
-    ax.set_xlabel('日期', fontsize=13)
+    # ax.set_xlabel('日期', fontsize=13)
     # 使用工具函数自动计算合适的刻度间隔
     if n_points > 0:
         # 使用工具函数计算日期刻度参数
@@ -126,7 +126,7 @@ def plot_dynamic_drawdown_chart(
         ax.set_xticks(tick_indices)
         
         # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=0, ha='center', fontsize=11)
+        ax.set_xticklabels(tick_labels, rotation=0, ha='center', fontsize=7)
         
         # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
         x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
@@ -135,11 +135,11 @@ def plot_dynamic_drawdown_chart(
         ax.set_xticks([])
         ax.set_xticklabels([])
 
-    ax.tick_params(axis='x', labelsize=11, length=4, pad=6)
+    ax.tick_params(axis='x', labelsize=7, length=4, pad=6)
     
     # 设置标题（如果启用）
     if show_title:
-        ax.set_title('动态回撤', fontsize=18, fontweight='bold', pad=18, loc='left')
+        ax.set_title('动态回撤', fontsize=8, fontweight='bold', pad=18, loc='left')
     
 
     # 设置边框：只保留左边框，删除其他边框
@@ -149,58 +149,58 @@ def plot_dynamic_drawdown_chart(
     ax.spines['bottom'].set_color('#d8d9dd')
 
     # 计算统计信息并在图表中显示
-    stats_lines = []
-    if product_drawdown:
-        product_min = min(product_drawdown)
-        product_min_idx = product_drawdown.index(product_min)
-        product_min_date = dates[product_min_idx].strftime('%Y-%m-%d')
-        stats_lines.append(f"产品最大回撤: {product_min:.2f}%")
-        stats_lines.append(f"发生日期: {product_min_date}")
-        ax.scatter(
-            x_indices[product_min_idx],
-            product_min,
-            color=color1,
-            edgecolors='white',
-            s=60,
-            zorder=4
-        )
-        ax.annotate(
-            f"{product_min:.2f}%",
-            xy=(x_indices[product_min_idx], product_min),
-            xytext=(10, -15),
-            textcoords='offset points',
-            fontsize=11,
-            color=color1,
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color1, alpha=0.85),
-            arrowprops=dict(arrowstyle='->', color=color1, lw=1.2)
-        )
+    # stats_lines = []
+    # if product_drawdown:
+    #     product_min = min(product_drawdown)
+    #     product_min_idx = product_drawdown.index(product_min)
+    #     product_min_date = dates[product_min_idx].strftime('%Y-%m-%d')
+    #     stats_lines.append(f"产品最大回撤: {product_min:.2f}%")
+    #     stats_lines.append(f"发生日期: {product_min_date}")
+    #     ax.scatter(
+    #         x_indices[product_min_idx],
+    #         product_min,
+    #         color=color1,
+    #         edgecolors='white',
+    #         s=60,
+    #         zorder=4
+    #     )
+    #     ax.annotate(
+    #         f"{product_min:.2f}%",
+    #         xy=(x_indices[product_min_idx], product_min),
+    #         xytext=(10, -15),
+    #         textcoords='offset points',
+    #         fontsize=11,
+    #         color=color1,
+    #         bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color1, alpha=0.85),
+    #         arrowprops=dict(arrowstyle='->', color=color1, lw=1.2)
+    #     )
 
-    if benchmark_drawdown:
-        benchmark_min = min(benchmark_drawdown)
-        benchmark_min_idx = benchmark_drawdown.index(benchmark_min)
-        benchmark_min_date = dates[benchmark_min_idx].strftime('%Y-%m-%d')
-        stats_lines.append(f"基准最大回撤: {benchmark_min:.2f}%")
-        stats_lines.append(f"基准日期: {benchmark_min_date}")
+    # if benchmark_drawdown:
+    #     benchmark_min = min(benchmark_drawdown)
+    #     benchmark_min_idx = benchmark_drawdown.index(benchmark_min)
+    #     benchmark_min_date = dates[benchmark_min_idx].strftime('%Y-%m-%d')
+    #     stats_lines.append(f"基准最大回撤: {benchmark_min:.2f}%")
+    #     stats_lines.append(f"基准日期: {benchmark_min_date}")
 
-    if stats_lines:
-        stats_text = '\n'.join(stats_lines)
-        ax.text(
-            0.98,
-            0.02,
-            stats_text,
-            transform=ax.transAxes,
-            ha='right',
-            va='bottom',
-            fontsize=11.5,
-            color='#333333',
-            bbox=dict(
-                boxstyle='round,pad=0.6',
-                facecolor='white',
-                edgecolor='#d8d9dd',
-                linewidth=1.0,
-                alpha=0.95
-            )
-        )
+    # if stats_lines:
+    #     stats_text = '\n'.join(stats_lines)
+    #     ax.text(
+    #         0.98,
+    #         0.02,
+    #         stats_text,
+    #         transform=ax.transAxes,
+    #         ha='right',
+    #         va='bottom',
+    #         fontsize=11.5,
+    #         color='#333333',
+    #         bbox=dict(
+    #             boxstyle='round,pad=0.6',
+    #             facecolor='white',
+    #             edgecolor='#d8d9dd',
+    #             linewidth=1.0,
+    #             alpha=0.95
+    #         )
+    #     )
 
     # 添加图例（靠左，带背景）
     legend = ax.legend(
@@ -208,7 +208,7 @@ def plot_dynamic_drawdown_chart(
         bbox_to_anchor=(0.01, 1.10),
         ncol=2,
         frameon=True,
-        fontsize=12,
+        fontsize=6,
         columnspacing=1.5
     )
     legend.get_frame().set_facecolor('white')
@@ -238,7 +238,7 @@ def plot_dynamic_drawdown_table(
     figsize: tuple = (6, 6),
     return_figure: bool = False,
     show_title: bool = True,
-    table_fontsize: int = 18
+    table_fontsize: int = 8
 ):
     """
     绘制动态回撤汇总表格
@@ -302,13 +302,13 @@ def plot_dynamic_drawdown_table(
         cellLoc='left',
         loc='center',
         colWidths=col_widths,
-        bbox=[0.02, -0.01, 0.96, 0.98]
+        bbox=[0.02, 0, 0.96, 0.98]
     )
     
     # 设置表格样式
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1.12, 2.3)
+    # table.scale(1.12, 2.3)
     
     # 设置表头样式
     for i in range(2):
