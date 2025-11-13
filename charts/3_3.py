@@ -61,7 +61,7 @@ def plot_industry_deviation_timeseries(
     # 如果没有数据或数据为空，返回空图表
     if not data:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=8)
         ax.axis('off')
         if return_figure:
             plt.close(fig)
@@ -89,7 +89,7 @@ def plot_industry_deviation_timeseries(
     # 如果数据为空，返回空图表
     if not dates or not deviations:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=8)
         ax.axis('off')
         if return_figure:
             plt.close(fig)

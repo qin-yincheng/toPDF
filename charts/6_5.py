@@ -228,11 +228,11 @@ def plot_period_transaction_chart(
     max_amount = max(max(buy_amounts) if buy_amounts else 0, 
                      max(sell_amounts) if sell_amounts else 0)
     
-    # 根据图表大小动态调整字体
-    label_fontsize = 16 if is_wide else 14  # Y轴标签字体
-    tick_fontsize = 14 if is_wide else 12  # 刻度字体
-    xlabel_fontsize = 15 if is_wide else 13  # X轴标签字体
-    legend_fontsize = 13 if is_wide else 11  # 图例字体
+    # 统一字体大小
+    label_fontsize = 7  # Y轴标签字体
+    tick_fontsize = 7  # 刻度字体
+    xlabel_fontsize = 7  # X轴标签字体
+    legend_fontsize = 6  # 图例字体
     
     # 根据数值大小决定Y轴标签格式（单位已经是"万元"）
     if max_amount >= 10000:
