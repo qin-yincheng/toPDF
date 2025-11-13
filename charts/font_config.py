@@ -92,12 +92,12 @@ def setup_chinese_font() -> None:
 
     # 其他字体配置
     plt.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
-    plt.rcParams["font.size"] = 14
-    plt.rcParams["axes.titlesize"] = 22
-    plt.rcParams["axes.labelsize"] = 16
-    plt.rcParams["xtick.labelsize"] = 16
-    plt.rcParams["ytick.labelsize"] = 16
-    plt.rcParams["legend.fontsize"] = 16
+    plt.rcParams["font.size"] = 10
+    plt.rcParams["axes.titlesize"] = 10
+    plt.rcParams["axes.labelsize"] = 7
+    plt.rcParams["xtick.labelsize"] = 6
+    plt.rcParams["ytick.labelsize"] = 6
+    plt.rcParams["legend.fontsize"] = 10
 
     # 专门为PDF优化的字体设置
     plt.rcParams["pdf.fonttype"] = 42  # 最重要：输出TrueType字体

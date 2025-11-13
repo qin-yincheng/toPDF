@@ -142,14 +142,14 @@ def plot_return_analysis_table(
     
     # 设置表格样式
     table.auto_set_font_size(False)
-    table.set_fontsize(20)
+    table.set_fontsize(8)
     table.scale(1.05, 2.3)
     
     # 设置表头样式
     for i in range(4):
         cell = table[(0, i)]
         cell.set_facecolor('#eef2fb')  # 浅灰色背景
-        cell.set_text_props(weight='bold', fontsize=20, ha='center', color='#1f2d3d')
+        cell.set_text_props(weight='bold', fontsize=8, ha='center', color='#1f2d3d')
         cell.set_edgecolor('#eef2fb')
         cell.set_linewidth(0)
     
@@ -160,7 +160,7 @@ def plot_return_analysis_table(
             is_even_row = (i % 2 == 0)
             cell.set_facecolor('#ffffff' if is_even_row else '#f6f7fb')
             if j == 0:
-                cell.set_text_props(weight='bold', ha='center', fontsize=20, color='#1a2233')
+                cell.set_text_props(weight='bold', ha='center', fontsize=8, color='#1a2233')
                 cell.PAD = 0.5
             else:
                 text_color = '#1a2233'
@@ -168,7 +168,7 @@ def plot_return_analysis_table(
                     value = raw_value_rows[i-1][j]
                     if value is not None:
                         text_color = '#dc4a4a' if value < 0 else '#1f8a70'
-                cell.set_text_props(ha='center', fontsize=20, color=text_color)
+                cell.set_text_props(ha='center', fontsize=8, color=text_color)
             cell.set_edgecolor('#e2e7f1')
             cell.set_linewidth(0.6)
             
@@ -252,12 +252,12 @@ def plot_return_comparison_chart(
     
     # 设置坐标轴
     ax.set_xlabel('')
-    ax.set_ylabel('收益率 (%)', color='#1a2233', fontsize=20, labelpad=14)
+    ax.set_ylabel('收益率 (%)', color='#1a2233', fontsize=7, labelpad=6)
     if show_title:
-        ax.set_title('产品收益率对比', fontsize=22, fontweight='bold', color='#1a2233', pad=24)
+        ax.set_title('产品收益率对比', fontsize=7, fontweight='bold', color='#1a2233', pad=6)
     ax.set_xticks(x)
-    ax.set_xticklabels(periods, rotation=0, ha='center', fontsize=18, color='#1a2233')
-    ax.tick_params(axis='y', labelsize=18, colors='#1a2233')
+    ax.set_xticklabels(periods, rotation=0, ha='center', fontsize=7, color='#1a2233')
+    ax.tick_params(axis='y', labelsize=7, colors='#1a2233')
     ax.margins(y=0.15)
     ax.grid(True, alpha=0.25, linestyle='--', axis='y', color='#b9c2d3', zorder=1)
     
@@ -281,11 +281,11 @@ def plot_return_comparison_chart(
         bbox_to_anchor=(0.5, 1.12),
         ncol=2,
         frameon=False,
-        fontsize=18,
+        fontsize=6,
         labelcolor='#1a2233'
     )
     for text in legend.get_texts():
-        text.set_fontsize(18)
+        text.set_fontsize(6)
     
     # 添加数值标签
     for bar_group in (bars1, bars2):
@@ -297,7 +297,7 @@ def plot_return_comparison_chart(
                 f'{height:.2f}%',
                 ha='center',
                 va='bottom' if height >= 0 else 'top',
-                fontsize=16,
+                fontsize=4,
                 color='#1a2233'
             )
     

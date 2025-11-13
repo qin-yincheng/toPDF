@@ -179,7 +179,7 @@ def plot_indicator_analysis_table(
     save_path: Optional[str] = None,
     figsize: tuple = (18, 10),
     return_figure: bool = False,
-    table_fontsize: int = 22,
+    table_fontsize: int = 8,
     row_height_scale: float = 2.35
 ):
     """
@@ -264,13 +264,13 @@ def plot_indicator_analysis_table(
         colLabels=table_data[0],  # 表头
         cellLoc='center',
         loc='center',
-        bbox=[0.04, 0.08, 0.92, 0.86]
+        bbox=[0, 0, 1, 1]
     )
     
     # 设置表格样式
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1.05, row_height_scale)
+    # table.scale(1.05, row_height_scale)
     
     # 设置表头样式
     for i in range(len(table_data[0])):

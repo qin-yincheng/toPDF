@@ -80,9 +80,9 @@ def plot_performance_overview_table(
     """
     # 样式配置
     section_configs = {
-        'title_fontsize': 22,
-        'label_fontsize': 20,
-        'value_fontsize': 20,
+        'title_fontsize': 10,
+        'label_fontsize': 8,
+        'value_fontsize': 8,
         'title_color': '#1D3557',
         'label_bg': '#F2F4F7',
         'value_bg': '#FFFFFF',
