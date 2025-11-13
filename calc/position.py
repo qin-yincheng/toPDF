@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import tushare as ts
 
-from config import CSV_FILE, INITIAL_CAPITAL, DOCS_DIR, REPORT_YEAR
+from config import CSV_FILE, INITIAL_CAPITAL, DOCS_DIR, REPORT_YEAR, VALUATION_METHOD
 
 import os
 TUSHARE_TOKEN = os.environ.get("TUSHARE_TOKEN", "")
@@ -92,13 +92,22 @@ def calculate_daily_asset_distribution(
     initial_capital: Optional[float] = None,
     max_days: Optional[int] = None,
     report_year: Optional[str] = "AUTO",
+    valuation_method: Optional[str] = None,
+    tushare_token: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     基于交割单（pair格式）计算每日资产分类占比（股票/现金）。
 
     核心逻辑：
     - 先按天计算每只股票的期末持仓股数（累计买入股数 - 累计卖出股数，卖出当日不计入持仓）。
-    - 使用持仓成本计算当日股票市值 = Σ(持仓股数 × 持仓平均成本)。
+    - 根据估值方法计算股票市值：
+      * 成本法: 股票市值 = 持仓成本（买入金额 - 卖出的买入成本）
+      * 市值法: 股票市值 = Σ(持仓股数 × 当日收盘价)
+        瀑布流估值逻辑（按优先级）：
+        1️⃣ Tushare官方收盘价
+        2️⃣ 交割单成交均价（_build_price_from_trades）
+        3️⃣ 时间序列填充（ffill/bfill）
+        4️⃣ 成本法兜底
     - 当日现金 = 初始资金 - 截止当日累计买入金额 + 累计卖出金额。
     - 当日总资产 = 股票市值 + 现金。
     - 占比：股票占比=股票市值/总资产，现金占比=现金/总资产。
@@ -109,6 +118,10 @@ def calculate_daily_asset_distribution(
         max_days: 仅计算前N天的数据，用于加速演示
         report_year: 报告年份（如"2015"），默认使用 config.REPORT_YEAR
                     设置后只返回该年份的数据，但会正确计算期初持仓
+        valuation_method: 估值方法，默认使用 config.VALUATION_METHOD
+                         "cost": 成本法（使用买入成本）
+                         "market": 市值法（使用每日收盘价）
+        tushare_token: Tushare Token，优先级高于环境变量
 
     返回:
         pd.DataFrame: 每日资产分布数据，index=date(字符串格式 YYYY-MM-DD)
@@ -118,6 +131,7 @@ def calculate_daily_asset_distribution(
             - cash_pct: 现金占比（%）
     """
     csv_path = str(csv_path or CSV_FILE)
+    valuation_method = valuation_method or VALUATION_METHOD
     ini = float(initial_capital if initial_capital is not None else INITIAL_CAPITAL)
     # report_year="AUTO" 表示使用config配置，None 表示不限制年份
     if report_year == "AUTO":
@@ -195,24 +209,155 @@ def calculate_daily_asset_distribution(
     cum_sell_qty = sell_qty_daily.cumsum()
     holdings_qty = (cum_buy_qty - cum_sell_qty).clip(lower=0.0)
 
-    # 计算持仓成本（使用简单的金额累加法，与参考脚本一致）
-    # 持仓成本 = 累计买入金额 - 已卖出股票的买入成本
-    # 
-    # 注意：这里按日期和代码聚合卖出金额（但实际上我们需要的是卖出股票的买入成本）
-    # 由于交割单是配对格式（每行包含买入和卖出），卖出时减去的是该笔交易的buy_money
+    # 根据估值方法计算股票市值
+    if valuation_method == "market":
+        # 【市值法】使用每日收盘价计算股票市值（瀑布流估值逻辑）
+        print(f"  💰 使用市值法计算持仓价值（瀑布流估值）")
+        print(f"  � 估值优先级: Tushare官方价 → 交割单成交价 → 时间填充 → 成本法兜底")
+        
+        # 获取所有股票的收盘价数据
+        all_codes = holdings_qty.columns.tolist()
+        print(f"  📊 持仓中包含 {len(all_codes)} 只股票")
+        
+        # 调试：检查持仓股数的统计
+        total_holdings = (holdings_qty > 0).sum(axis=1)
+        print(f"  📊 平均持仓只数: {total_holdings.mean():.1f} 只")
+        print(f"  📊 最大持仓只数: {total_holdings.max()} 只")
+        
+        start_date = date_range[0]
+        end_date = date_range[-1]
+        
+        # 【第1优先级】获取Tushare官方收盘价
+        print(f"\n  🔍 第1优先级: 从Tushare获取官方收盘价...")
+        tushare_price_df = _fetch_close_prices_tushare(
+            all_codes, start_date, end_date, tushare_token=tushare_token
+        )
+        
+        # 【第2优先级】从交割单构建成交均价（填补Tushare缺失数据）
+        print(f"\n  🔍 第2优先级: 从交割单提取成交均价...")
+        trade_price_df = _build_price_from_trades(df, all_codes, date_range)
+        
+        # 合并价格数据：Tushare优先，交割单填充缺失
+        if tushare_price_df is not None and not tushare_price_df.empty:
+            print(f"  ✓ Tushare数据: {len(tushare_price_df)} 个交易日 × {len(tushare_price_df.columns)} 只股票")
+            price_df = tushare_price_df.reindex(date_range, fill_value=None)
+            
+            # 用交割单价格填充Tushare缺失的股票
+            if not trade_price_df.empty:
+                tushare_stocks = set(tushare_price_df.columns)
+                trade_stocks = set(trade_price_df.columns)
+                missing_stocks = trade_stocks - tushare_stocks
+                
+                if missing_stocks:
+                    print(f"  ✓ 交割单补充: {len(missing_stocks)} 只股票（Tushare无数据）")
+                    # 将交割单的缺失股票合并到price_df
+                    for code in missing_stocks:
+                        price_df[code] = trade_price_df[code]
+                
+                # 对于Tushare有列但有NaN的情况，也用交割单填充
+                print(f"  � 用交割单填充Tushare中的NaN值...")
+                for code in tushare_stocks & trade_stocks:
+                    # 只填充NaN值，保留Tushare的有效值
+                    mask = price_df[code].isna()
+                    if mask.any():
+                        price_df.loc[mask, code] = trade_price_df.loc[mask, code]
+            else:
+                print(f"  ⚠️ 交割单无法提取价格数据")
+        elif not trade_price_df.empty:
+            print(f"  ⚠️ Tushare无数据，使用交割单价格")
+            price_df = trade_price_df.reindex(date_range)
+        else:
+            print(f"  ⚠️ 无任何价格数据，回退到成本法")
+            valuation_method = "cost"
+        
+        if valuation_method == "market":
+            # 【第3优先级】时间序列填充（ffill/bfill）
+            print(f"\n  🔍 第3优先级: 时间序列填充...")
+            nan_count_before = price_df.isna().sum().sum()
+            print(f"  📊 填充前NaN数量: {nan_count_before}")
+            
+            # bfill: 新股用上市后第一个价格填充上市前
+            # ffill: 停牌/退市用最后价格填充后续
+            price_df = price_df.bfill().ffill()
+            
+            nan_count_after = price_df.isna().sum().sum()
+            filled_count = nan_count_before - nan_count_after
+            print(f"  ✓ 时间填充: 填补 {filled_count} 个NaN")
+            
+            # 确保price_df包含所有持仓股票的列
+            price_df = price_df.reindex(columns=all_codes)
+            
+            # 【第4优先级】成本法兜底（对于仍无价格的股票）
+            has_price_stocks = set(price_df.columns[price_df.notna().any()])
+            all_holdings_stocks = set(holdings_qty.columns)
+            stocks_with_price = has_price_stocks & all_holdings_stocks
+            stocks_without_price = all_holdings_stocks - has_price_stocks
+            
+            print(f"\n  📊 最终价格覆盖统计:")
+            print(f"  ✓ 有价格数据: {len(stocks_with_price)} 只 ({len(stocks_with_price)/len(all_holdings_stocks)*100:.1f}%)")
+            
+            if len(stocks_without_price) > 0:
+                print(f"  🔍 第4优先级: 成本法兜底 {len(stocks_without_price)} 只股票")
+                print(f"     示例: {list(stocks_without_price)[:5]}")
+            
+            # 计算每日每只股票的市值 = 持仓股数 × 收盘价
+            stock_value_by_code = holdings_qty * price_df
+            
+            # 【成本法兜底】对于完全没有价格数据的股票
+            if len(stocks_without_price) > 0:
+                for code in stocks_without_price:
+                    # 获取该股票的买入和卖出记录
+                    buy_records = df[df['code'] == code].dropna(subset=['buy_dt'])
+                    sell_records = df[df['code'] == code].dropna(subset=['sell_dt'])
+                    
+                    # 按日期聚合买入金额和卖出对应的买入成本
+                    buy_by_day_code = buy_records.groupby(buy_records['buy_dt'].dt.strftime('%Y-%m-%d'))[buy_money_col].sum()
+                    sell_cost_by_day_code = sell_records.groupby(sell_records['sell_dt'].dt.strftime('%Y-%m-%d'))[buy_money_col].sum()
+                    
+                    # 累计成本 = 累计买入 - 累计卖出的成本
+                    cum_cost = (buy_by_day_code.reindex(date_range, fill_value=0.0).cumsum() - 
+                               sell_cost_by_day_code.reindex(date_range, fill_value=0.0).cumsum())
+                    
+                    # 用成本填充该股票的市值
+                    stock_value_by_code[code] = cum_cost
+            
+            # 填充剩余的NaN为0
+            stock_value_by_code = stock_value_by_code.fillna(0.0)
+            
+            # 每日股票总市值 = 所有股票市值之和
+            stock_value = stock_value_by_code.sum(axis=1)
+            
+            # 调试：显示市值统计
+            print(f"\n  📊 市值计算结果:")
+            print(f"  股票市值范围: {stock_value.min()/10000:.2f}万 ~ {stock_value.max()/10000:.2f}万")
+            if len(stock_value[stock_value.index <= '2015-12-31']) > 0:
+                print(f"  2015年末市值: {stock_value[stock_value.index <= '2015-12-31'].iloc[-1]/10000:.2f}万")
     
-    # 按日期聚合：买入时增加持仓成本，卖出时减少持仓成本
-    sells_cost = (
-        df.dropna(subset=["sell_dt"]).groupby(df["sell_dt"].dt.strftime("%Y-%m-%d"))[buy_money_col].sum()
-    )
-    sells_cost_daily = sells_cost.reindex(date_range, fill_value=0.0)
     
-    # 累计持仓成本 = 累计买入 - 累计卖出的买入成本
-    cum_position_cost = (buy_by_day.reindex(date_range, fill_value=0.0).cumsum() 
-                        - sells_cost_daily.cumsum())
+    if valuation_method == "cost":
+        # 【成本法】使用持仓成本计算股票市值
+        print(f"  💰 使用成本法计算持仓价值（基于买入成本）")
+        print(f"  ⚠️ 注意：成本法无法反映市场波动，回撤/归因等指标不准确")
+        
+        # 计算持仓成本（使用简单的金额累加法）
+        # 持仓成本 = 累计买入金额 - 已卖出股票的买入成本
+        # 
+        # 注意：这里按日期和代码聚合卖出金额（但实际上我们需要的是卖出股票的买入成本）
+        # 由于交割单是配对格式（每行包含买入和卖出），卖出时减去的是该笔交易的buy_money
+        
+        # 按日期聚合：买入时增加持仓成本，卖出时减少持仓成本
+        sells_cost = (
+            df.dropna(subset=["sell_dt"]).groupby(df["sell_dt"].dt.strftime("%Y-%m-%d"))[buy_money_col].sum()
+        )
+        sells_cost_daily = sells_cost.reindex(date_range, fill_value=0.0)
+        
+        # 累计持仓成本 = 累计买入 - 累计卖出的买入成本
+        cum_position_cost = (buy_by_day.reindex(date_range, fill_value=0.0).cumsum() 
+                            - sells_cost_daily.cumsum())
+        
+        # 股票市值 = 持仓成本（使用买入成本，不使用市价）
+        stock_value = cum_position_cost
     
-    # 股票市值 = 持仓成本（使用买入成本，不使用市价）
-    stock_value = cum_position_cost
     # 现金 = 初始资金 - 累计买入金额 + 累计卖出金额
     cash_value = ini - cum_buy + cum_sell
     
@@ -295,7 +440,12 @@ def _ts_code(code: str) -> str:
         return f"{code}.SZ"
 
 
-def _fetch_close_prices_tushare(codes: List[str], start_date: str, end_date: str) -> pd.DataFrame:
+def _fetch_close_prices_tushare(
+    codes: List[str], 
+    start_date: str, 
+    end_date: str,
+    tushare_token: Optional[str] = None
+) -> pd.DataFrame:
     """
     使用 Tushare API 获取股票收盘价数据（不复权）。
     
@@ -308,6 +458,7 @@ def _fetch_close_prices_tushare(codes: List[str], start_date: str, end_date: str
         codes: 股票代码列表（6位字符串）
         start_date: 开始日期 (YYYY-MM-DD)
         end_date: 结束日期 (YYYY-MM-DD)
+        tushare_token: Tushare Token，优先级高于环境变量
     
     返回:
         DataFrame: index=date(YYYY-MM-DD), columns=code(6位), values=close_price
@@ -315,8 +466,10 @@ def _fetch_close_prices_tushare(codes: List[str], start_date: str, end_date: str
     if not codes:
         return pd.DataFrame()
     
-    if not TUSHARE_TOKEN:
-        print("  错误：未设置 TUSHARE_TOKEN 环境变量")
+    # Token优先级：参数 > 环境变量
+    token = tushare_token or TUSHARE_TOKEN
+    if not token:
+        print("  错误：未设置 TUSHARE_TOKEN（环境变量或参数）")
         return pd.DataFrame()
     
     # 检查缓存
@@ -339,7 +492,7 @@ def _fetch_close_prices_tushare(codes: List[str], start_date: str, end_date: str
             cached_df = None
     
     # 初始化 Tushare
-    ts.set_token(TUSHARE_TOKEN)
+    ts.set_token(token)
     pro = ts.pro_api()
     
     # 转换日期格式为 YYYYMMDD
@@ -460,6 +613,8 @@ def _fetch_close_prices_tushare(codes: List[str], start_date: str, end_date: str
     
     # 保存到缓存
     try:
+        # 确保缓存目录存在
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
         price_pivot.to_pickle(cache_file)
         print(f"  已缓存到: {cache_file.name}")
     except Exception as e:
@@ -470,56 +625,98 @@ def _fetch_close_prices_tushare(codes: List[str], start_date: str, end_date: str
 
 def _build_price_from_trades(df: pd.DataFrame, codes: List[str], date_range: pd.Index) -> pd.DataFrame:
     """
-    从交割单中构建每日价格数据（使用当天最后一笔交易的价格作为收盘价）。
+    从交割单中构建每日价格数据（使用当天成交的加权平均价作为参考价）。
     
-    对于高频交易策略，使用实际成交价比Tushare的复权价格更准确。
+    ⚠️ 重要说明：
+    - 这是填补Tushare缺失数据的次优方案（如停牌、退市、未上市股票）
+    - 对于高频交易，当日多笔成交的加权平均价可能与收盘价有差异
+    - 优先级：Tushare官方价 > 本函数 > 时间序列填充 > 成本法
     
     优化：使用向量化操作，避免逐个股票循环。
     
     参数:
-        df: 交割单DataFrame（需包含buy_dt, sell_dt, code, buy_price, sell_price列）
+        df: 交割单DataFrame（需包含buy_dt, sell_dt, code, buy_price, sell_price, buy_number, sell_number列）
         codes: 需要价格的股票代码列表
-        date_range: 日期范围
+        date_range: 日期范围（pd.Index，格式YYYY-MM-DD）
     
     返回:
-        DataFrame: index=date, columns=code, values=price
+        DataFrame: index=date, columns=code, values=price（加权平均价）
     """
     # 筛选出需要的股票（一次性完成）
     codes_set = set(codes)
     df_filtered = df[df['code'].isin(codes_set)].copy()
     
     if df_filtered.empty:
-        return pd.DataFrame(index=date_range)
+        return pd.DataFrame(index=date_range, columns=[str(c).zfill(6) for c in codes])
     
-    # 准备买入价格数据
+    # 确定列名（兼容不同格式）
+    buy_price_col = "buy_price" if "buy_price" in df_filtered.columns else None
+    sell_price_col = "sell_price" if "sell_price" in df_filtered.columns else None
+    buy_num_col = "buy_number" if "buy_number" in df_filtered.columns else None
+    sell_num_col = "sell_number" if "sell_number" in df_filtered.columns else None
+    
+    if buy_price_col is None or sell_price_col is None:
+        print(f"  ⚠️ 交割单缺少价格列，无法构建价格")
+        return pd.DataFrame(index=date_range, columns=[str(c).zfill(6) for c in codes])
+    
+    if buy_num_col is None or sell_num_col is None:
+        print(f"  ⚠️ 交割单缺少股数列，将使用简单平均（非加权）")
+    
+    # 准备买入数据：计算加权平均价
     buy_data = df_filtered.dropna(subset=['buy_dt']).copy()
     buy_data['date'] = buy_data['buy_dt'].dt.strftime('%Y-%m-%d')
     buy_data['code_str'] = buy_data['code'].astype(str).str.zfill(6)
     
-    # 准备卖出价格数据
+    # 准备卖出数据：计算加权平均价
     sell_data = df_filtered.dropna(subset=['sell_dt']).copy()
     sell_data['date'] = sell_data['sell_dt'].dt.strftime('%Y-%m-%d')
     sell_data['code_str'] = sell_data['code'].astype(str).str.zfill(6)
     
-    # 使用groupby一次性获取每天每只股票的最后一笔价格
-    if not buy_data.empty:
-        # 买入价：每天每只股票的最后一笔
-        buy_last = buy_data.groupby(['date', 'code_str'])['buy_price'].last().reset_index()
-        buy_pivot = buy_last.pivot(index='date', columns='code_str', values='buy_price')
+    # 计算加权平均价（如果有股数列）
+    if buy_num_col and not buy_data.empty:
+        # 买入加权平均价 = Σ(价格×股数) / Σ股数
+        buy_data['weighted_price'] = buy_data[buy_price_col] * buy_data[buy_num_col]
+        buy_grouped = buy_data.groupby(['date', 'code_str']).agg({
+            'weighted_price': 'sum',
+            buy_num_col: 'sum'
+        })
+        buy_grouped['avg_price'] = buy_grouped['weighted_price'] / buy_grouped[buy_num_col]
+        buy_pivot = buy_grouped['avg_price'].unstack(fill_value=None)
+    elif not buy_data.empty:
+        # 简单平均（无股数）
+        buy_avg = buy_data.groupby(['date', 'code_str'])[buy_price_col].mean()
+        buy_pivot = buy_avg.unstack(fill_value=None)
     else:
         buy_pivot = pd.DataFrame()
     
-    if not sell_data.empty:
-        # 卖出价：每天每只股票的最后一笔
-        sell_last = sell_data.groupby(['date', 'code_str'])['sell_price'].last().reset_index()
-        sell_pivot = sell_last.pivot(index='date', columns='code_str', values='sell_price')
+    if sell_num_col and not sell_data.empty:
+        # 卖出加权平均价 = Σ(价格×股数) / Σ股数
+        sell_data['weighted_price'] = sell_data[sell_price_col] * sell_data[sell_num_col]
+        sell_grouped = sell_data.groupby(['date', 'code_str']).agg({
+            'weighted_price': 'sum',
+            sell_num_col: 'sum'
+        })
+        sell_grouped['avg_price'] = sell_grouped['weighted_price'] / sell_grouped[sell_num_col]
+        sell_pivot = sell_grouped['avg_price'].unstack(fill_value=None)
+    elif not sell_data.empty:
+        # 简单平均（无股数）
+        sell_avg = sell_data.groupby(['date', 'code_str'])[sell_price_col].mean()
+        sell_pivot = sell_avg.unstack(fill_value=None)
     else:
         sell_pivot = pd.DataFrame()
     
-    # 合并：卖出价优先（更接近收盘价）
+    # 合并买卖价格：取平均（买入和卖出都是当日成交的参考）
     if not buy_pivot.empty and not sell_pivot.empty:
+        # 对于同时有买入和卖出的日期，取平均
         price_df = buy_pivot.combine_first(sell_pivot)
-        price_df.update(sell_pivot)  # 卖出价覆盖买入价
+        # 对于同时存在的单元格，取平均值
+        common_index = buy_pivot.index.intersection(sell_pivot.index)
+        common_columns = buy_pivot.columns.intersection(sell_pivot.columns)
+        if len(common_index) > 0 and len(common_columns) > 0:
+            price_df.loc[common_index, common_columns] = (
+                buy_pivot.loc[common_index, common_columns] + 
+                sell_pivot.loc[common_index, common_columns]
+            ) / 2
     elif not sell_pivot.empty:
         price_df = sell_pivot
     elif not buy_pivot.empty:
@@ -527,17 +724,16 @@ def _build_price_from_trades(df: pd.DataFrame, codes: List[str], date_range: pd.
     else:
         price_df = pd.DataFrame()
     
-    # 对齐日期范围
+    # 对齐日期范围和股票列表
     price_df = price_df.reindex(index=date_range, columns=[str(c).zfill(6) for c in codes])
     price_df.index.name = 'date'
     
-    # 前向填充缺失值（使用最近的交易价格）
-    price_df = price_df.ffill()
+    # 统计覆盖率
+    total_cells = len(date_range) * len(codes)
+    valid_cells = price_df.notna().sum().sum()
+    coverage = valid_cells / total_cells * 100 if total_cells > 0 else 0
+    stocks_covered = (price_df.notna().any()).sum()
     
-    # 如果还有缺失（某些股票在初期没有交易），用后向填充
-    price_df = price_df.bfill()
-    
-    # 如果还有缺失，填0
-    price_df = price_df.fillna(0.0)
+    print(f"  ✓ 交割单价格覆盖: {stocks_covered}/{len(codes)} 只股票, {valid_cells}/{total_cells} 数据点 ({coverage:.1f}%)")
     
     return price_df
