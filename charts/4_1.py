@@ -79,7 +79,7 @@ def plot_brinson_attribution(
     # 如果没有数据或数据为空，返回空图表
     if not data:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=8)
         ax.axis('off')
         if return_figure:
             plt.close(fig)
@@ -110,7 +110,7 @@ def plot_brinson_attribution(
     # 如果所有值都为空或相同，返回空图表
     if not dates or not selection_returns or not allocation_returns:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=8)
         ax.axis('off')
         if return_figure:
             plt.close(fig)
@@ -169,8 +169,8 @@ def plot_brinson_attribution(
             color=COLOR_GRID, zorder=0, which='major')
     
     # 设置X轴刻度和标签（更大的字体，更好的间距）
-    ax.set_xlabel('日期', fontsize=7, color=COLOR_TEXT_PRIMARY, 
-                  fontweight='medium', labelpad=10)
+    # ax.set_xlabel('日期', fontsize=7, color=COLOR_TEXT_PRIMARY, 
+    #               fontweight='medium', labelpad=10)
     # 使用工具函数自动计算合适的刻度间隔
     if n_points > 0:
         # 使用工具函数计算日期刻度参数
@@ -430,7 +430,7 @@ def plot_brinson_industry_bar_chart(
                 ax.text(bar.get_x() + bar.get_width()/2., y_pos,
                        label_text,
                        ha='center', va='bottom' if height >= 0 else 'top',
-                       fontsize=9, color=COLOR_TEXT_PRIMARY, fontweight='medium',
+                       fontsize=7, color=COLOR_TEXT_PRIMARY, fontweight='medium',
                        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', 
                                edgecolor='none', alpha=0.8) if abs(height) > 50 else None)
     

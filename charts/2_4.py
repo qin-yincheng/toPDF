@@ -87,13 +87,13 @@ def plot_stock_position_chart(
     ax1.spines['right'].set_visible(False)
     ax1.spines['left'].set_color('#d0d5dd')
     ax1.spines['bottom'].set_color('#d0d5dd')
-    ax1.tick_params(axis='x', colors='#606266', labelsize=9, pad=6, length=0)
-    ax1.tick_params(axis='y', colors='#606266', labelsize=9, pad=6, length=0)
+    ax1.tick_params(axis='x', colors='#606266', labelsize=7, pad=6, length=0)
+    ax1.tick_params(axis='y', colors='#606266', labelsize=7, pad=6, length=0)
     
     ax2.spines['top'].set_visible(False)
     ax2.spines['left'].set_visible(False)
     ax2.spines['right'].set_color('#d0d5dd')
-    ax2.tick_params(axis='y', colors='#606266', labelsize=9, pad=6, length=0)
+    ax2.tick_params(axis='y', colors='#606266', labelsize=7, pad=6, length=0)
     
     # 设置X轴：使用索引位置，但显示日期标签
     # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
@@ -109,7 +109,7 @@ def plot_stock_position_chart(
     ax1.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
     ax1.grid(True, alpha=0.6, linestyle='-', linewidth=0.6, axis='y', color='#e5e7ef')
-    ax1.set_xlabel('日期', fontsize=7, color='#303133')
+    # ax1.set_xlabel('日期', fontsize=7, color='#303133')
     
     # 绘制TOP10折线图（左Y轴，灰色，带圆形标记）
     if any(top10_values):
@@ -118,7 +118,7 @@ def plot_stock_position_chart(
                  markerfacecolor='white', markeredgecolor='#8d97a5', markeredgewidth=1.0)
     
     # 绘制沪深300折线图（右Y轴，红色，带圆形标记）
-    ax2.plot(x_indices, csi300_values, color='#d25c5c', marker='o',
+    ax2.plot(x_indices, csi300_values, color='#d25c5c', marker='',
              markersize=3.5, linewidth=1, label='沪深300',
              markerfacecolor='white', markeredgecolor='#d25c5c', markeredgewidth=1.0)
     ax2.set_ylabel('沪深300 指数', fontsize=7, color='#303133')

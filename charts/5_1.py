@@ -211,10 +211,10 @@ def plot_stock_profit_chart(
     bar_width = 0.55 if is_wide else 0.6  # 适中的柱子宽度
     marker_size = 6 if is_wide else 5.5  # 更大的标记
     line_width = 2.5 if is_wide else 2.2  # 更粗的线条
-    label_fontsize = 12 if is_wide else 11  # 更大的标签
-    tick_fontsize = 10 if is_wide else 9  # 更大的刻度
-    legend_fontsize = 10 if is_wide else 9  # 更大的图例
-    data_label_fontsize = 8 if is_wide else 7  # 数据标签
+    label_fontsize = 7  # 统一标签字体大小
+    tick_fontsize = 7  # 统一刻度字体大小
+    legend_fontsize = 6  # 统一图例字体大小
+    data_label_fontsize = 7  # 数据标签字体大小
     
     # 设置 axes 的 zorder，确保 ax2（折线图）在上层
     ax1.set_zorder(1)
@@ -258,7 +258,7 @@ def plot_stock_profit_chart(
     line = ax2.plot(x, contributions, color=COLOR_SECONDARY, marker='o', 
                    markersize=marker_size, linewidth=line_width, label='贡献度', zorder=10,
                    markerfacecolor=COLOR_SECONDARY, 
-                   markeredgecolor='white', markeredgewidth=1.2,
+                   markeredgecolor='white', markeredgewidth=1,
                    alpha=0.9)
     
     # 添加折线图数据标签 - 只显示关键点，避免拥挤
@@ -516,10 +516,10 @@ def plot_stock_loss_chart(
     bar_width = 0.55 if is_wide else 0.6  # 适中的柱子宽度
     marker_size = 6 if is_wide else 5.5  # 更大的标记
     line_width = 2.5 if is_wide else 2.2  # 更粗的线条
-    label_fontsize = 12 if is_wide else 11  # 更大的标签
-    tick_fontsize = 10 if is_wide else 9  # 更大的刻度
-    legend_fontsize = 10 if is_wide else 9  # 更大的图例
-    data_label_fontsize = 8 if is_wide else 7  # 数据标签
+    label_fontsize = 7  # 统一标签字体大小
+    tick_fontsize = 7  # 统一刻度字体大小
+    legend_fontsize = 6  # 统一图例字体大小
+    data_label_fontsize = 7  # 数据标签字体大小
     
     # 设置 axes 的 zorder，确保 ax2（折线图）在上层
     ax1.set_zorder(1)
@@ -566,14 +566,14 @@ def plot_stock_loss_chart(
     ax1.set_ylim(min_profit * 1.2, max_profit * 1.1)
     
     # 添加零线
-    ax1.axhline(y=0, color=COLOR_ZERO_LINE, linestyle='-', linewidth=1.2, 
+    ax1.axhline(y=0, color=COLOR_ZERO_LINE, linestyle='-', linewidth=1, 
                zorder=0, alpha=0.8)
     
     # 绘制折线图（贡献度，右Y轴，柔和橙色）- 后绘制，确保在上层
     line = ax2.plot(x, contributions, color=COLOR_SECONDARY_LOSS, marker='o', 
                    markersize=marker_size, linewidth=line_width, label='贡献度', zorder=10,
                    markerfacecolor=COLOR_SECONDARY_LOSS, 
-                   markeredgecolor='white', markeredgewidth=1.2,
+                   markeredgecolor='white', markeredgewidth=1,
                    alpha=0.9)
     
     # 添加折线图数据标签 - 只显示关键点

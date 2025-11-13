@@ -201,7 +201,7 @@ def plot_asset_allocation_chart(
     if show_title:
         ax.set_title(
             "大类持仓时序",
-            fontsize=16,
+            fontsize=8,
             fontweight="bold",
             pad=22,
             loc="left",
@@ -214,7 +214,7 @@ def plot_asset_allocation_chart(
         bbox_to_anchor=(0.5, 1.15),
         ncol=5,
         frameon=False,
-        fontsize=10,
+        fontsize=6,
         labelcolor="#333333",
     )
 
@@ -226,7 +226,7 @@ def plot_asset_allocation_chart(
             0.02,
             0.96,
             summary_text,
-            fontsize=11,
+            fontsize=7,
             color="#4d5766",
             ha="left",
             va="center",

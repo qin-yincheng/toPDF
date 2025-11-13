@@ -82,13 +82,13 @@ def plot_liquidity_asset_chart(
     ax1.spines['right'].set_visible(False)
     ax1.spines['left'].set_color('#d0d5dd')
     ax1.spines['bottom'].set_color('#d0d5dd')
-    ax1.tick_params(axis='x', colors='#606266', labelsize=9, pad=6, length=0)
-    ax1.tick_params(axis='y', colors='#606266', labelsize=9, pad=6, length=0)
+    ax1.tick_params(axis='x', colors='#606266', labelsize=7, pad=6, length=0)
+    ax1.tick_params(axis='y', colors='#606266', labelsize=7, pad=6, length=0)
     
     ax2.spines['top'].set_visible(False)
     ax2.spines['left'].set_visible(False)
     ax2.spines['right'].set_color('#d0d5dd')
-    ax2.tick_params(axis='y', colors='#606266', labelsize=9, pad=6, length=0)
+    ax2.tick_params(axis='y', colors='#606266', labelsize=7, pad=6, length=0)
     
     # 设置X轴：使用索引位置，但显示日期标签
     # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
@@ -105,7 +105,7 @@ def plot_liquidity_asset_chart(
     ax1.set_yticklabels(['0.13%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
     ax1.grid(True, alpha=0.6, linestyle='-', linewidth=0.6, axis='y', color='#e5e7ef')
-    ax1.set_xlabel('日期', fontsize=7, color='#303133')
+    # ax1.set_xlabel('日期', fontsize=7, color='#303133')
     
     # 绘制沪深300折线图（右Y轴，灰色，带圆形标记）
     ax2.plot(x_indices, csi300_values, color='#9aa0a6', marker='', 
