@@ -614,10 +614,11 @@ def generate_page1(
         "holdings": usable_height * 0.18,
         "stock_position": usable_height * 0.18,
         "liquidity_asset": usable_height * 0.18,
-        "industry_pie": usable_height * 0.18,
+        "industry_pie": usable_height * 0.24,  # 大幅增加高度，确保图例完整显示
         "industry_bar": usable_height * 0.18,
         "industry_table": usable_height * 0.18,
-        "industry_timeseries": usable_height * 0.20,
+        "industry_timeseries": usable_height
+        * 0.28,  # 增加高度以容纳下移的图例，不压缩图表主体
         "industry_deviation": usable_height * 0.18,
         "asset_performance": usable_height * 0.15,
         "brinson_attribution": usable_height * 0.18,
