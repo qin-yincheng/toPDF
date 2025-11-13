@@ -9,6 +9,21 @@ from charts.font_config import setup_chinese_font
 from matplotlib.patches import Rectangle
 import numpy as np
 
+# 专业配色方案 - 金融报告标准配色
+COLOR_PRIMARY = '#2563eb'            # 主色：专业蓝色（买入柱状图）
+COLOR_SECONDARY = '#6b7280'           # 次色：专业灰色（卖出柱状图）
+COLOR_GRID = '#e5e7eb'                # 网格线颜色 - 更清晰
+COLOR_AXIS = '#6b7280'                # 坐标轴颜色 - 更清晰
+COLOR_BG_LIGHT = '#ffffff'            # 背景色 - 纯白更专业
+# 表格配色（与1_5.py保持一致）
+COLOR_TABLE_HEADER = '#eef2fb'        # 表格标题背景（浅灰色）- 与1_5一致
+COLOR_TABLE_HEADER_TEXT = '#1f2d3d'   # 表格标题文字颜色（深色）- 与1_5一致
+COLOR_TABLE_ROW1 = '#ffffff'          # 表格行1背景（白色）
+COLOR_TABLE_ROW2 = '#f6f7fb'         # 表格行2背景（浅灰色斑马纹）- 与1_5一致
+COLOR_TABLE_BORDER = '#e2e7f1'       # 表格边框颜色 - 与1_5一致
+COLOR_TEXT_PRIMARY = '#1a2233'       # 主要文字颜色 - 与1_5一致
+COLOR_TEXT_SECONDARY = '#475569'     # 次要文字颜色
+
 
 
 def plot_period_transaction_table(
@@ -54,13 +69,15 @@ def plot_period_transaction_table(
     # 获取数据
     transaction_data = data.get('transaction_data', [])
     
-    # 准备表格数据
+    # 准备表格数据，优化数字格式化（添加千分位分隔符）
     table_data = []
     for item in transaction_data:
+        buy_amount = item.get('buy_amount', 0)
+        sell_amount = item.get('sell_amount', 0)
         table_data.append([
             item.get('asset_class', ''),
-            f"{item.get('buy_amount', 0):.2f}",
-            f"{item.get('sell_amount', 0):.2f}"
+            f"{buy_amount:,.2f}",  # 添加千分位分隔符
+            f"{sell_amount:,.2f}"   # 添加千分位分隔符
         ])
     
     # 表头
@@ -70,14 +87,30 @@ def plot_period_transaction_table(
     fig, ax = plt.subplots(figsize=figsize)
     ax.axis('off')
     
-    # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 0.7   # 表格宽度为图形宽度的70%
-    table_total_height = 0.7  # 表格总高度
-    table_fontsize = 16  # 字体大小统一为16
+    # 优化表格尺寸和位置 - 根据figsize动态调整
+    is_narrow = figsize[0] < 10
+    table_width = 0.96 if is_narrow else 0.97   # 更充分利用空间
+    table_total_height = 0.85 if is_narrow else 0.83  # 增加高度利用率，使表格更饱满
+    # 根据图表大小动态调整字体，使其更易读和专业
+    if figsize[0] >= 20:
+        table_fontsize = 18  # 大图表使用大字体
+    elif figsize[0] >= 15:
+        table_fontsize = 16  # 中等图表
+    elif figsize[0] >= 10:
+        table_fontsize = 14  # 小图表
+    else:
+        table_fontsize = 12  # 很窄的图表
     
-    # 计算位置（居中）
-    table_x = (1 - table_width) / 2
-    table_y = (1 - table_total_height) / 2
+    # 计算位置（居中，但为标题留出空间）
+    table_x = (1 - table_width) / 2  # 居中
+    if show_title:
+        ax.text(0.5, 0.97, '期间交易', transform=ax.transAxes,
+                ha='center', va='top', fontsize=16, fontweight='bold', 
+                color=COLOR_TEXT_PRIMARY, family='sans-serif')
+        # table_y 是表格底部位置，表格高度是 table_total_height
+        table_y = 0.89 - table_total_height  # 表格顶部在89%，与标题保持合理距离
+    else:
+        table_y = (1 - table_total_height) / 2
     
     # 绘制表格
     table = ax.table(
@@ -89,30 +122,39 @@ def plot_period_transaction_table(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1, 1.5)  # 调整行高
+    # 根据表格宽度动态调整行高 - 增加行高提升可读性和专业感
+    row_scale = 2.2 if is_narrow else 2.5  # 增加行高，使表格更舒适美观
+    table.scale(1, row_scale)  # 调整行高，使表格更舒适美观
     
-    # 设置表格样式
+    # 设置表格样式 - 专业配色
     for i in range(len(table_data) + 1):  # +1 包括表头
         for j in range(len(headers)):
             cell = table[(i, j)]
-            if i == 0:  # 表头
-                cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
+            if i == 0:  # 表头 - 浅灰色背景配深色文字（与1_5一致）
+                cell.set_facecolor(COLOR_TABLE_HEADER)
+                cell.set_text_props(weight='bold', ha='center', 
+                                  fontsize=table_fontsize, 
+                                  color=COLOR_TABLE_HEADER_TEXT,
+                                  family='sans-serif')
+                # 表头边框
+                cell.set_edgecolor(COLOR_TABLE_HEADER)
+                cell.set_linewidth(0)
             else:
-                # 所有数据行都是白色背景
-                cell.set_facecolor('#ffffff')
-                
-                # 第一列（资产分类）左对齐，数值列右对齐
-                if j == 0:
-                    cell.set_text_props(ha='center', fontsize=table_fontsize)
+                # 交替行颜色 - 增强对比度
+                if (i - 1) % 2 == 0:
+                    cell.set_facecolor(COLOR_TABLE_ROW1)
                 else:
-                    cell.set_text_props(ha='center', fontsize=table_fontsize)  # 数值列右对齐
-            
-            cell.set_edgecolor('#f0f0f0')
-            cell.set_linewidth(0.8)
+                    cell.set_facecolor(COLOR_TABLE_ROW2)
+                # 所有列居中
+                cell.set_text_props(ha='center', fontsize=table_fontsize,
+                                  color=COLOR_TEXT_PRIMARY,
+                                  family='sans-serif')
+                # 数据行边框（与1_5一致）
+                cell.set_edgecolor(COLOR_TABLE_BORDER)
+                cell.set_linewidth(0.6)
     
-    # 调整布局
-    plt.tight_layout()
+    # 调整布局 - 优化边距
+    plt.tight_layout(pad=1.5)
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
@@ -120,7 +162,8 @@ def plot_period_transaction_table(
     
     # 如果提供了保存路径，保存图表为 PDF（矢量格式，高清）
     if save_path:
-        plt.savefig(save_path, format='pdf', bbox_inches='tight', dpi=300)
+        plt.savefig(save_path, format='pdf', bbox_inches='tight', 
+                   pad_inches=0.2, dpi=300)
         plt.close()
         return save_path
     else:
@@ -166,45 +209,99 @@ def plot_period_transaction_chart(
     buy_amounts = [item['buy_amount'] for item in transaction_data]
     sell_amounts = [item['sell_amount'] for item in transaction_data]
     
+    # 根据图表大小动态调整元素尺寸
+    is_wide = figsize[0] > 8
+    bar_width = 0.4 if is_wide else 0.35  # 适中的柱子宽度
+    gap = 0.08 if is_wide else 0.1  # 两个柱子之间的间隔
+    
     # 设置X轴位置（分组柱状图，两个柱子之间有间隔）
     x = np.arange(len(asset_classes))
-    width = 0.35  # 柱子宽度
-    gap = 0.1  # 两个柱子之间的间隔
     
-    # 绘制柱状图（买入，深蓝色）
-    bars1 = ax.bar(x - (width + gap)/2, buy_amounts, width=width, 
-                   color='#082868', alpha=0.9, label='买入')
+    # 优化颜色：使用更专业的蓝色和灰色，与整体风格一致
+    color_buy = '#1f3c88'  # 深蓝色，与1_5.py一致，更专业稳重
+    color_sell = '#64748b'  # 中性灰蓝色，更柔和专业
     
-    # 绘制柱状图（卖出，浅灰色）
-    bars2 = ax.bar(x + (width + gap)/2, sell_amounts, width=width, 
-                   color='#808080', alpha=0.7, label='卖出')
+    # 绘制柱状图（买入，专业深蓝色）
+    bars1 = ax.bar(x - (bar_width + gap)/2, buy_amounts, width=bar_width, 
+                   color=color_buy, alpha=0.95, label='买入',
+                   edgecolor='white', linewidth=1.0, zorder=3)
     
-    # 设置Y轴
-    ax.set_ylabel('万元', fontsize=11)
+    # 绘制柱状图（卖出，专业灰蓝色）
+    bars2 = ax.bar(x + (bar_width + gap)/2, sell_amounts, width=bar_width, 
+                   color=color_sell, alpha=0.9, label='卖出',
+                   edgecolor='white', linewidth=1.0, zorder=3)
+    
+    # 设置Y轴 - 优化格式化
     max_amount = max(max(buy_amounts) if buy_amounts else 0, 
                      max(sell_amounts) if sell_amounts else 0)
-    # ax.set_ylim(0, max_amount * 1.1)
-    # # 设置Y轴刻度（0, 300, 600, 900, 1200, 1500）
-    # ax.set_yticks(np.arange(0, max_amount * 1.1 + 300, 300))
-    ax.margins(y=0.1)
     
-    # 设置X轴
+    # 根据图表大小动态调整字体
+    label_fontsize = 16 if is_wide else 14  # Y轴标签字体
+    tick_fontsize = 14 if is_wide else 12  # 刻度字体
+    xlabel_fontsize = 15 if is_wide else 13  # X轴标签字体
+    legend_fontsize = 13 if is_wide else 11  # 图例字体
+    
+    # 根据数值大小决定Y轴标签格式（单位已经是"万元"）
+    if max_amount >= 10000:
+        # 如果数值很大（>=1万万元=1亿元），使用"百万元"作为单位
+        ax.set_ylabel('百万元', fontsize=label_fontsize, color=COLOR_TEXT_PRIMARY, 
+                     family='sans-serif', fontweight='medium', labelpad=10)
+        # 转换Y轴刻度标签：万元转百万元（除以100）
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x/100:,.0f}'))
+    elif max_amount >= 1000:
+        # 如果数值较大（>=1000万元），使用千分位格式化
+        ax.set_ylabel('万元', fontsize=label_fontsize, color=COLOR_TEXT_PRIMARY, 
+                     family='sans-serif', fontweight='medium', labelpad=10)
+        # 使用千分位格式化
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:,.0f}'))
+    else:
+        # 数值较小，保持万元单位
+        ax.set_ylabel('万元', fontsize=label_fontsize, color=COLOR_TEXT_PRIMARY, 
+                     family='sans-serif', fontweight='medium', labelpad=10)
+    
+    ax.margins(y=0.12)  # 增加上边距，使图表更舒适
+    
+    # 设置X轴 - 优化样式
     ax.set_xticks(x)
-    ax.set_xticklabels(asset_classes, rotation=0, ha='center')
-    ax.set_xlabel('资产分类', fontsize=11)
+    ax.set_xticklabels(asset_classes, rotation=0, ha='center', 
+                      fontsize=tick_fontsize, color=COLOR_TEXT_PRIMARY, family='sans-serif')
+    ax.set_xlabel('资产分类', fontsize=xlabel_fontsize, color=COLOR_TEXT_PRIMARY, 
+                  family='sans-serif', fontweight='medium')
     
-    # 添加网格线
-    ax.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
+    # 设置坐标轴样式 - 更专业，只保留必要的边框
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_color('#b9c2d3')  # 更柔和的边框颜色
+    ax.spines['bottom'].set_linewidth(1.2)
+    ax.spines['left'].set_color('#b9c2d3')
+    ax.spines['left'].set_linewidth(1.2)
+    ax.tick_params(colors=COLOR_TEXT_PRIMARY, labelsize=tick_fontsize, 
+                  length=6, width=1.2)
     
-    # 图例在顶部中心
-    ax.legend(loc='upper center', fontsize=10, ncol=2, frameon=False)
+    # 添加网格线 - 优化样式，更柔和专业
+    ax.grid(True, alpha=0.25, linestyle='--', linewidth=0.8, axis='y', 
+           color='#b9c2d3', zorder=1)
+    ax.set_axisbelow(True)  # 网格线在图表下方
+    
+    # 设置背景色
+    ax.set_facecolor(COLOR_BG_LIGHT)
+    fig.patch.set_facecolor('white')
+    
+    # 图例 - 优化样式，更专业
+    legend = ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.08), 
+                      fontsize=legend_fontsize, ncol=2, 
+                      frameon=False,  # 无边框，更简洁
+                      labelcolor=COLOR_TEXT_PRIMARY)
+    for text in legend.get_texts():
+        text.set_family('sans-serif')
+        text.set_fontweight('medium')
     
     # 不显示标题（根据用户要求，标题只在表格上方显示）
     # if show_title:
     #     ax.set_title('期间交易', fontsize=12, fontweight='bold', pad=15, loc='left')
     
-    # 调整布局
-    plt.tight_layout()
+    # 调整布局 - 优化边距
+    plt.tight_layout(pad=1.5)
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
@@ -212,7 +309,8 @@ def plot_period_transaction_chart(
     
     # 如果提供了保存路径，保存图表为 PDF（矢量格式，高清）
     if save_path:
-        plt.savefig(save_path, format='pdf', bbox_inches='tight', dpi=300)
+        plt.savefig(save_path, format='pdf', bbox_inches='tight', 
+                   pad_inches=0.2, dpi=300, facecolor=COLOR_BG_LIGHT)
         plt.close()
         return save_path
     else:

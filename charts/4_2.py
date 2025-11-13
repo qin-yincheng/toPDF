@@ -10,12 +10,27 @@ from charts.font_config import setup_chinese_font
 from matplotlib.patches import Rectangle
 import numpy as np
 
+# 专业金融报告配色方案 - 与1_5.py保持一致
+COLOR_PRIMARY = '#1e40af'          # 主色：深蓝色（折线图）- 更专业稳重的蓝色
+COLOR_SECONDARY = '#64748b'        # 次色：中性灰蓝色（柱状图）- 更柔和的灰色
+COLOR_GRID = '#f1f5f9'             # 网格线颜色 - 非常柔和，几乎不可见但有用
+COLOR_AXIS = '#cbd5e1'             # 坐标轴颜色 - 更淡，不抢夺注意力
+COLOR_BG_LIGHT = '#ffffff'         # 纯白背景
+COLOR_TABLE_HEADER = '#eef2fb'     # 表格标题背景 - 浅灰色背景（与1_5.py一致）
+COLOR_TABLE_HEADER_TEXT = '#1f2d3d' # 表格标题文字 - 深色（与1_5.py一致）
+COLOR_TABLE_ROW1 = '#ffffff'       # 表格行1背景 - 白色（偶数行）
+COLOR_TABLE_ROW2 = '#f6f7fb'       # 表格行2背景（斑马纹）- 浅灰色（奇数行，与1_5.py一致）
+COLOR_TABLE_BORDER = '#e2e7f1'     # 表格边框颜色 - 与1_5.py一致
+COLOR_TEXT_PRIMARY = '#1a2233'     # 主要文字颜色 - 与1_5.py一致
+COLOR_TEXT_SECONDARY = '#475569'   # 次要文字颜色 - 中等灰色
+COLOR_HIGHLIGHT = '#3b82f6'        # 高亮色 - 用于重要数据
+
 
 
 def plot_industry_attribution_profit_table(
     data: Optional[Dict[str, Any]] = None,
     save_path: Optional[str] = None,
-    figsize: tuple = (10, 8),
+    figsize: tuple = (14, 7),
     return_figure: bool = False,
     show_title: bool = True,
     table_fontsize: int = 16
@@ -58,8 +73,9 @@ def plot_industry_attribution_profit_table(
     # 获取数据
     profit_data = data.get('profit_data', [])
     
-    # 创建图表
-    fig, ax = plt.subplots(figsize=figsize)
+    # 创建图表，设置背景色
+    fig, ax = plt.subplots(figsize=figsize, facecolor='white')
+    ax.set_facecolor(COLOR_BG_LIGHT)
     ax.axis('off')
     
     # 准备表格数据
@@ -79,19 +95,20 @@ def plot_industry_attribution_profit_table(
     headers = ['行业', '权重占净值比(%)', '贡献度(%)', '收益额(万元)', 
                '选择收益(%)', '配置收益(%)', '交互收益(%)']
     
-    # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 1   # 表格宽度为图形宽度的70%
-    table_total_height = 0.7  # 表格总高度
-    table_fontsize = 16  # 字体大小统一为16
+    # 优化表格尺寸和字体 - 更专业的比例
+    table_width = 0.96   # 表格宽度，留出适当的左右边距
+    table_total_height = 0.75  # 表格高度，更合理的比例
+    table_fontsize = 12  # 字体大小 - 更精致，不会显得拥挤
     
-    # 计算位置（左对齐，但为标题留出空间）
-    table_x = 0  # 左边距0，使表格左对齐
+    # 计算位置（居中，留出边距）
+    table_x = 0.02  # 左边距
     if show_title:
-        ax.text(0, 0.92, '按照收益额排名前十', transform=ax.transAxes,
-                ha='left', va='top', fontsize=16, fontweight='bold')
-        # table_y 是表格底部位置，表格高度是 table_total_height
-        # 如果希望表格顶部在 0.85，则底部 = 0.85 - table_total_height
-        table_y = 0.85 - table_total_height  # 表格顶部在85%，与标题保持合理距离
+        # 标题放在axes外部
+        title_text = ax.text(0.5, 1.02, '按照收益额排名前十', transform=ax.transAxes,
+                ha='center', va='bottom', fontsize=18, fontweight='bold',
+                color=COLOR_TEXT_PRIMARY, family='sans-serif')
+        # 表格在axes中居中，留出上下边距
+        table_y = (1 - table_total_height) / 2 + 0.05  # 稍微上移，为标题留空间
     else:
         table_y = (1 - table_total_height) / 2
     
@@ -105,32 +122,39 @@ def plot_industry_attribution_profit_table(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    # table.scale(1, 1.5)  # 调整行高
+    table.scale(1, 1.6)  # 更合理的行高比例，不会显得太稀疏
     
-    # 设置表格样式
+    # 设置表格样式 - 精致专业
     for i in range(len(table_data) + 1):
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#f0f0f0')
-                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
+                cell.set_facecolor(COLOR_TABLE_HEADER)
+                cell.set_text_props(weight='bold', ha='center', 
+                                   fontsize=table_fontsize, 
+                                   color=COLOR_TABLE_HEADER_TEXT)
+                cell.set_edgecolor(COLOR_TABLE_HEADER)  # 表头边框与背景色一致（与1_5.py一致）
+                cell.set_linewidth(0)  # 表头无边框（与1_5.py一致）
+                cell.set_height(0.08)  # 表头稍微高一点
             else:
-                # 交替行颜色
+                # 交替行颜色 - 微妙但清晰
                 if (i - 1) % 2 == 0:
-                    cell.set_facecolor('#ffffff')
+                    cell.set_facecolor(COLOR_TABLE_ROW1)
                 else:
-                    cell.set_facecolor('#f8f8f8')
-                # 第一列左对齐，其他列居中
-                if j == 0:
-                    cell.set_text_props(ha='center', fontsize=table_fontsize)
-                else:
-                    cell.set_text_props(ha='center', fontsize=table_fontsize)
+                    cell.set_facecolor(COLOR_TABLE_ROW2)
+                # 所有列居中
+                cell.set_text_props(ha='center', fontsize=table_fontsize,
+                                   color=COLOR_TEXT_PRIMARY, weight='normal')
             
-            cell.set_edgecolor('#f0f0f0')
-            cell.set_linewidth(0.8)
+            # 精致的边框 - 与1_5.py保持一致
+            cell.set_edgecolor(COLOR_TABLE_BORDER)
+            cell.set_linewidth(0.6)  # 边框宽度与1_5.py一致
     
-    # 调整布局
+    # 调整布局 - 更合理的边距
     plt.tight_layout()
+    plt.subplots_adjust(left=0.08, right=0.95, top=0.88, bottom=0.15, hspace=0.3)
+    
+    # 标题已经设置好了，不需要重新定位
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
@@ -149,7 +173,7 @@ def plot_industry_attribution_profit_table(
 def plot_industry_attribution_profit_chart(
     data: Optional[Dict[str, Any]] = None,
     save_path: Optional[str] = None,
-    figsize: tuple = (10, 6),
+    figsize: tuple = (14, 7),
     return_figure: bool = False,
     show_title: bool = True
 ):
@@ -176,8 +200,9 @@ def plot_industry_attribution_profit_chart(
     # 获取数据
     profit_data = data.get('profit_data', [])
     
-    # 创建图表和双Y轴
-    fig, ax1 = plt.subplots(figsize=figsize)
+    # 创建图表和双Y轴，设置背景色
+    fig, ax1 = plt.subplots(figsize=figsize, facecolor='white')
+    ax1.set_facecolor(COLOR_BG_LIGHT)
     ax2 = ax1.twinx()
     
     # 设置 axes 的 zorder，确保 ax1（折线图）在上层
@@ -193,54 +218,94 @@ def plot_industry_attribution_profit_chart(
     
     # 设置X轴位置（10个柱子）
     x = np.arange(len(industries))
+    # 计算合适的柱宽 - 根据柱子数量动态调整，让柱子更宽更舒适
+    # 对于10个柱子，使用0.6-0.7的宽度比较合适
+    if len(industries) > 0:
+        bar_width = min(0.7, max(0.5, 0.8 - len(industries) * 0.02))
+    else:
+        bar_width = 0.7
     
-    # 绘制柱状图（权重%，右Y轴，灰色）- 先绘制，确保在底层
-    ax2.bar(x, weights, width=0.65, color='#808080', alpha=1, label='权重', zorder=1)
+    # 绘制柱状图（权重%，右Y轴）- 先绘制，确保在底层
+    # 使用更柔和的灰色，与1_5.py风格一致
+    bars = ax2.bar(x, weights, width=bar_width, color='#c5cad8', alpha=0.85, 
+            label='权重', zorder=1, edgecolor='white', linewidth=1.0)
     
-    # 绘制折线图（贡献度%，左Y轴，蓝色）- 后绘制，确保在上层
-    ax1.plot(x, contributions, color='#082868', marker='o', 
-            markersize=5, linewidth=2, label='贡献度',markerfacecolor='white', markeredgecolor='#082868',
-            markeredgewidth=1.5, zorder=10)
-    ax1.set_ylabel('贡献度(%)', fontsize=11, color='black')
-    ax1.tick_params(axis='y', labelcolor='black')
-    ax2.set_ylabel('权重(%)', fontsize=11, color='black')
-    ax2.tick_params(axis='y', labelcolor='black')
+    # 绘制折线图（贡献度%，左Y轴）- 后绘制，确保在上层
+    # 使用更专业的深蓝色，与1_5.py风格一致
+    line = ax1.plot(x, contributions, color='#1f3c88', marker='o', 
+            markersize=8, linewidth=2.5, label='贡献度',
+            markerfacecolor='white', markeredgecolor='#1f3c88',
+            markeredgewidth=2.0, zorder=10, alpha=1.0)
     
-    # 统一两个Y轴的范围，使折线图能正确显示在柱状图上方
+    # 优化Y轴标签样式 - 专业清晰
+    ax1.set_ylabel('贡献度(%)', fontsize=13, color=COLOR_TEXT_PRIMARY, 
+                   fontweight='bold', labelpad=10)
+    ax1.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=10, 
+                    width=0.8, length=4)
+    ax2.set_ylabel('权重(%)', fontsize=13, color=COLOR_TEXT_PRIMARY, 
+                   fontweight='bold', labelpad=10)
+    ax2.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=10,
+                    width=0.8, length=4)
+    
+    # 设置Y轴范围，让图表有适当的呼吸空间
     max_contrib = max(contributions) if contributions else 10
     max_weight = max(weights) if weights else 8
-    y_max = max(max_contrib, max_weight) * 1.1  # 取两者最大值
-    # ax1.set_ylim(0, y_max)
-    # ax2.set_ylim(0, y_max)
-    ax1.margins(y=0.1)
-    ax2.margins(y=0.1)
+    y_max = max(max_contrib, max_weight) * 1.12
+    ax1.set_ylim(bottom=0, top=y_max)
+    ax2.set_ylim(bottom=0, top=y_max)
     
-    # 设置X轴：显示所有10个位置，但只显示5个标签（机械设备、石油石化、医药生物、国防军工、社会服务）
-    # 这5个行业在原始数据中的索引是：0, 2, 4, 6, 8
-    selected_indices = [0, 2, 4, 6, 8]
-    selected_industries = [industries[i] for i in selected_indices if i < len(industries)]
-    selected_x_positions = [x[i] for i in selected_indices if i < len(x)]
+    # 设置X轴：显示所有标签，适当旋转以避免重叠
+    ax1.set_xticks(x)
+    # 根据标签数量和长度决定是否旋转
+    # 如果标签数量>=8或平均标签长度>4，则旋转45度
+    avg_label_len = np.mean([len(label) for label in industries]) if industries else 0
+    rotation = 45 if (len(industries) >= 8 or avg_label_len > 4) else 0
     
-    ax1.set_xticks(selected_x_positions)
-    ax1.set_xticklabels(selected_industries, rotation=45, ha='right')
-    ax1.set_xlabel('行业', fontsize=11)
+    ax1.set_xticklabels(industries, fontsize=10, color=COLOR_TEXT_SECONDARY, 
+                        rotation=rotation, ha='right' if rotation > 0 else 'center',
+                        rotation_mode='anchor')
+    ax1.set_xlabel('', fontsize=0)  # 不显示X轴标题
     
-    # 添加网格线
-    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
+    # 设置X轴范围，让柱子不贴边，留出适当的边距
+    x_margin = 0.5
+    ax1.set_xlim(-x_margin, len(industries) - 1 + x_margin)
     
-    # 合并图例
+    # 优化网格线样式 - 与1_5.py风格一致
+    ax1.grid(True, alpha=0.25, linestyle='--', linewidth=0.5, 
+            color='#b9c2d3', axis='y', zorder=1, which='major')
+    ax1.set_axisbelow(True)  # 网格线在图表元素下方
+    
+    # 优化坐标轴样式 - 与1_5.py风格一致
+    for spine in ax1.spines.values():
+        spine.set_color('#b9c2d3')  # 使用与1_5.py相同的坐标轴颜色
+        spine.set_linewidth(1.2)
+    for spine in ax2.spines.values():
+        spine.set_color('#b9c2d3')
+        spine.set_linewidth(1.2)
+    
+    # 优化图例样式 - 更精致
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines1 + lines2, labels1 + labels2,
-               loc='upper right', fontsize=10)
+               loc='upper right', fontsize=11, frameon=True,
+               fancybox=False, shadow=False, framealpha=0.95,
+               edgecolor=COLOR_TABLE_BORDER, facecolor='white',
+               borderpad=0.8, labelspacing=0.6, handlelength=2.5)
     
-    # 不显示标题（根据用户要求，标题只在表格上方显示）
-    # if show_title:
-    #     ax1.set_title('按照收益额排名前十', fontsize=12, fontweight='bold', pad=15, loc='left')
+    # 隐藏顶部和右侧边框
     ax1.spines['top'].set_visible(False)
     ax2.spines['top'].set_visible(False)
-    # 调整布局
+    ax2.spines['left'].set_visible(False)
+    
+    # 添加标题
+    if show_title:
+        ax1.text(0.5, 1.02, '按照收益额排名前十', transform=ax1.transAxes,
+                ha='center', va='bottom', fontsize=18, fontweight='bold',
+                color=COLOR_TEXT_PRIMARY, family='sans-serif')
+    
+    # 调整布局 - 更合理的边距，与表格对齐
     plt.tight_layout()
+    plt.subplots_adjust(left=0.10, right=0.90, top=0.88, bottom=0.20 if rotation > 0 else 0.15)
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
@@ -259,7 +324,7 @@ def plot_industry_attribution_profit_chart(
 def plot_industry_attribution_loss_table(
     data: Optional[Dict[str, Any]] = None,
     save_path: Optional[str] = None,
-    figsize: tuple = (10, 8),
+    figsize: tuple = (14, 7),
     return_figure: bool = False,
     show_title: bool = True,
     table_fontsize: int = 16
@@ -302,8 +367,9 @@ def plot_industry_attribution_loss_table(
     # 获取数据
     loss_data = data.get('loss_data', [])
     
-    # 创建图表
-    fig, ax = plt.subplots(figsize=figsize)
+    # 创建图表，设置背景色
+    fig, ax = plt.subplots(figsize=figsize, facecolor='white')
+    ax.set_facecolor(COLOR_BG_LIGHT)
     ax.axis('off')
     
     # 准备表格数据
@@ -323,19 +389,20 @@ def plot_industry_attribution_loss_table(
     headers = ['行业', '权重占净值比(%)', '贡献度(%)', '收益额(万元)', 
                '选择收益(%)', '配置收益(%)', '交互收益(%)']
     
-    # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 1   # 表格宽度为图形宽度的70%
-    table_total_height = 0.7  # 表格总高度
-    table_fontsize = 16  # 字体大小统一为16
+    # 优化表格尺寸和字体 - 更专业的比例
+    table_width = 0.96   # 表格宽度，留出适当的左右边距
+    table_total_height = 0.75  # 表格高度，更合理的比例
+    table_fontsize = 12  # 字体大小 - 更精致，不会显得拥挤
     
-    # 计算位置（左对齐，但为标题留出空间）
-    table_x = 0  # 左边距0，使表格左对齐
+    # 计算位置（居中，留出边距）
+    table_x = 0.02  # 左边距
     if show_title:
-        ax.text(0, 0.92, '按照亏损额排名前十', transform=ax.transAxes,
-                ha='left', va='top', fontsize=16, fontweight='bold')
-        # table_y 是表格底部位置，表格高度是 table_total_height
-        # 如果希望表格顶部在 0.85，则底部 = 0.85 - table_total_height
-        table_y = 0.85 - table_total_height  # 表格顶部在85%，与标题保持合理距离
+        # 标题放在axes外部
+        title_text = ax.text(0.5, 1.02, '按照亏损额排名前十', transform=ax.transAxes,
+                ha='center', va='bottom', fontsize=18, fontweight='bold',
+                color=COLOR_TEXT_PRIMARY, family='sans-serif')
+        # 表格在axes中居中，留出上下边距
+        table_y = (1 - table_total_height) / 2 + 0.05  # 稍微上移，为标题留空间
     else:
         table_y = (1 - table_total_height) / 2
     
@@ -349,32 +416,39 @@ def plot_industry_attribution_loss_table(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    # table.scale(1, 1.5)  # 调整行高
+    table.scale(1, 1.6)  # 更合理的行高比例，不会显得太稀疏
     
-    # 设置表格样式
+    # 设置表格样式 - 精致专业
     for i in range(len(table_data) + 1):
         for j in range(len(headers)):
             cell = table[(i, j)]
             if i == 0:  # 表头
-                cell.set_facecolor('#f0f0f0')
-                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
+                cell.set_facecolor(COLOR_TABLE_HEADER)
+                cell.set_text_props(weight='bold', ha='center', 
+                                   fontsize=table_fontsize, 
+                                   color=COLOR_TABLE_HEADER_TEXT)
+                cell.set_edgecolor(COLOR_TABLE_HEADER)  # 表头边框与背景色一致（与1_5.py一致）
+                cell.set_linewidth(0)  # 表头无边框（与1_5.py一致）
+                cell.set_height(0.08)  # 表头稍微高一点
             else:
-                # 交替行颜色
+                # 交替行颜色 - 微妙但清晰
                 if (i - 1) % 2 == 0:
-                    cell.set_facecolor('#ffffff')
+                    cell.set_facecolor(COLOR_TABLE_ROW1)
                 else:
-                    cell.set_facecolor('#f8f8f8')
-                # 第一列左对齐，其他列居中
-                if j == 0:
-                    cell.set_text_props(ha='center', fontsize=table_fontsize)
-                else:
-                    cell.set_text_props(ha='center', fontsize=table_fontsize)
+                    cell.set_facecolor(COLOR_TABLE_ROW2)
+                # 所有列居中
+                cell.set_text_props(ha='center', fontsize=table_fontsize,
+                                   color=COLOR_TEXT_PRIMARY, weight='normal')
             
-            cell.set_edgecolor('#f0f0f0')
-            cell.set_linewidth(0.8)
+            # 精致的边框 - 与1_5.py保持一致
+            cell.set_edgecolor(COLOR_TABLE_BORDER)
+            cell.set_linewidth(0.6)  # 边框宽度与1_5.py一致
     
-    # 调整布局
+    # 调整布局 - 更合理的边距
     plt.tight_layout()
+    plt.subplots_adjust(left=0.08, right=0.95, top=0.88, bottom=0.15, hspace=0.3)
+    
+    # 标题已经设置好了，不需要重新定位
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
@@ -393,7 +467,7 @@ def plot_industry_attribution_loss_table(
 def plot_industry_attribution_loss_chart(
     data: Optional[Dict[str, Any]] = None,
     save_path: Optional[str] = None,
-    figsize: tuple = (10, 6),
+    figsize: tuple = (14, 7),
     return_figure: bool = False,
     show_title: bool = True
 ):
@@ -420,8 +494,9 @@ def plot_industry_attribution_loss_chart(
     # 获取数据
     loss_data = data.get('loss_data', [])
     
-    # 创建图表和双Y轴
-    fig, ax1 = plt.subplots(figsize=figsize)
+    # 创建图表和双Y轴，设置背景色
+    fig, ax1 = plt.subplots(figsize=figsize, facecolor='white')
+    ax1.set_facecolor(COLOR_BG_LIGHT)
     ax2 = ax1.twinx()
     
     # 设置 axes 的 zorder，确保 ax1（折线图）在上层
@@ -437,51 +512,102 @@ def plot_industry_attribution_loss_chart(
     
     # 设置X轴位置
     x = np.arange(len(industries))
+    # 计算合适的柱宽 - 根据柱子数量动态调整，让柱子更宽更舒适
+    # 对于10个柱子，使用0.6-0.7的宽度比较合适
+    if len(industries) > 0:
+        bar_width = min(0.7, max(0.5, 0.8 - len(industries) * 0.02))
+    else:
+        bar_width = 0.7
     
-    # 绘制柱状图（权重%，右Y轴，灰色）- 先绘制，确保在底层
-    ax2.bar(x, weights, width=0.65, color='#808080', alpha=1, label='权重', zorder=1)
+    # 绘制柱状图（权重%，右Y轴）- 先绘制，确保在底层
+    # 使用更柔和的灰色，与1_5.py风格一致
+    bars = ax2.bar(x, weights, width=bar_width, color='#c5cad8', alpha=0.85, 
+            label='权重', zorder=1, edgecolor='white', linewidth=1.0)
     
-    # 绘制折线图（贡献度%，左Y轴，蓝色）- 后绘制，确保在上层
-    ax1.plot(x, contributions, color='#082868', marker='o', 
-            markersize=5, linewidth=2, label='贡献度', markerfacecolor='white', markeredgecolor='#082868',
-            markeredgewidth=1.5, zorder=10)
-    ax1.set_ylabel('贡献度(%)', fontsize=11, color='black')
-    ax1.tick_params(axis='y', labelcolor='black')
-    ax2.set_ylabel('权重(%)', fontsize=11, color='black')
-    ax2.tick_params(axis='y', labelcolor='black')
+    # 绘制折线图（贡献度%，左Y轴）- 后绘制，确保在上层
+    # 使用更专业的深蓝色，与1_5.py风格一致
+    line = ax1.plot(x, contributions, color='#1f3c88', marker='o', 
+            markersize=8, linewidth=2.5, label='贡献度',
+            markerfacecolor='white', markeredgecolor='#1f3c88',
+            markeredgewidth=2.0, zorder=10, alpha=1.0)
     
-    # 统一两个Y轴的范围，使折线图能正确显示在柱状图上方
+    # 优化Y轴标签样式 - 专业清晰
+    ax1.set_ylabel('贡献度(%)', fontsize=13, color=COLOR_TEXT_PRIMARY, 
+                   fontweight='bold', labelpad=10)
+    ax1.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=10, 
+                    width=0.8, length=4)
+    ax2.set_ylabel('权重(%)', fontsize=13, color=COLOR_TEXT_PRIMARY, 
+                   fontweight='bold', labelpad=10)
+    ax2.tick_params(axis='y', labelcolor=COLOR_TEXT_PRIMARY, labelsize=10,
+                    width=0.8, length=4)
+    
+    # 设置Y轴范围，让图表有适当的呼吸空间（负数范围）
     min_contrib = min(contributions) if contributions else -2
     max_contrib = max(contributions) if contributions else 0
     max_weight = max(weights) if weights else 8
     # 对于负数范围，需要同时考虑贡献度的最小值和权重的最大值
-    y_min = min_contrib * 1.1
-    y_max = max(max_contrib, max_weight) * 1.1
-    # ax1.set_ylim(y_min, y_max)
-    # ax2.set_ylim(0, y_max)  # 权重始终为正数
-    ax1.margins(y=0.1)
-    ax2.margins(y=0.1)
-    # 设置X轴  
+    y_min = min_contrib * 1.15 if min_contrib < 0 else 0
+    y_max = max(max_contrib, max_weight) * 1.12
+    ax1.set_ylim(bottom=y_min, top=y_max)
+    ax2.set_ylim(bottom=y_min, top=y_max)
+    
+    # 设置X轴：显示所有标签，适当旋转以避免重叠
     ax1.set_xticks(x)
-    ax1.set_xticklabels(industries, rotation=45, ha='right')
-    ax1.set_xlabel('行业', fontsize=11)
+    # 根据标签数量和长度决定是否旋转
+    # 如果标签数量>=8或平均标签长度>4，则旋转45度
+    avg_label_len = np.mean([len(label) for label in industries]) if industries else 0
+    rotation = 45 if (len(industries) >= 8 or avg_label_len > 4) else 0
     
-    # 添加网格线
-    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
+    ax1.set_xticklabels(industries, fontsize=10, color=COLOR_TEXT_SECONDARY, 
+                        rotation=rotation, ha='right' if rotation > 0 else 'center',
+                        rotation_mode='anchor')
+    ax1.set_xlabel('', fontsize=0)  # 不显示X轴标题
     
-    # 合并图例
+    # 设置X轴范围，让柱子不贴边，留出适当的边距
+    x_margin = 0.5
+    ax1.set_xlim(-x_margin, len(industries) - 1 + x_margin)
+    
+    # 优化网格线样式 - 与1_5.py风格一致
+    ax1.grid(True, alpha=0.25, linestyle='--', linewidth=0.5, 
+            color='#b9c2d3', axis='y', zorder=1, which='major')
+    ax1.set_axisbelow(True)  # 网格线在图表元素下方
+    
+    # 添加零线（对于负数范围很重要）- 与1_5.py风格一致
+    if min_contrib < 0:
+        ax1.axhline(y=0, color='#8f97aa', linestyle='-', linewidth=1.2, 
+                   alpha=1.0, zorder=2)
+    
+    # 优化坐标轴样式 - 与1_5.py风格一致
+    for spine in ax1.spines.values():
+        spine.set_color('#b9c2d3')  # 使用与1_5.py相同的坐标轴颜色
+        spine.set_linewidth(1.2)
+    for spine in ax2.spines.values():
+        spine.set_color('#b9c2d3')
+        spine.set_linewidth(1.2)
+    
+    # 优化图例样式 - 更精致
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines1 + lines2, labels1 + labels2,
-               loc='upper right', fontsize=10)
+               loc='upper right', fontsize=11, frameon=True,
+               fancybox=False, shadow=False, framealpha=0.95,
+               edgecolor=COLOR_TABLE_BORDER, facecolor='white',
+               borderpad=0.8, labelspacing=0.6, handlelength=2.5)
     
-    # 不显示标题（根据用户要求，标题只在表格上方显示）
-    # if show_title:
-    #     ax1.set_title('按照亏损额排名前十', fontsize=12, fontweight='bold', pad=15, loc='left')
+    # 隐藏顶部和右侧边框
     ax1.spines['top'].set_visible(False)
     ax2.spines['top'].set_visible(False)
-    # 调整布局
+    ax2.spines['left'].set_visible(False)
+    
+    # 添加标题
+    if show_title:
+        ax1.text(0.5, 1.02, '按照亏损额排名前十', transform=ax1.transAxes,
+                ha='center', va='bottom', fontsize=18, fontweight='bold',
+                color=COLOR_TEXT_PRIMARY, family='sans-serif')
+    
+    # 调整布局 - 更合理的边距，与表格对齐
     plt.tight_layout()
+    plt.subplots_adjust(left=0.10, right=0.90, top=0.88, bottom=0.20 if rotation > 0 else 0.15)
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:

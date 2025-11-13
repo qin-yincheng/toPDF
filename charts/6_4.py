@@ -9,6 +9,15 @@ from charts.font_config import setup_chinese_font
 from matplotlib.patches import Rectangle
 import numpy as np
 
+# 专业配色方案 - 金融报告标准配色（与1_5.py保持一致）
+COLOR_TABLE_HEADER = '#eef2fb'        # 表格标题背景（浅灰色）- 与1_5一致
+COLOR_TABLE_HEADER_TEXT = '#1f2d3d'   # 表格标题文字颜色（深色）- 与1_5一致
+COLOR_TABLE_ROW1 = '#ffffff'          # 表格行1背景（白色）
+COLOR_TABLE_ROW2 = '#f6f7fb'         # 表格行2背景（浅灰色斑马纹）- 与1_5一致
+COLOR_TABLE_BORDER = '#e2e7f1'       # 表格边框颜色 - 与1_5一致
+COLOR_TEXT_PRIMARY = '#1a2233'       # 主要文字颜色 - 与1_5一致
+COLOR_TEXT_SECONDARY = '#475569'     # 次要文字颜色
+
 
 
 def plot_turnover_rate_table(
@@ -58,7 +67,7 @@ def plot_turnover_rate_table(
     # 获取数据
     turnover_data = data.get('turnover_data', [])
     
-    # 准备表格数据
+    # 准备表格数据，优化数字格式化
     table_data = []
     for item in turnover_data:
         table_data.append([
@@ -79,14 +88,30 @@ def plot_turnover_rate_table(
     fig, ax = plt.subplots(figsize=figsize)
     ax.axis('off')
     
-    # 使用类似 4_1.py 的方式：缩小表格，放大字体
-    table_width = 0.7   # 表格宽度为图形宽度的70%
-    table_total_height = 0.7  # 表格总高度
-    table_fontsize = 16  # 字体大小统一为16
+    # 优化表格尺寸和位置 - 根据figsize动态调整
+    is_narrow = figsize[0] < 10
+    table_width = 0.96 if is_narrow else 0.97   # 更充分利用空间
+    table_total_height = 0.85 if is_narrow else 0.83  # 增加高度利用率，使表格更饱满
+    # 根据图表大小动态调整字体，使其更易读和专业
+    if figsize[0] >= 20:
+        table_fontsize = 18  # 大图表使用大字体
+    elif figsize[0] >= 15:
+        table_fontsize = 16  # 中等图表
+    elif figsize[0] >= 10:
+        table_fontsize = 14  # 小图表
+    else:
+        table_fontsize = 12  # 很窄的图表
     
-    # 计算位置（居中）
-    table_x = (1 - table_width) / 2
-    table_y = (1 - table_total_height) / 2
+    # 计算位置（居中，但为标题留出空间）
+    table_x = (1 - table_width) / 2  # 居中
+    if show_title:
+        ax.text(0.5, 0.97, '换手率 (年化)', transform=ax.transAxes,
+                ha='center', va='top', fontsize=16, fontweight='bold', 
+                color=COLOR_TEXT_PRIMARY, family='sans-serif')
+        # table_y 是表格底部位置，表格高度是 table_total_height
+        table_y = 0.89 - table_total_height  # 表格顶部在89%，与标题保持合理距离
+    else:
+        table_y = (1 - table_total_height) / 2
     
     # 绘制表格
     table = ax.table(
@@ -98,33 +123,39 @@ def plot_turnover_rate_table(
     )
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1, 1.5)  # 调整行高
+    # 根据表格宽度动态调整行高 - 增加行高提升可读性和专业感
+    row_scale = 2.2 if is_narrow else 2.5  # 增加行高，使表格更舒适美观
+    table.scale(1, row_scale)  # 调整行高，使表格更舒适美观
     
-    # 设置表格样式
+    # 设置表格样式 - 专业配色
     for i in range(len(table_data) + 1):  # +1 包括表头
         for j in range(len(headers)):
             cell = table[(i, j)]
-            if i == 0:  # 表头
-                cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
+            if i == 0:  # 表头 - 浅灰色背景配深色文字（与1_5一致）
+                cell.set_facecolor(COLOR_TABLE_HEADER)
+                cell.set_text_props(weight='bold', ha='center', 
+                                  fontsize=table_fontsize, 
+                                  color=COLOR_TABLE_HEADER_TEXT,
+                                  family='sans-serif')
+                # 表头边框
+                cell.set_edgecolor(COLOR_TABLE_HEADER)
+                cell.set_linewidth(0)
             else:
-                # 交替行颜色：第一行数据（i=1，股票）白色，第二行（i=2，基金）浅灰，第三行（i=3，逆回购）白色
-                if (i - 1) % 2 == 0:  # 第一行和第三行数据（i=1, 3）白色
-                    cell.set_facecolor('#ffffff')
-                else:  # 第二行数据（i=2）浅灰
-                    cell.set_facecolor('#f8f8f8')
-                
-                # 第一列（资产分类）左对齐，其他列居中对齐
-                if j == 0:
-                    cell.set_text_props(ha='center', fontsize=table_fontsize)
+                # 交替行颜色 - 增强对比度
+                if (i - 1) % 2 == 0:
+                    cell.set_facecolor(COLOR_TABLE_ROW1)
                 else:
-                    cell.set_text_props(ha='center', fontsize=table_fontsize)
-            
-            cell.set_edgecolor('#f0f0f0')
-            cell.set_linewidth(0.8)
+                    cell.set_facecolor(COLOR_TABLE_ROW2)
+                # 所有列居中
+                cell.set_text_props(ha='center', fontsize=table_fontsize,
+                                  color=COLOR_TEXT_PRIMARY,
+                                  family='sans-serif')
+                # 数据行边框（与1_5一致）
+                cell.set_edgecolor(COLOR_TABLE_BORDER)
+                cell.set_linewidth(0.6)
     
-    # 调整布局
-    plt.tight_layout()
+    # 调整布局 - 优化边距
+    plt.tight_layout(pad=1.5)
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
@@ -132,7 +163,8 @@ def plot_turnover_rate_table(
     
     # 如果提供了保存路径，保存图表为 PDF（矢量格式，高清）
     if save_path:
-        plt.savefig(save_path, format='pdf', bbox_inches='tight', dpi=300)
+        plt.savefig(save_path, format='pdf', bbox_inches='tight', 
+                   pad_inches=0.2, dpi=300)
         plt.close()
         return save_path
     else:
