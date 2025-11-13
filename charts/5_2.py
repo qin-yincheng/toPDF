@@ -201,7 +201,7 @@ def plot_stock_holding_nodes_chart(
     
     # 根据图表宽度动态调整元素大小 - 提升可读性
     is_wide = figsize[0] > 10
-    bar_width = 0.55 if is_wide else 0.6  # 适中的柱子宽度
+    bar_width = 0.35 if is_wide else 0.38  # 柱子宽度，确保两个柱子并排不重叠
     label_fontsize = 12 if is_wide else 11  # 更大的标签
     tick_fontsize = 10 if is_wide else 9  # 更大的刻度
     legend_fontsize = 10 if is_wide else 9  # 更大的图例
@@ -220,7 +220,7 @@ def plot_stock_holding_nodes_chart(
     
     # 设置X轴位置（分组柱状图，两个柱子之间有间隔）
     x = np.arange(len(nodes))
-    gap = 0.05  # 两个柱子之间的间隔
+    gap = 0.08  # 两个柱子之间的间隔，增加以避免重叠
     
     # 绘制柱状图（市值，左Y轴，专业蓝色）- 先绘制，确保在底层
     bars1 = ax1.bar(x - (bar_width + gap)/2, market_values, width=bar_width, 
