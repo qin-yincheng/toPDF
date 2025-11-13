@@ -13,6 +13,8 @@ if str(project_root) not in sys.path:
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+from matplotlib.ticker import FixedLocator, FixedFormatter
+import matplotlib.ticker as ticker
 from datetime import datetime, timedelta
 import numpy as np
 from charts.font_config import setup_chinese_font
@@ -21,10 +23,10 @@ from calc.utils import is_trading_day
 
 
 REPORT_STYLE = {
-    'font.size': 14,
-    'axes.titlesize': 22,
+    'font.size': 8,
+    'axes.titlesize': 8,
     'axes.titleweight': 'bold',
-    'axes.labelsize': 16,
+    'axes.labelsize': 7,
     'axes.labelcolor': '#303030',
     'xtick.color': '#4d4d4d',
     'ytick.color': '#4d4d4d',
@@ -33,7 +35,7 @@ REPORT_STYLE = {
     'grid.color': '#e5e5e5',
     'grid.linestyle': '-',
     'grid.linewidth': 1.0,
-    'legend.fontsize': 13,
+    'legend.fontsize': 6,
     'figure.facecolor': 'white',
 }
 
@@ -117,7 +119,7 @@ def plot_nav_performance(
         x_indices,
         accumulated_return,
         color=color1,
-        linewidth=3.0,
+        linewidth=1.0,
         label='复权累计收益'
     )
     
@@ -127,7 +129,7 @@ def plot_nav_performance(
         x_indices,
         csi300,
         color=color2,
-        linewidth=2.6,
+        linewidth=1,
         linestyle='--',
         label='沪深300'
     )
@@ -138,15 +140,15 @@ def plot_nav_performance(
         x_indices,
         excess_return,
         color=color3,
-        linewidth=2.6,
+        linewidth=1,
         label='累计超额收益'
     )
     
     # 设置坐标轴
-    ax.set_xlabel('日期', labelpad=18)
-    ax.set_ylabel('收益率（%）', labelpad=18)
-    ax.tick_params(axis='y', labelsize=13, colors='#4d4d4d', pad=10)
-    ax.tick_params(axis='x', labelsize=13, pad=12)
+    # ax.set_xlabel('日期', labelpad=18)
+    ax.set_ylabel('收益率（%）', labelpad=6)
+    ax.tick_params(axis='y', labelsize=7, colors='#4d4d4d', pad=6)
+    ax.tick_params(axis='x', labelsize=7, pad=6)
     ax.grid(axis='y', linestyle='-', linewidth=1.0, alpha=0.5)
     ax.grid(visible=False, axis='x')
     ax.set_axisbelow(True)
@@ -168,15 +170,22 @@ def plot_nav_performance(
         # 使用工具函数计算日期刻度参数
         tick_indices, tick_labels = calculate_date_tick_params(dates)
         
-        # 设置刻度位置
-        ax.set_xticks(tick_indices)
+        # 去掉倒数第二个刻度
+        if len(tick_indices) > 1:
+            tick_indices = list(tick_indices)
+            tick_labels = list(tick_labels)
+            tick_indices.pop(-2)  # 移除倒数第二个索引
+            tick_labels.pop(-2)  # 移除倒数第二个标签
         
-        # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=40, ha='right')
+        # 用 FixedLocator + FixedFormatter 明确绑定
+        ax.xaxis.set_major_locator(ticker.FixedLocator(tick_indices))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter(tick_labels))
         
-        # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
-        x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
-        ax.set_xlim(x_min, x_max)
+        # 标签旋转与对齐
+        plt.setp(ax.get_xticklabels(), ha='center')
+        
+        # 确保范围覆盖所有索引
+        ax.set_xlim(-0.5, len(dates)-0.5)
     else:
         ax.set_xticks([])
         ax.set_xticklabels([])
