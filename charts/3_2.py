@@ -84,7 +84,7 @@ def plot_industry_proportion_timeseries(
     # 如果没有数据或数据为空，返回空图表
     if not data:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=8)
         ax.axis('off')
         if return_figure:
             plt.close(fig)
@@ -103,7 +103,7 @@ def plot_industry_proportion_timeseries(
     # 需要从原始数据获取，因为过滤后可能为空
     if not data or len(data) == 0:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=14)
+        ax.text(0.5, 0.5, '暂无数据', ha='center', va='center', fontsize=8)
         ax.axis('off')
         if return_figure:
             plt.close(fig)
@@ -129,7 +129,7 @@ def plot_industry_proportion_timeseries(
     # 检查过滤后的数据是否为空
     if not filtered_data or len(filtered_data) == 0:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, '暂无交易日数据', ha='center', va='center', fontsize=14)
+        ax.text(0.5, 0.5, '暂无交易日数据', ha='center', va='center', fontsize=8)
         ax.axis('off')
         if return_figure:
             plt.close(fig)
@@ -281,7 +281,7 @@ def plot_industry_proportion_timeseries(
     ax.set_axisbelow(True)  # 网格线在柱子后面
     
     # 设置X轴刻度和标签 - 优化样式
-    ax.set_xlabel('日期', fontsize=7, fontweight='bold', color='#1a1a1a', labelpad=12)
+    # ax.set_xlabel('日期', fontsize=7, fontweight='bold', color='#1a1a1a', labelpad=12)
     # 使用工具函数自动计算合适的刻度间隔
     if len(dates) > 0:
         # 使用工具函数计算日期刻度参数

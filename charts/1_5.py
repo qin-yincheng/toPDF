@@ -254,7 +254,7 @@ def plot_return_comparison_chart(
     ax.set_xlabel('')
     ax.set_ylabel('收益率 (%)', color='#1a2233', fontsize=7, labelpad=6)
     if show_title:
-        ax.set_title('产品收益率对比', fontsize=7, fontweight='bold', color='#1a2233', pad=6)
+        ax.set_title('产品收益率对比', fontsize=8, fontweight='bold', color='#1a2233', pad=6)
     ax.set_xticks(x)
     ax.set_xticklabels(periods, rotation=0, ha='center', fontsize=7, color='#1a2233')
     ax.tick_params(axis='y', labelsize=7, colors='#1a2233')
@@ -297,7 +297,7 @@ def plot_return_comparison_chart(
                 f'{height:.2f}%',
                 ha='center',
                 va='bottom' if height >= 0 else 'top',
-                fontsize=4,
+                fontsize=7,
                 color='#1a2233'
             )
     

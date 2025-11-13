@@ -139,14 +139,14 @@ def plot_asset_performance_attribution_table(
                 # 第一列（资产类别）左对齐，其他列右对齐（便于数值对比）
                 if j == 0:
                     cell.set_text_props(
-                        ha="left",
+                        ha="center",
                         color="#1a2233",  # 深色文字
                         fontsize=table_fontsize,
                         fontweight="medium",
                     )
                 else:
                     cell.set_text_props(
-                        ha="right",  # 数值列右对齐
+                        ha="center",  # 数值列右对齐
                         color="#1a2233",  # 深色文字
                         fontsize=table_fontsize,
                         fontweight="medium",

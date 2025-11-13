@@ -233,9 +233,9 @@ def plot_industry_attribution_profit_chart(
     # 绘制折线图（贡献度%，左Y轴）- 后绘制，确保在上层
     # 使用更专业的深蓝色，与1_5.py风格一致
     line = ax1.plot(x, contributions, color='#1f3c88', marker='o', 
-            markersize=8, linewidth=2.5, label='贡献度',
+            markersize=8, linewidth=1, label='贡献度',
             markerfacecolor='white', markeredgecolor='#1f3c88',
-            markeredgewidth=2.0, zorder=10, alpha=1.0)
+            markeredgewidth=1, zorder=10, alpha=1.0)
     
     # 优化Y轴标签样式 - 专业清晰
     ax1.set_ylabel('贡献度(%)', fontsize=7, color=COLOR_TEXT_PRIMARY, 
@@ -278,10 +278,10 @@ def plot_industry_attribution_profit_chart(
     # 优化坐标轴样式 - 与1_5.py风格一致
     for spine in ax1.spines.values():
         spine.set_color('#b9c2d3')  # 使用与1_5.py相同的坐标轴颜色
-        spine.set_linewidth(1.2)
+        spine.set_linewidth(1)
     for spine in ax2.spines.values():
         spine.set_color('#b9c2d3')
-        spine.set_linewidth(1.2)
+        spine.set_linewidth(1)
     
     # 优化图例样式 - 更精致
     lines1, labels1 = ax1.get_legend_handles_labels()
@@ -527,9 +527,9 @@ def plot_industry_attribution_loss_chart(
     # 绘制折线图（贡献度%，左Y轴）- 后绘制，确保在上层
     # 使用更专业的深蓝色，与1_5.py风格一致
     line = ax1.plot(x, contributions, color='#1f3c88', marker='o', 
-            markersize=8, linewidth=2.5, label='贡献度',
+            markersize=8, linewidth=1, label='贡献度',
             markerfacecolor='white', markeredgecolor='#1f3c88',
-            markeredgewidth=2.0, zorder=10, alpha=1.0)
+            markeredgewidth=1, zorder=10, alpha=1.0)
     
     # 优化Y轴标签样式 - 专业清晰
     ax1.set_ylabel('贡献度(%)', fontsize=7, color=COLOR_TEXT_PRIMARY, 
@@ -574,16 +574,16 @@ def plot_industry_attribution_loss_chart(
     
     # 添加零线（对于负数范围很重要）- 与1_5.py风格一致
     if min_contrib < 0:
-        ax1.axhline(y=0, color='#8f97aa', linestyle='-', linewidth=1.2, 
+        ax1.axhline(y=0, color='#8f97aa', linestyle='-', linewidth=1, 
                    alpha=1.0, zorder=2)
     
     # 优化坐标轴样式 - 与1_5.py风格一致
     for spine in ax1.spines.values():
         spine.set_color('#b9c2d3')  # 使用与1_5.py相同的坐标轴颜色
-        spine.set_linewidth(1.2)
+        spine.set_linewidth(1)
     for spine in ax2.spines.values():
         spine.set_color('#b9c2d3')
-        spine.set_linewidth(1.2)
+        spine.set_linewidth(1)
     
     # 优化图例样式 - 更精致
     lines1, labels1 = ax1.get_legend_handles_labels()

@@ -89,14 +89,14 @@ def plot_dynamic_drawdown_chart(
     color1 = '#5470c6'  # 深蓝色
     line1 = ax.plot(
         x_indices, product_drawdown, color=color1, linestyle='-', linewidth=1,
-        label='私募基金产品'
+        label='私募基金产品', zorder=3
     )
     
     # 绘制基准回撤线（绿色）
     color2 = '#91cc75'  # 绿色
     line2 = ax.plot(
         x_indices, benchmark_drawdown, color=color2, linestyle='-', linewidth=1,
-        label='沪深300'
+        label='沪深300', zorder=3
     )
     
     # 设置Y轴（回撤从0%到最大回撤）
@@ -113,8 +113,8 @@ def plot_dynamic_drawdown_chart(
     ax.yaxis.set_major_locator(MultipleLocator(2.5))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{y:.1f}%"))
     ax.tick_params(axis='y', labelcolor='black', labelsize=7, length=4, pad=6)
-    ax.axhline(0, color='#d8d9dd', linewidth=1.0)
-    ax.grid(which='major', axis='y', linestyle='--', color='#d8d9dd', alpha=0.6)
+    ax.axhline(0, color='#d8d9dd', linewidth=1.0, zorder=0)  # 零轴在曲线下方
+    ax.grid(which='major', axis='y', linestyle='--', color='#d8d9dd', alpha=0.6, zorder=0)
     
     # 设置X轴刻度和标签
     # ax.set_xlabel('日期', fontsize=13)
