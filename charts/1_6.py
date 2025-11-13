@@ -3,8 +3,9 @@
 使用 matplotlib 生成指标分析表格
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
 from charts.font_config import setup_chinese_font
 
 try:
@@ -15,6 +16,34 @@ except ImportError:
     PYECHARTS_AVAILABLE = False
     print("警告: pyecharts 未安装，ECharts 功能将不可用。请运行: pip install pyecharts")
 
+
+
+def _draw_card_background(
+    ax: plt.Axes,
+    *,
+    facecolor: str = "#ffffff",
+    edgecolor: str = "#dce1eb",
+    linewidth: float = 1.4,
+    radius: float = 0.018,
+    zorder: int = 0
+):
+    """
+    在坐标轴内绘制圆角背景，营造卡片式层次。
+    """
+    card = FancyBboxPatch(
+        (0, 0),
+        1,
+        1,
+        transform=ax.transAxes,
+        boxstyle=f"round,pad={radius}",
+        linewidth=linewidth,
+        facecolor=facecolor,
+        edgecolor=edgecolor,
+        zorder=zorder
+    )
+    ax.add_patch(card)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
 
 
 def _generate_mock_indicator_data() -> Dict[str, Dict[str, Any]]:
@@ -150,8 +179,8 @@ def plot_indicator_analysis_table(
     save_path: Optional[str] = None,
     figsize: tuple = (18, 10),
     return_figure: bool = False,
-    table_fontsize: int = 16,
-    row_height_scale: float = 2.2
+    table_fontsize: int = 22,
+    row_height_scale: float = 2.35
 ):
     """
     绘制指标分析表格（matplotlib版本）
@@ -183,7 +212,9 @@ def plot_indicator_analysis_table(
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor("#f5f7fb")
     ax.axis('off')
+    _draw_card_background(ax, facecolor="#ffffff", edgecolor="#d6dbe6")
     
     # 准备表格数据
     periods = ['近一个月', '近三个月', '近六个月', '近一年', '成立以来']
@@ -195,30 +226,37 @@ def plot_indicator_analysis_table(
     
     # 构建表格数据
     table_data = []
-    # 表头
+    raw_value_rows: list[list[Optional[float]]] = []
     header = ['指标'] + periods
     table_data.append(header)
     
-    # 数据行
+    percentage_keywords = ('收益率', '波动率', '跟踪误差', '下行波动率', '最大回撤')
+    
     for indicator in indicators:
-        row = [indicator]
+        row_display = [indicator]
+        row_raw: list[Optional[float]] = [None]
         for period in periods:
             if indicator in data and period in data[indicator]:
                 value = data[indicator][period]
                 if isinstance(value, (int, float)):
-                    # 判断是否需要添加百分号
-                    if '收益率' in indicator or '波动率' in indicator or '跟踪误差' in indicator or '下行波动率' in indicator or '最大回撤' in indicator:
-                        row.append(f'{value:.2f}%')
-                    elif '胜率' in indicator:
-                        row.append(f'{value:.2f}')
+                    raw_val = value
+                    if '胜率' in indicator:
+                        raw_val = value * 100
+                        cell_text = f'{raw_val:.2f}%'
+                    elif any(keyword in indicator for keyword in percentage_keywords):
+                        cell_text = f'{value:.2f}%'
                     else:
-                        row.append(f'{value:.2f}')
+                        cell_text = f'{value:.2f}'
+                    row_display.append(cell_text)
+                    row_raw.append(raw_val if '胜率' in indicator else value)
                 else:
-                    # 处理换行符，matplotlib 表格不支持换行，使用空格分隔
-                    row.append(str(value).replace('\n', ' '))
+                    row_display.append(str(value).replace('\n', ' '))
+                    row_raw.append(None)
             else:
-                row.append('-')
-        table_data.append(row)
+                row_display.append('-')
+                row_raw.append(None)
+        table_data.append(row_display)
+        raw_value_rows.append(row_raw)
     
     # 创建表格
     table = ax.table(
@@ -226,42 +264,51 @@ def plot_indicator_analysis_table(
         colLabels=table_data[0],  # 表头
         cellLoc='center',
         loc='center',
-        bbox=[0, 0, 1, 1]
+        bbox=[0.04, 0.08, 0.92, 0.86]
     )
     
     # 设置表格样式
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1, row_height_scale)
+    table.scale(1.05, row_height_scale)
     
     # 设置表头样式
     for i in range(len(table_data[0])):
         cell = table[(0, i)]
-        cell.set_facecolor('#f0f0f0')  # 浅灰色背景
-        cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
-        cell.set_edgecolor('#f0f0f0')
-        cell.set_linewidth(1)
+        cell.set_facecolor('#eef2fb')  # 浅灰蓝背景
+        cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize, color='#1f2d3d')
+        cell.set_edgecolor('#eef2fb')
+        cell.set_linewidth(0)
     
     # 设置数据行样式
     for i in range(1, len(table_data)):
+        indicator_label = table_data[i][0]
         for j in range(len(table_data[0])):
             cell = table[(i, j)]
-            # 第一列（指标列）左对齐，其他列右对齐
-            # if j == 0:
-            #     cell.set_text_props(ha='center', weight='bold')
-            #     cell.set_facecolor('#ffffff')  # 浅灰色背景
-            # else:
-            cell.set_text_props(ha='center', fontsize=table_fontsize)
-            # 交替行颜色
-            if (i - 1) % 2 == 0:
-                cell.set_facecolor('#ffffff')  # 白色
+            is_even_row = (i % 2 == 0)
+            base_color = '#ffffff' if is_even_row else '#f6f7fb'
+            if indicator_label.startswith('*'):
+                base_color = '#f9fbff' if is_even_row else '#eef3fb'
+            cell.set_facecolor(base_color)
+            
+            if j == 0:
+                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize, color='#1a2233')
+                cell.PAD = 0.5
             else:
-                cell.set_facecolor('#f8f8f8')  # 浅灰色
-            cell.set_edgecolor('#f0f0f0')
-            cell.set_linewidth(1)
+                text_color = '#1a2233'
+                value = raw_value_rows[i-1][j]
+                if value is not None:
+                    threshold = 0.0
+                    if '胜率' in indicator_label:
+                        threshold = 50.0
+                    if ('收益率' in indicator_label or '胜率' in indicator_label or '最大回撤' in indicator_label):
+                        text_color = '#dc4a4a' if value < threshold else '#1f8a70'
+                cell.set_text_props(ha='center', fontsize=table_fontsize, color=text_color)
+            cell.set_edgecolor('#e2e7f1')
+            cell.set_linewidth(0.6)
     
     # 调整布局
-    plt.tight_layout()
+    plt.tight_layout(rect=[0.02, 0.02, 0.98, 0.98])
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:

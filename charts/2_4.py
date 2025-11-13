@@ -13,9 +13,7 @@ if str(project_root) not in sys.path:
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 from charts.font_config import setup_chinese_font
-import matplotlib.dates as mdates
 from datetime import datetime, timedelta
-import numpy as np
 from charts.utils import calculate_xlim, calculate_date_tick_params
 from calc.utils import is_trading_day
 
@@ -24,7 +22,7 @@ from calc.utils import is_trading_day
 def plot_stock_position_chart(
     data: Optional[List[Dict[str, Any]]] = None,
     save_path: Optional[str] = None,
-    figsize: tuple = (16, 8),
+    figsize: tuple = (14, 6),
     return_figure: bool = False,
     show_title: bool = True
 ):
@@ -80,6 +78,21 @@ def plot_stock_position_chart(
     # 创建图表和双Y轴
     fig, ax1 = plt.subplots(figsize=figsize)
     ax2 = ax1.twinx()
+    fig.patch.set_facecolor('white')
+    ax1.set_facecolor('#f7f9fc')
+    
+    # 统一坐标轴与刻度样式
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+    ax1.spines['left'].set_color('#d0d5dd')
+    ax1.spines['bottom'].set_color('#d0d5dd')
+    ax1.tick_params(axis='x', colors='#606266', labelsize=9, pad=6, length=0)
+    ax1.tick_params(axis='y', colors='#606266', labelsize=9, pad=6, length=0)
+    
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    ax2.spines['right'].set_color('#d0d5dd')
+    ax2.tick_params(axis='y', colors='#606266', labelsize=9, pad=6, length=0)
     
     # 设置X轴：使用索引位置，但显示日期标签
     # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
@@ -87,24 +100,27 @@ def plot_stock_position_chart(
     x_indices = list(range(n_points))
     
     # 绘制股票仓位面积图（左Y轴，深灰色填充）
-    ax1.fill_between(x_indices, stock_positions, 0, alpha=1, color='#929aa8', label='股票仓位')
-    ax1.set_ylabel('占比', fontsize=11)
+    ax1.fill_between(x_indices, stock_positions, 0, alpha=0.72, color='#5b7daa', label='股票仓位')
+    ax1.plot(x_indices, stock_positions, color='#304a6e', linewidth=1.6, label='_nolegend_')
+    ax1.set_ylabel('投资比例（%）', fontsize=12, color='#303133')
     ax1.set_ylim(0, 100)
     ax1.set_yticks([0, 20, 40, 60, 80, 100])
     ax1.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
-    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
-    ax1.set_xlabel('日期', fontsize=11)
+    ax1.grid(True, alpha=0.6, linestyle='-', linewidth=0.6, axis='y', color='#e5e7ef')
+    ax1.set_xlabel('日期', fontsize=11, color='#303133')
     
     # 绘制TOP10折线图（左Y轴，灰色，带圆形标记）
     if any(top10_values):
-        ax1.plot(x_indices, top10_values, color='#808080', marker='', 
-                markersize=4, linewidth=1.5, label='TOP10', alpha=0.7)
+        ax1.plot(x_indices, top10_values, color='#8d97a5', marker='o',
+                 markersize=3.5, linewidth=1.4, label='TOP10', alpha=0.9,
+                 markerfacecolor='white', markeredgecolor='#8d97a5', markeredgewidth=1.0)
     
     # 绘制沪深300折线图（右Y轴，红色，带圆形标记）
-    ax2.plot(x_indices, csi300_values, color='#c12e34', marker='', 
-             markersize=4, linewidth=1.5, label='沪深300')
-    ax2.set_ylabel('沪深300', fontsize=11)
+    ax2.plot(x_indices, csi300_values, color='#d25c5c', marker='o',
+             markersize=3.5, linewidth=1.5, label='沪深300',
+             markerfacecolor='white', markeredgecolor='#d25c5c', markeredgewidth=1.0)
+    ax2.set_ylabel('沪深300 指数', fontsize=12, color='#303133')
     
     # 动态计算右Y轴范围（基准净值）
     if csi300_values:
@@ -141,16 +157,27 @@ def plot_stock_position_chart(
     # 合并图例
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2,
-               loc='upper center', bbox_to_anchor=(0.5, 1.12),
-               ncol=3, frameon=True)
+    legend = ax1.legend(
+        lines1 + lines2,
+        labels1 + labels2,
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.08),
+        ncol=3,
+        frameon=True,
+        borderaxespad=0.3,
+        columnspacing=1.2,
+        handlelength=1.8
+    )
+    legend.get_frame().set_facecolor('white')
+    legend.get_frame().set_edgecolor('#d0d5dd')
+    legend.get_frame().set_alpha(0.95)
     
     # 添加标题（如果启用，但这里不显示，由 pages.py 统一绘制）
-    # if show_title:
-    #     plt.title('股票仓位时序*', fontsize=16, fontweight='bold', pad=20, loc='left')
+    if show_title:
+        ax1.set_title('股票仓位时序', fontsize=16, fontweight='bold', color='#162447', loc='left', pad=18)
     
     # 调整布局
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout(rect=[0.02, 0.06, 0.98, 0.92])
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:

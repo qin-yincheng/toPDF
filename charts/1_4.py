@@ -40,7 +40,6 @@ except ImportError:
 # 保留 matplotlib 导入用于兼容
 import matplotlib.pyplot as plt
 from charts.font_config import setup_chinese_font
-import matplotlib.dates as mdates
 
 
 
@@ -102,6 +101,8 @@ def plot_daily_return_chart(
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor('#f7f9fc')
+    ax.set_facecolor('white')
     
     # 设置X轴：使用索引位置，但显示日期标签
     # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
@@ -109,22 +110,37 @@ def plot_daily_return_chart(
     x_indices = list(range(n_points))
     
     # 左Y轴：日收益率（柱状图）
-    color_bar = '#082868'  # 深蓝色
+    color_bar = '#2e5aac'  # 深蓝色
     # 减小width以增加柱子之间的间隔
     bar_width = 0.6  # 从1.0减小到0.6，增加间隔
-    bars = ax.bar(x_indices, daily_returns, width=bar_width, alpha=0.7, 
-                  color=color_bar, label='日收益率', edgecolor=color_bar, linewidth=0.5)
+    bars = ax.bar(
+        x_indices,
+        daily_returns,
+        width=bar_width,
+        alpha=0.85,
+        color=color_bar,
+        label='日收益率',
+        edgecolor='white',
+        linewidth=0.6
+    )
     
     # 添加零线
     ax.axhline(y=0, color='black', linestyle='-', linewidth=0.8, zorder=0)
     
     ax.set_xlabel('日期')
-    ax.set_ylabel('收益率(%)', color='black')
+    ax.set_ylabel('收益率(%)', color='#333333')
     # ax.set_ylim(-12, 12)
     # ax.set_yticks([-10, -5, 0, 5, 10])
     ax.margins(y=0.1)
-    ax.tick_params(axis='y', labelcolor='black')
-    ax.grid(True, alpha=0.5, linestyle='--', zorder=0)
+    ax.tick_params(axis='both', labelcolor='#333333', labelsize=10)
+    ax.grid(
+        True,
+        alpha=0.35,
+        linestyle='--',
+        linewidth=0.8,
+        zorder=0,
+        color='#d7dce5'
+    )
     
     # 标注最大收益和最大亏损
     # 最大收益标注
@@ -140,7 +156,7 @@ def plot_daily_return_chart(
         color=color_bar,
         weight='bold',
         arrowprops=dict(arrowstyle='->', color=color_bar, lw=1.5),
-        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color_bar, alpha=0.8)
+        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color_bar, alpha=0.85)
     )
     
     # 最大亏损标注
@@ -156,23 +172,39 @@ def plot_daily_return_chart(
         color=color_bar,
         weight='bold',
         arrowprops=dict(arrowstyle='->', color=color_bar, lw=1.5),
-        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color_bar, alpha=0.8)
+        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color_bar, alpha=0.85)
     )
     
     # 右Y轴：累计收益率（折线图）
     ax2 = ax.twinx()
-    color_line = '#afb0b2'  # 浅灰色
-    line = ax2.plot(x_indices, cumulative_returns, color=color_line, marker='', 
-                   markersize=3, linewidth=2, label='累计收益率',
-                   markerfacecolor='white', markeredgecolor=color_line, markeredgewidth=1.5)
+    color_line = '#6b7280'  # 深浅灰
+    if cumulative_returns:
+        ax2.plot(
+        x_indices,
+        cumulative_returns,
+        color=color_line,
+        marker='o',
+        markersize=3.5,
+        linewidth=2.2,
+        label='累计收益率',
+        markerfacecolor='white',
+        markeredgecolor=color_line,
+        markeredgewidth=1.2
+    )
+        ax2.fill_between(
+            x_indices,
+            cumulative_returns,
+            alpha=0.08,
+            color=color_line
+        )
     
-    ax2.set_ylabel('累计收益率(%)', color='black')
+    ax2.set_ylabel('累计收益率(%)', color='#333333')
     # 根据数据动态设置Y轴范围，留出一些空间
     max_cum_value = max(cumulative_returns) if cumulative_returns else 90
     # ax2.set_ylim(-20, max(100, max_cum_value + 10))  # 至少到100，或最大值+10
     # ax2.set_yticks([-20, 0, 20, 40, 60, 80, 100])  # 包含100的刻度
-    ax.margins(y=0.1)
-    ax2.tick_params(axis='y', labelcolor='black')
+    ax.tick_params(axis='x', labelsize=9, colors='#333333')
+    ax2.tick_params(axis='y', labelcolor='#333333', labelsize=10)
     
     # 标注累计收益率的最大值点
     # max_cum_idx = cumulative_returns.index(max(cumulative_returns))
@@ -194,7 +226,7 @@ def plot_daily_return_chart(
     
     # 设置标题（如果启用）
     if show_title:
-        ax.set_title('日收益表现', fontsize=14, fontweight='bold', pad=20)
+        ax.set_title('日收益表现', fontsize=16, fontweight='bold', pad=22, loc='left', color='#1f2933')
     
     # 设置X轴刻度和标签
     # 使用工具函数自动计算合适的刻度间隔
@@ -206,7 +238,7 @@ def plot_daily_return_chart(
         ax.set_xticks(tick_indices)
         
         # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        ax.set_xticklabels(tick_labels, rotation=35, ha='right')
         
         # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
         x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
@@ -216,21 +248,49 @@ def plot_daily_return_chart(
         ax.set_xticklabels([])
 
     # 设置边框：只保留左边框，删除其他边框
-    ax.spines['top'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    for spine in ['top', 'right']:
+        ax.spines[spine].set_visible(False)
+    ax.spines['left'].set_color('#c7ccd6')
+    ax.spines['left'].set_linewidth(1)
+    ax.spines['bottom'].set_color('#c7ccd6')
+    ax.spines['bottom'].set_linewidth(1)
     
     # 同时处理右Y轴的边框（只保留右边框）
     ax2.spines['top'].set_visible(False)
     ax2.spines['bottom'].set_visible(False)
     ax2.spines['left'].set_visible(False)
+    ax2.spines['right'].set_color('#c7ccd6')
+    ax2.spines['right'].set_linewidth(1)
     
     # 设置图例（顶部居中，增加与图表的间隔）
     lines1, labels1 = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax.legend(lines1 + lines2, labels1 + labels2, 
-             loc='upper center', bbox_to_anchor=(0.5, 1.2), 
-             ncol=2, frameon=True)
+    ax.legend(
+        lines1 + lines2,
+        labels1 + labels2,
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.18),
+        ncol=2,
+        frameon=False,
+        fontsize=10
+    )
+
+    if dates:
+        start_str = dates[0].strftime('%Y-%m-%d')
+        end_str = dates[-1].strftime('%Y-%m-%d')
+        max_cum_value = max(cumulative_returns) if cumulative_returns else 0
+        summary_text = (
+            f"区间：{start_str} ~ {end_str}｜样本量：{len(dates)}｜累计收益峰值：{max_cum_value:.2f}%"
+        )
+        fig.text(
+            0.02,
+            0.96,
+            summary_text,
+            fontsize=11,
+            color='#4d5766',
+            ha='left',
+            va='center'
+        )
     
     # 调整布局，为图例留出更多空间
     plt.tight_layout(rect=[0, 0, 1, 0.96])  # 顶部留出4%的空间给图例
@@ -293,6 +353,8 @@ def plot_daily_return_table(
     
     # 创建图表（只用于显示表格）
     fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor('#f7f9fc')
+    ax.set_facecolor('white')
     ax.axis('off')
     
     # 表格数据
@@ -304,39 +366,58 @@ def plot_daily_return_table(
     # 创建表格
     table = ax.table(
         cellText=table_data,
-        colLabels=None,
+        colLabels=['指标', '数值'],
         cellLoc='center',
+        colLoc='center',
         loc='center',
-        bbox=[0.2, 0.4, 0.6, 0.3]
+        bbox=[0.05, 0.18, 0.9, 0.5]
     )
     
     # 设置表格样式
     table.auto_set_font_size(False)
     table.set_fontsize(table_fontsize)
-    table.scale(1, 2.5)
+    table.scale(1.02, 2.2)
     
     # 设置表格单元格样式
-    for i in range(len(table_data)):
-        for j in range(2):
-            cell = table[(i, j)]
-            if j == 0:  # 第一列（标签）
-                cell.set_text_props(weight='bold', ha='center', fontsize=table_fontsize)
-                cell.set_facecolor('#ffffff')
-            else:  # 第二列（数值）
-                cell.set_text_props(ha='center', fontsize=table_fontsize)
-                if i == 0:  # 最大收益，绿色
-                    cell.set_text_props(color='black')
-                else:  # 最大亏损，红色
-                    cell.set_text_props(color='black')
-            cell.set_edgecolor('#f0f0f0')
-            cell.set_linewidth(1.5)
+    for (row, col), cell in table.get_celld().items():
+        cell.set_edgecolor('#d7dce5')
+        cell.set_linewidth(1)
+        if row == 0:
+            cell.set_facecolor('#eef2f9')
+            cell.set_text_props(weight='bold', color='#1f2933')
+        else:
+            cell.set_facecolor('white')
+            if col == 0:
+                cell.set_text_props(weight='semibold', color='#4d5766')
+            else:
+                cell.set_text_props(color='#111111')
+            if row == 1 and col == 1:
+                cell.set_text_props(color='#0f8c5f')
+            if row == 2 and col == 1:
+                cell.set_text_props(color='#d64545')
     
     # 设置标题（如果启用）
     if show_title:
-        ax.text(0.5, 0.9, '日收益表现摘要', 
-                transform=ax.transAxes,
-                fontsize=16, fontweight='bold',
-                ha='center', va='top')
+        ax.text(
+            0.05,
+            0.92,
+            '日收益表现摘要',
+            transform=ax.transAxes,
+            fontsize=16,
+            fontweight='bold',
+            color='#1f2933',
+            ha='left',
+            va='top'
+        )
+        ax.text(
+            0.05,
+            0.78,
+            '概览：展示区间内的极值表现，用于快速传达风险与收益边界。',
+            transform=ax.transAxes,
+            fontsize=11,
+            color='#4d5766',
+            ha='left'
+        )
     
     # 调整布局
     plt.tight_layout()

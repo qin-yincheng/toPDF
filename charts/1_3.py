@@ -12,18 +12,44 @@ if str(project_root) not in sys.path:
 
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
-from charts.font_config import setup_chinese_font
+from matplotlib import rcParams
 from datetime import datetime, timedelta
 import numpy as np
+from charts.font_config import setup_chinese_font
 from charts.utils import calculate_xlim, calculate_date_tick_params
 from calc.utils import is_trading_day
+
+
+REPORT_STYLE = {
+    'font.size': 14,
+    'axes.titlesize': 22,
+    'axes.titleweight': 'bold',
+    'axes.labelsize': 16,
+    'axes.labelcolor': '#303030',
+    'xtick.color': '#4d4d4d',
+    'ytick.color': '#4d4d4d',
+    'axes.edgecolor': '#d9d9d9',
+    'axes.linewidth': 1.0,
+    'grid.color': '#e5e5e5',
+    'grid.linestyle': '-',
+    'grid.linewidth': 1.0,
+    'legend.fontsize': 13,
+    'figure.facecolor': 'white',
+}
+
+DEFAULT_FIGSIZE = (15, 8)
+
+
+def _apply_report_style() -> None:
+    rcParams.update(REPORT_STYLE)
+    rcParams['axes.spines.top'] = False
 
 
 
 def plot_nav_performance(
     data: Optional[List[Dict[str, Any]]] = None,
     save_path: Optional[str] = None,
-    figsize: tuple = (16, 8),
+    figsize: tuple = DEFAULT_FIGSIZE,
     return_figure: bool = False,
     show_title: bool = True
 ):
@@ -48,8 +74,9 @@ def plot_nav_performance(
     返回:
         str: 保存的文件路径
     """
-    # 配置中文字体
+    # 配置中文字体与统一的报告视觉风格
     setup_chinese_font()
+    _apply_report_style()
     
     # 如果没有提供数据，生成假数据
     if data is None:
@@ -76,6 +103,7 @@ def plot_nav_performance(
     
     # 创建图表
     fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor('white')
     
     # 设置X轴：使用索引位置，但显示日期标签
     # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
@@ -83,35 +111,56 @@ def plot_nav_performance(
     x_indices = list(range(n_points))
     
     # 绘制三条线
-    # 1. 复权累计收益：深蓝色，实心圆点
-    color1 = '#082868'  # 深蓝色
-    line1 = ax.plot(x_indices, accumulated_return, color=color1, marker='', 
-                    markersize=4, linewidth=2, label='复权累计收益',
-                    markerfacecolor='white', markeredgecolor=color1,
-                    markeredgewidth=1.5)
+    # 1. 复权累计收益：深蓝色
+    color1 = '#0a3475'  # 深蓝色
+    ax.plot(
+        x_indices,
+        accumulated_return,
+        color=color1,
+        linewidth=3.0,
+        label='复权累计收益'
+    )
     
     # 2. 沪深300：浅灰色，空心圆点
-    color2 = '#afb0b2'  # 浅灰色
-    line2 = ax.plot(x_indices, csi300, color=color2, marker='', 
-                    markersize=4, linewidth=2, label='沪深300',
-                    markerfacecolor='white', markeredgecolor=color2, 
-                    markeredgewidth=1.5)
+    color2 = '#7f8a9c'  # 灰蓝色
+    ax.plot(
+        x_indices,
+        csi300,
+        color=color2,
+        linewidth=2.6,
+        linestyle='--',
+        label='沪深300'
+    )
     
     # 3. 累计超额收益：红色，实心圆点
     color3 = '#c12e34'  # 红色
-    line3 = ax.plot(x_indices, excess_return, color=color3, marker='', 
-                    markersize=4, linewidth=2, label='累计超额收益',
-                    markerfacecolor='white', markeredgecolor=color3,
-                    markeredgewidth=1.5)
+    ax.plot(
+        x_indices,
+        excess_return,
+        color=color3,
+        linewidth=2.6,
+        label='累计超额收益'
+    )
     
     # 设置坐标轴
-    ax.set_xlabel('日期')
-    ax.set_ylabel('收益率(%)', color='black')
-    ax.grid(True, alpha=0.5, linestyle='--')
+    ax.set_xlabel('日期', labelpad=18)
+    ax.set_ylabel('收益率（%）', labelpad=18)
+    ax.tick_params(axis='y', labelsize=13, colors='#4d4d4d', pad=10)
+    ax.tick_params(axis='x', labelsize=13, pad=12)
+    ax.grid(axis='y', linestyle='-', linewidth=1.0, alpha=0.5)
+    ax.grid(visible=False, axis='x')
+    ax.set_axisbelow(True)
+    for spine in ['left', 'bottom']:
+        ax.spines[spine].set_color('#cfcfcf')
+    ax.spines['right'].set_visible(False)
     
     # 设置标题（如果启用）
     if show_title:
-        ax.set_title('单位净值表现', fontsize=14, fontweight='bold', pad=20)
+        ax.set_title('单位净值表现', pad=28)
+        if n_points > 0:
+            subtitle = f"期间：{dates[0].strftime('%Y-%m-%d')} 至 {dates[-1].strftime('%Y-%m-%d')}"
+            ax.text(0, 1.05, subtitle, transform=ax.transAxes, fontsize=13, color='#5c5c5c')
+        ax.text(0, 1.02, '单位：%', transform=ax.transAxes, fontsize=12, color='#7a7a7a')
     
     # 设置X轴刻度和标签
     # 使用工具函数自动计算合适的刻度间隔
@@ -123,7 +172,7 @@ def plot_nav_performance(
         ax.set_xticks(tick_indices)
         
         # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        ax.set_xticklabels(tick_labels, rotation=40, ha='right')
         
         # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
         x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
@@ -137,11 +186,18 @@ def plot_nav_performance(
     ax.spines['right'].set_visible(False)
     
     # 设置图例（顶部居中，增加与图表的间隔）
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.12), 
-              ncol=3, frameon=True)
+    legend = ax.legend(
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.15),
+        ncol=3,
+        frameon=False,
+        handlelength=2.0
+    )
+    for text in legend.get_texts():
+        text.set_color('#404040')
     
     # 调整布局，为图例留出更多空间
-    plt.tight_layout(rect=[0, 0, 1, 0.96])  # 顶部留出4%的空间给图例
+    plt.subplots_adjust(left=0.08, right=0.96, top=0.86, bottom=0.22)
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
