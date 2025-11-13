@@ -99,45 +99,39 @@ def plot_industry_deviation_timeseries(
         plt.show()
         return None
     
-    # 创建图表
+    # 创建图表，设置专业背景色
     fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor('#f7f9fc')  # 浅灰蓝色背景
+    ax.set_facecolor('white')  # 图表区域白色背景
     
     # 设置X轴：使用索引位置，但显示日期标签
     # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
     n_points = len(dates)
     x_indices = list(range(n_points))
     
-    # 绘制折线图（蓝色，带圆形标记）
-    ax.plot(x_indices, deviations, color='#4682B4', marker='', 
-            markersize=4, linewidth=1.5, label='持股行业偏离度')
+    # 绘制折线图（使用专业的蓝色，增加线宽）
+    line_color = '#2563eb'  # 更专业的蓝色
+    ax.plot(x_indices, deviations, color=line_color, marker='', 
+            linewidth=2.5, label='持股行业偏离度', zorder=3)
     
-    # 设置Y轴
-    ax.set_ylabel('占比(%)', fontsize=11)
+    # 设置Y轴标签（增大字体，使用专业颜色）
+    ax.set_ylabel('占比(%)', fontsize=13, color='#303030', fontweight='medium')
     # 根据数据范围设置Y轴
     min_val = min(deviations)
     max_val = max(deviations)
     y_min = max(0, min_val - 0.2)
     y_max = max_val + 0.2
-    # ax.set_ylim(y_min, y_max)
     ax.margins(y=0.1)
     
-    # 设置Y轴刻度（根据图片描述：3.23%, 3.50%, 4.00%, 4.50%, 5.00%, 5.50%, 6.00%, 6.32%）
-    # 动态生成合适的刻度
-    y_range = y_max - y_min
-    if y_range < 1:
-        # 小范围，使用0.5%间隔
-        y_ticks = np.arange(np.floor(y_min * 2) / 2, np.ceil(y_max * 2) / 2 + 0.5, 0.5)
-    else:
-        # 较大范围，使用1%间隔
-        y_ticks = np.arange(np.floor(y_min), np.ceil(y_max) + 1, 1)
-    # ax.set_yticks(y_ticks)
-    # ax.set_yticklabels([f'{y:.2f}%' for y in y_tickss])
-    ax.margins(y=0.1)
-    # 添加网格线
-    ax.grid(True, alpha=0.5, linestyle='--', linewidth=0.5, axis='y')
+    # 设置Y轴刻度样式（专业颜色和字体大小）
+    ax.tick_params(axis='y', colors='#4d4d4d', labelsize=12)
+    
+    # 添加专业网格线（仅Y轴，实线，专业颜色）
+    ax.grid(True, alpha=0.6, linestyle='-', linewidth=0.8, axis='y', 
+            color='#e5e5e5', zorder=0)
     
     # 设置X轴刻度和标签
-    ax.set_xlabel('日期', fontsize=11)
+    ax.set_xlabel('日期', fontsize=13, color='#303030', fontweight='medium')
     # 使用工具函数自动计算合适的刻度间隔
     if n_points > 0:
         # 使用工具函数计算日期刻度参数
@@ -146,8 +140,9 @@ def plot_industry_deviation_timeseries(
         # 设置刻度位置
         ax.set_xticks(tick_indices)
         
-        # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        # 设置刻度标签为对应的日期（专业样式）
+        ax.set_xticklabels(tick_labels, rotation=45, ha='right', 
+                          fontsize=12, color='#4d4d4d')
         
         # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
         x_min, x_max = calculate_xlim(x_indices, padding_ratio=0.02, is_date=False)
@@ -156,16 +151,17 @@ def plot_industry_deviation_timeseries(
         ax.set_xticks([])
         ax.set_xticklabels([])
     
-    # # 设置标题
-    # if show_title:
-    #     ax.set_title('持股行业偏离度时序', fontsize=12, fontweight='bold', pad=15, loc='left')
-
+    # 设置坐标轴边框样式（专业颜色）
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#d9d9d9')
+    ax.spines['left'].set_linewidth(1.0)
+    ax.spines['bottom'].set_color('#d9d9d9')
+    ax.spines['bottom'].set_linewidth(1.0)
     
-    # 添加图例（在顶部中心）
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.12),
-              ncol=1, frameon=False, fontsize=10)
+    # 添加专业图例（右上角，无边框）
+    ax.legend(loc='upper right', frameon=False, fontsize=12, 
+              labelcolor='#303030', edgecolor='none')
     
     # # 添加脚注
     # if show_title:
@@ -176,8 +172,8 @@ def plot_industry_deviation_timeseries(
     #     ax.text(1, -0.08, '产品相对基准的所有行业偏离度绝对值的平均值', transform=ax.transAxes,
     #             ha='right', va='top', fontsize=8, style='italic')
     
-    # 调整布局，为图例和脚注留出空间
-    plt.tight_layout(rect=[0, 0.05, 1, 0.92])
+    # 调整布局，为图例留出空间
+    plt.tight_layout(rect=[0, 0.03, 1, 0.98])
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:

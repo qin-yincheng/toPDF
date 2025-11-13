@@ -142,76 +142,53 @@ def plot_industry_proportion_timeseries(
     # 使用过滤后的数据
     data = filtered_data
     
-    # 定义行业颜色映射（根据图片描述）
+    # 定义行业颜色映射 - 使用高对比度专业配色
     color_map = {
-        '农林牧渔': '#38030d',      # 深红/栗色
-        '基础化工': '#28353e',      # 深蓝/海军蓝
-        '钢铁': '#5b6c8a',          # 灰蓝色
-        '有色金属': '#57557b',      # 深紫色
-        '电子': '#d93442',          # 红色
-        '汽车': '#7d94c0',          # 浅蓝色
-        '家用电器': '#1a6daf',      # 深蓝色
-        '食品饮料': '#d87939',      # 橙色
-        '纺织服饰': '#e8f5ee',      # 浅绿/薄荷绿
-        '轻工制造': '#fff9ed',      # 粉色
-        '医药生物': '#bf192f',      # 深红
-        '公用事业': '#64999f',      # 青色/蓝绿色
-        '交通运输': '#74b4b3',      # 浅蓝绿色
-        '房地产': '#c1a1d2',        # 浅紫色
-        '商贸零售': '#99b292',      # 橄榄绿
-        '社会服务': '#9da983',      # 浅紫灰色
-        '银行': '#b09fc9',          # 深黄/金色
-        '非银金融': '#b6ac79',      # 深棕/金色
-        '综合': '#b0835a',          # 浅棕色
-        '建筑材料': '#a38636',       # 深黄/金色
-        '建筑装饰': '#d0af22',       # 深紫色
+        '农林牧渔': '#2ca02c',      # 绿色
+        '基础化工': '#1f77b4',      # 蓝色
+        '钢铁': '#7f7f7f',          # 灰色
+        '有色金属': '#9467bd',      # 紫色
+        '电子': '#d62728',          # 红色
+        '汽车': '#17becf',          # 青色
+        '家用电器': '#ff7f0e',      # 橙色
+        '食品饮料': '#e377c2',      # 粉色
+        '纺织服饰': '#8c564b',      # 棕色
+        '轻工制造': '#bcbd22',      # 黄绿色
+        '医药生物': '#d62728',      # 红色（与电子区分）
+        '公用事业': '#9467bd',      # 紫色
+        '交通运输': '#17becf',      # 青色
+        '房地产': '#e377c2',        # 粉色
+        '商贸零售': '#2ca02c',      # 绿色
+        '社会服务': '#bcbd22',      # 黄绿色
+        '银行': '#ff7f0e',          # 橙色
+        '非银金融': '#ffbb78',      # 浅橙色
+        '综合': '#8c564b',          # 棕色
+        '建筑材料': '#7f7f7f',       # 灰色
+        '建筑装饰': '#aec7e8',       # 浅蓝色
+        '电力设备': '#1f77b4',       # 蓝色
+        '元件': '#ff7f0e',          # 橙色
+        '电气设备': '#2ca02c',       # 绿色
+        '机床制造': '#9467bd',       # 紫色
+        '化学制药': '#d62728',       # 红色
+        '纺织机械': '#17becf',       # 青色
+        '汽车配件': '#e377c2',       # 粉色
+        '专用机械': '#8c564b',       # 棕色
     }
     
-    # 为没有定义颜色的行业分配默认颜色
-    # 使用多个colormap组合，确保每个行业都有不同的颜色
-    def generate_unique_colors(n):
-        """生成n个不同的颜色"""
-        colors_list = []
-        # 使用多个colormap来获得更多颜色
-        colormaps = [plt.cm.Set3, plt.cm.Pastel1, plt.cm.Pastel2, plt.cm.Set1, 
-                     plt.cm.Set2, plt.cm.Dark2, plt.cm.Accent, plt.cm.tab10,
-                     plt.cm.tab20, plt.cm.tab20b, plt.cm.tab20c]
-        
-        color_idx = 0
-        for cmap in colormaps:
-            if color_idx >= n:
-                break
-            # 从每个colormap中取颜色，避免重复
-            for i in range(cmap.N):
-                if color_idx >= n:
-                    break
-                colors_list.append(cmap(i))
-                color_idx += 1
-        
-        # 如果还不够，使用HSV颜色空间均匀分布
-        if len(colors_list) < n:
-            remaining = n - len(colors_list)
-            for i in range(remaining):
-                hue = (i / remaining) % 1.0
-                saturation = 0.6 + (i % 3) * 0.1  # 0.6-0.8之间变化
-                value = 0.7 + (i % 2) * 0.2  # 0.7-0.9之间变化
-                rgb = mcolors.hsv_to_rgb([hue, saturation, value])
-                colors_list.append(rgb)
-        
-        return colors_list[:n]
+    # 为没有定义颜色的行业分配默认颜色 - 使用专业配色方案
+    professional_palette = [
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+        '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5',
+        '#c49c94', '#f7b6d3', '#c7c7c7', '#dbdb8d', '#9edae5'
+    ]
     
     # 获取所有未定义颜色的行业
     undefined_industries = [ind for ind in industry_names if ind not in color_map]
     if undefined_industries:
-        unique_colors = generate_unique_colors(len(undefined_industries))
-        # 为未定义的行业分配颜色
+        # 为未定义的行业分配专业配色
         for i, industry in enumerate(undefined_industries):
-            # 将RGB转换为十六进制
-            rgb = unique_colors[i]
-            hex_color = '#{:02x}{:02x}{:02x}'.format(
-                int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255)
-            )
-            color_map[industry] = hex_color
+            color_map[industry] = professional_palette[i % len(professional_palette)]
     
     # 为所有行业分配颜色
     colors = [color_map.get(ind, '#808080') for ind in industry_names]
@@ -250,8 +227,9 @@ def plot_industry_proportion_timeseries(
     if not active_industries:
         active_industries = industry_names
     
-    # 创建图表
-    fig, ax = plt.subplots(figsize=figsize)
+    # 创建图表 - 使用更专业的样式
+    fig, ax = plt.subplots(figsize=figsize, facecolor='white')
+    ax.set_facecolor('white')
     
     # 使用数值索引绘制柱状图，使所有柱子之间间隔相等
     x_positions = np.arange(len(dates))
@@ -272,7 +250,7 @@ def plot_industry_proportion_timeseries(
         # 获取该行业在原始列表中的索引，用于颜色
         original_idx = industry_names.index(industry) if industry in industry_names else i
         ax.bar(x_positions, values, width=bar_width, bottom=current_bottom,
-               label=industry, color=colors[original_idx], edgecolor='white', linewidth=0.5)
+               label=industry, color=colors[original_idx], edgecolor='white', linewidth=0.8, alpha=0.9)
         current_bottom += values
     
     # 补齐残差到100%：活跃行业外的占比合并到“其他”
@@ -285,21 +263,23 @@ def plot_industry_proportion_timeseries(
             width=bar_width,
             bottom=current_bottom,
             label='其他',
-            color='#d3d3d3',
+            color='#e0e0e0',
             edgecolor='white',
-            linewidth=0.5
+            linewidth=0.8,
+            alpha=0.9
         )
     
-    # 设置Y轴
-    ax.set_ylabel('占比(%)', fontsize=11)
+    # 设置Y轴 - 优化样式
+    ax.set_ylabel('占比(%)', fontsize=13, fontweight='bold', color='#1a1a1a', labelpad=12)
     ax.set_ylim(0, 100)
     ax.set_yticks([0, 20, 40, 60, 80, 100])
-    ax.set_yticklabels(['0.00%', '20.00%', '40.00%', '60.00%', '80.00%', '100.00%'])
-    # ax.margins(y=0.1)
-    ax.grid(True, alpha=0.5, linestyle='--', axis='y')
+    ax.set_yticklabels(['0.00%', '20.00%', '40.00%', '60.00%', '80.00%', '100.00%'],
+                       fontsize=11, color='#2c3e50')
+    ax.grid(True, alpha=0.3, linestyle='-', axis='y', linewidth=0.8, color='#d0d0d0')
+    ax.set_axisbelow(True)  # 网格线在柱子后面
     
-    # 设置X轴刻度和标签
-    ax.set_xlabel('日期', fontsize=11)
+    # 设置X轴刻度和标签 - 优化样式
+    ax.set_xlabel('日期', fontsize=13, fontweight='bold', color='#1a1a1a', labelpad=12)
     # 使用工具函数自动计算合适的刻度间隔
     if len(dates) > 0:
         # 使用工具函数计算日期刻度参数
@@ -308,8 +288,8 @@ def plot_industry_proportion_timeseries(
         # 设置刻度位置（使用索引位置）
         ax.set_xticks([x_positions[i] for i in tick_indices])
         
-        # 设置刻度标签为对应的日期
-        ax.set_xticklabels(tick_labels, rotation=45, ha='right')
+        # 设置刻度标签为对应的日期 - 优化可读性
+        ax.set_xticklabels(tick_labels, rotation=45, ha='right', fontsize=10, color='#2c3e50')
         
         # 使用工具函数自动计算X轴范围（虽然这里用的是索引，但可以设置索引范围）
         x_min, x_max = calculate_xlim(x_positions, padding_ratio=0.02, is_date=False)
@@ -318,27 +298,75 @@ def plot_industry_proportion_timeseries(
         ax.set_xticks([])
         ax.set_xticklabels([])
     
-    # 设置标题
-    # if show_title:
-    #     ax.set_title('持股行业占比时序', fontsize=12, fontweight='bold', pad=15, loc='left')
+    # 设置标题 - 恢复并优化
+    if show_title:
+        ax.set_title('持股行业占比时序', fontsize=17, fontweight='bold', 
+                    pad=25, loc='center', color='#1a1a1a')
     
-    # 添加图例（在顶部，多列显示）
-    # 根据活跃行业数量动态调整列数
-    n_legend_cols = min(len(active_industries_sorted), 25)  # 最多15列，避免图例太宽
-    # 增加图例与图表的距离，从1.15增加到1.25，并增加padding
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), 
-              ncol=n_legend_cols, frameon=True, fontsize=8, 
-              columnspacing=1.0, handletextpad=0.5)
+    # 优化图例 - 增大字体，优化布局，提高可读性
+    # 只显示前15个主要行业，其余合并到"其他"
+    max_legend_items = 15
+    if len(active_industries_sorted) > max_legend_items:
+        # 只显示前max_legend_items个行业
+        legend_industries = active_industries_sorted[:max_legend_items]
+        # 为图例创建对应的颜色
+        legend_colors = [colors[industry_names.index(ind)] if ind in industry_names 
+                        else '#808080' for ind in legend_industries]
+        legend_handles = [plt.Rectangle((0,0),1,1, facecolor=color, edgecolor='white', linewidth=1.0)
+                         for color in legend_colors]
+        legend = ax.legend(legend_handles, legend_industries,
+                 loc='upper center', bbox_to_anchor=(0.5, -0.12),
+                 ncol=5, frameon=True, fontsize=11,  # 增大字体
+                 title='主要行业分布', title_fontsize=14,  # 增大标题字体
+                 framealpha=0.98, edgecolor='#c0c0c0',
+                 facecolor='#f8f8f8',
+                 columnspacing=1.5, handletextpad=0.8,
+                 handlelength=1.5, borderpad=0.8)
+        # 手动设置标题字体粗细（兼容旧版本matplotlib）
+        if legend.get_title():
+            legend.get_title().set_fontweight('bold')
+            legend.get_title().set_color('#1a1a1a')
+            legend.get_title().set_fontsize(14)
+    else:
+        # 行业数量不多，显示所有
+        legend_colors = [colors[industry_names.index(ind)] if ind in industry_names 
+                        else '#808080' for ind in active_industries_sorted]
+        legend_handles = [plt.Rectangle((0,0),1,1, facecolor=color, edgecolor='white', linewidth=1.0)
+                         for color in legend_colors]
+        n_legend_cols = min(len(active_industries_sorted), 5)  # 最多5列
+        legend = ax.legend(legend_handles, active_industries_sorted,
+                 loc='upper center', bbox_to_anchor=(0.5, -0.12),
+                 ncol=n_legend_cols, frameon=True, fontsize=11,  # 增大字体
+                 title='行业分布', title_fontsize=14,  # 增大标题字体
+                 framealpha=0.98, edgecolor='#c0c0c0',
+                 facecolor='#f8f8f8',
+                 columnspacing=1.5, handletextpad=0.8,
+                 handlelength=1.5, borderpad=0.8)
+        # 手动设置标题字体粗细（兼容旧版本matplotlib）
+        if legend.get_title():
+            legend.get_title().set_fontweight('bold')
+            legend.get_title().set_color('#1a1a1a')
+            legend.get_title().set_fontsize(14)
+    
+    # 设置图例文字颜色
+    for text in legend.get_texts():
+        text.set_color('#2c3e50')
+        text.set_fontsize(11)
     
     # # 添加脚注
     # ax.text(0, -0.08, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,
     #         ha='left', va='top', fontsize=8, style='italic')
     
+    # 优化边框样式
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    # 调整布局，为图例留出更多空间（从0.90增加到0.85，给图例更多空间）
-    plt.tight_layout(rect=[0.01, 0.05, 1, 0.78])
-    plt.subplots_adjust(left=0.02, right=0.98, top=0.70)
+    ax.spines['left'].set_color('#e0e0e0')
+    ax.spines['bottom'].set_color('#e0e0e0')
+    ax.spines['left'].set_linewidth(1)
+    ax.spines['bottom'].set_linewidth(1)
+    
+    # 调整布局，为底部图例留出更多空间
+    plt.tight_layout(rect=[0, 0.15, 1, 0.98])
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:

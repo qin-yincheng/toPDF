@@ -80,28 +80,47 @@ def setup_chinese_fonts() -> None:
     return None
 
 
-def figure_to_image(fig, dpi: int = 200) -> BytesIO:
+def figure_to_image(fig, dpi: int = 200, preserve_aspect: bool = False) -> BytesIO:
     """
     将 matplotlib figure 对象转换为 PNG 图片
 
     参数:
         fig: matplotlib figure 对象
         dpi: 图片分辨率（默认 200）
+        preserve_aspect: 是否保持宽高比（用于饼图等需要固定比例的图表）
 
     返回:
         BytesIO: 图片数据流
     """
     try:
+        # 检查 fig 是否是有效的 figure 对象
+        if fig is None:
+            raise ValueError("figure 对象为 None")
+        if not hasattr(fig, 'savefig'):
+            raise ValueError(f"传入的对象不是有效的 matplotlib figure，类型: {type(fig)}")
+        
         img_io = BytesIO()
-        fig.savefig(
-            img_io, format="png", dpi=dpi, bbox_inches="tight", facecolor="white"
-        )
+        if preserve_aspect:
+            # 对于需要保持宽高比的图表（如饼图），不使用tight，保持固定边界
+            # 省略 bbox_inches 参数来保持固定边界（使用默认值）
+            fig.savefig(
+                img_io, format="png", dpi=dpi, facecolor="white"
+            )
+        else:
+            # 对于其他图表，使用tight以节省空间
+            fig.savefig(
+                img_io, format="png", dpi=dpi, bbox_inches="tight", facecolor="white"
+            )
         img_io.seek(0)
         plt.close(fig)  # 关闭 figure 释放内存
         return img_io
     except Exception as e:
         print(f"  转换图片失败: {e}")
-        plt.close(fig)
+        if fig is not None and hasattr(fig, 'close'):
+            try:
+                plt.close(fig)
+            except:
+                pass
         raise
 
 
@@ -219,6 +238,7 @@ def insert_figure(
     height: float,
     dpi: int = 200,
     title: Optional[str] = None,
+    preserve_aspect: bool = False,
 ) -> bool:
     """
     将 matplotlib figure 对象插入到画布中
@@ -232,12 +252,13 @@ def insert_figure(
         height: 高度（单位：点）
         dpi: 图片分辨率（默认 200）
         title: 标题文本（可选）
+        preserve_aspect: 是否保持宽高比（用于饼图等需要固定比例的图表）
 
     返回:
         bool: 是否成功
     """
     try:
-        img_io = figure_to_image(fig, dpi=dpi)
+        img_io = figure_to_image(fig, dpi=dpi, preserve_aspect=preserve_aspect)
         # 直接绘制图片；标题改由 draw_section_title 统一绘制
         canvas_obj.drawImage(ImageReader(img_io), x, y, width=width, height=height)
         return True
@@ -590,7 +611,7 @@ def generate_page1(
         "asset_performance": usable_height * 0.15,
         "brinson_attribution": usable_height * 0.18,
         "brinson_industry_bar": usable_height * 0.18,
-        "brinson_table": usable_height * 0.15,
+        "brinson_table": usable_height * 0.18,  # 与柱状图高度一致，保持视觉平衡
         "industry_attribution_profit": usable_height * 0.25,
         "industry_attribution_loss": usable_height * 0.25,
         "industry_attribution_table": usable_height * 0.25,
@@ -599,9 +620,9 @@ def generate_page1(
         "stock_attribution_chart": usable_height * 0.25,
         "stock_holding_nodes_table": usable_height * 0.25,
         "stock_holding_nodes_chart": usable_height * 0.25,
-        "turnover_rate_table": usable_height * 0.15,
-        "period_transaction_table": usable_height * 0.25,
-        "period_transaction_chart": usable_height * 0.25,
+        "turnover_rate_table": usable_height * 0.18,  # 增加高度，使表格更饱满易读
+        "period_transaction_table": usable_height * 0.28,  # 增加高度，使表格和图表更协调
+        "period_transaction_chart": usable_height * 0.28,  # 增加高度，使表格和图表更协调
     }
 
     x_left = margin
@@ -881,17 +902,24 @@ def generate_page1(
         # 饼图和柱状图并排显示
         h_charts = row_heights["industry_pie"]
         chart_width = (usable_width - 10) / 2  # 两个图表并排，留10点间距
-
-        # 左侧：饼图
+        
+        # 关键修复：确保饼图是正方形，避免变形
+        # 饼图必须保持1:1的宽高比才能显示为圆形
+        pie_size = min(chart_width, h_charts)  # 取较小值确保是正方形
+        
+        # 左侧：饼图 - 使用正方形尺寸
         fig15 = plot_market_value_pie_chart(
             data=safe_get("industry_attribution.end_holdings_distribution"),
             return_figure=True,
-            figsize=(chart_width / 72 * 2.54, h_charts / 72 * 2.54),
+            figsize=(pie_size / 72 * 2.54, pie_size / 72 * 2.54),  # 确保宽高相等
             show_title=True,
         )
-        insert_figure(c, fig15, x_left, y_cursor - h_charts, chart_width, h_charts)
+        # 插入时也使用正方形尺寸，居中显示，并保持宽高比
+        pie_x = x_left + (chart_width - pie_size) / 2  # 水平居中
+        pie_y = y_cursor - h_charts + (h_charts - pie_size) / 2  # 垂直居中
+        insert_figure(c, fig15, pie_x, pie_y, pie_size, pie_size, preserve_aspect=True)
 
-        # 右侧：柱状图
+        # 右侧：柱状图 - 可以使用完整宽度
         fig16 = plot_average_market_value_bar_chart(
             data=safe_get("industry_attribution.end_holdings_distribution"),
             return_figure=True,
@@ -1013,12 +1041,13 @@ def generate_page1(
         insert_figure(c, fig22, x_left, y_cursor - h_bottom, left_w, h_bottom)
 
         # 右侧：归因分析表格，使用 brinson 的汇总数据
+        # 调整表格尺寸，使其更协调（不再缩小，保持原始比例）
         fig23 = plot_brinson_attribution_table(
             data=safe_get("brinson"),
             return_figure=True,
-            figsize=(right_w / 72 * 2.54 * 0.7, h_bottom / 72 * 2.54 * 0.7),
+            figsize=(right_w / 72 * 2.54, h_bottom / 72 * 2.54),
             show_title=True,
-            table_fontsize=16,
+            table_fontsize=18,  # 增大字体，提高可读性
         )
         insert_figure(
             c, fig23, x_left + left_w + 5, y_cursor - h_bottom, right_w, h_bottom
@@ -1039,8 +1068,8 @@ def generate_page1(
         ensure_space(total_height + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "股票行业归因")
 
-        # 左侧表格占50%，右侧图表占50%
-        left_w = usable_width * 0.7
+        # 左侧表格占60%，右侧图表占40%，使比例更协调
+        left_w = usable_width * 0.6
         right_w = usable_width - left_w - 5
 
         # 第一行：收益额排名前十（表格在左，图表在右）
@@ -1100,8 +1129,8 @@ def generate_page1(
         ensure_space(total_height + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "股票绩效归因")
 
-        # 左侧表格占50%，右侧图表占50%
-        left_w = usable_width * 0.4
+        # 左侧表格占48%，右侧图表占52%，使比例更协调平衡
+        left_w = usable_width * 0.48
         right_w = usable_width - left_w - 5
 
         # 第一行：盈利前十（表格在左，图表在右）
@@ -1116,13 +1145,17 @@ def generate_page1(
         insert_figure(c, fig26_table, x_left, y_cursor - h, left_w, h)
 
         # 右侧：盈利前十图表（不显示标题）
+        # 计算表格标题占用的高度，使图表与表格内容区域对齐
+        # 表格标题在96%位置，表格内容从88%开始，标题占用约8%的高度
+        title_height = h * 0.08
         fig26_chart = plot_stock_profit_chart(
             data=safe_get("end_holdings.stock_performance"),
             return_figure=True,
             figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
             show_title=False,
         )
-        insert_figure(c, fig26_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
+        # 图表向下偏移标题高度，使其与表格内容区域对齐
+        insert_figure(c, fig26_chart, x_left + left_w + 5, y_cursor - h - title_height, right_w, h)
         y_cursor -= h + 10
 
         # 第二行：亏损前十（表格在左，图表在右）
@@ -1138,13 +1171,17 @@ def generate_page1(
         insert_figure(c, fig27_table, x_left, y_cursor - h, left_w, h)
 
         # 右侧：亏损前十图表（不显示标题）
+        # 计算表格标题占用的高度，使图表与表格内容区域对齐
+        # 表格标题在96%位置，表格内容从88%开始，标题占用约8%的高度
+        title_height = h * 0.08
         fig27_chart = plot_stock_loss_chart(
             data=safe_get("end_holdings.stock_performance"),
             return_figure=True,
             figsize=(right_w / 72 * 2.54, h / 72 * 2.54),
             show_title=False,
         )
-        insert_figure(c, fig27_chart, x_left + left_w + 5, y_cursor - h, right_w, h)
+        # 图表向下偏移标题高度，使其与表格内容区域对齐
+        insert_figure(c, fig27_chart, x_left + left_w + 5, y_cursor - h - title_height, right_w, h)
         y_cursor -= h + 10
     except Exception as e:
         print(f"  股票绩效归因图表生成失败: {e}")
@@ -1192,13 +1229,13 @@ def generate_page1(
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "换手率 (年化)")
 
-        # 绘制表格
+        # 绘制表格（不显示标题，因为已有主标题）
         fig29 = plot_turnover_rate_table(
             data=safe_get("turnover"),
             return_figure=True,
             figsize=(usable_width / 72 * 2.54, h / 72 * 2.54),
-            show_title=True,
-            table_fontsize=16,
+            show_title=False,
+            table_fontsize=18,  # 增大字体，提高可读性
         )
         insert_figure(c, fig29, x_left, y_cursor - h, usable_width, h)
         y_cursor -= h + 10
@@ -1215,17 +1252,17 @@ def generate_page1(
         ensure_space(h + 22 + 10)
         y_cursor = draw_section_title(y_cursor, "期间交易")
 
-        # 左侧表格占50%，右侧图表占50%
-        left_w = usable_width * 0.5
+        # 左侧表格占48%，右侧图表占52%，使图表有更多展示空间
+        left_w = usable_width * 0.48
         right_w = usable_width - left_w - 5
 
-        # 左侧：表格（显示标题）
+        # 左侧：表格（不显示标题，因为已有主标题）
         fig30_table = plot_period_transaction_table(
             data=safe_get("period_transaction"),
             return_figure=True,
             figsize=(left_w / 72 * 2.54, h / 72 * 2.54),
-            show_title=True,
-            table_fontsize=16,
+            show_title=False,
+            table_fontsize=18,  # 增大字体，提高可读性
         )
         insert_figure(c, fig30_table, x_left, y_cursor - h, left_w, h)
 
