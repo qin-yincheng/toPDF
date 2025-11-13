@@ -564,7 +564,15 @@ def generate_page1(
 
     # 绘制标题帮助函数
     def draw_section_title(y_top: float, text: str) -> float:
-        """在 y_top 处绘制左对齐标题与蓝色竖条，返回内容起始 y 坐标。"""
+        """在 y_top 处绘制左对齐标题与蓝色竖条，返回内容起始 y 坐标。
+
+        标题上方预留 18 点间距，标题下方预留 18 点间距，确保标题前后有足够的留白。
+        """
+        # 标题上方间距
+        title_top_margin = 18
+        # 标题下方间距
+        title_bottom_margin = 18
+
         try:
             # 使用已注册的中文字体
             c.setFont(chinese_font_name, 16)
@@ -576,8 +584,10 @@ def generate_page1(
         text_height = font_size * 0.85
         # 竖条高度与文本高度一致
         bar_height = text_height
-        # 确定对齐中心位置（从 y_top 向下偏移，使标题区域居中）
-        center_y = y_top - font_size * 0.5
+        # 标题实际绘制位置：从 y_top 向下偏移上方间距
+        title_y = y_top - title_top_margin
+        # 确定对齐中心位置（从 title_y 向下偏移，使标题区域居中）
+        center_y = title_y - font_size * 0.5
         # 蓝色竖条：以 center_y 为中心
         bar_x = margin - 3
         bar_y = center_y - bar_height / 2
@@ -588,8 +598,8 @@ def generate_page1(
         text_baseline = center_y - font_size * 0.4
         c.setFillColorRGB(0, 0, 0)
         c.drawString(margin + 5, text_baseline, text)
-        # 内容区域顶边（根据字体大小动态留白）
-        return y_top - (font_size + 8)
+        # 内容区域顶边：标题下方再留出间距
+        return title_y - font_size - title_bottom_margin
 
     # 行高配置（按小标题一行一行分布图片）
     row_heights = {
@@ -604,10 +614,11 @@ def generate_page1(
         "holdings": usable_height * 0.18,
         "stock_position": usable_height * 0.18,
         "liquidity_asset": usable_height * 0.18,
-        "industry_pie": usable_height * 0.18,
+        "industry_pie": usable_height * 0.24,  # 大幅增加高度，确保图例完整显示
         "industry_bar": usable_height * 0.18,
         "industry_table": usable_height * 0.18,
-        "industry_timeseries": usable_height * 0.20,
+        "industry_timeseries": usable_height
+        * 0.28,  # 增加高度以容纳下移的图例，不压缩图表主体
         "industry_deviation": usable_height * 0.18,
         "asset_performance": usable_height * 0.15,
         "brinson_attribution": usable_height * 0.18,
@@ -662,9 +673,13 @@ def generate_page1(
         y_cursor = page_height - top_margin
 
     def ensure_space(needed_height: float) -> None:
-        """如果当前页剩余空间不足以容纳 needed_height，则自动分页。"""
+        """如果当前页剩余空间不足以容纳 needed_height，则自动分页。
+
+        考虑到标题上方间距(18) + 字体高度(16) + 标题下方间距(18) = 52点，
+        以及额外的安全边距(20点)。
+        """
         nonlocal y_cursor
-        safe_bottom = bottom_margin + 10
+        safe_bottom = bottom_margin + 20
         if y_cursor - needed_height < safe_bottom:
             new_page()
 
@@ -673,7 +688,7 @@ def generate_page1(
     try:
         print("  生成总体表现表格...")
         h = row_heights["overview"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "总体表现")
         fig1 = plot_performance_overview_table(
             data=safe_get("performance_overview"),
@@ -690,7 +705,7 @@ def generate_page1(
     try:
         print("  生成产品规模总览图表（含右侧表格）...")
         h = row_heights["scale"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "产品规模总览")
         # scale_overview.scale_series 才是图表期望的列表数据
         fig2 = plot_scale_overview(
@@ -709,7 +724,7 @@ def generate_page1(
     try:
         print("  生成单位净值表现图表...")
         h = row_heights["nav"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "单位净值表现")
         fig3 = plot_nav_performance(
             data=safe_get("nav_performance.nav_series"),
@@ -726,7 +741,7 @@ def generate_page1(
     try:
         print("  生成日收益表现图表...")
         h = row_heights["daily"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "日收益表现")
         # 左图占 70%，右表占 30%
         left_w = usable_width * 0.7
@@ -754,7 +769,7 @@ def generate_page1(
     try:
         print("  生成收益分析表格与图表...")
         h = row_heights["returns"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "收益分析")
         left_w = usable_width * 0.5
         right_w = usable_width - left_w - 5
@@ -781,7 +796,7 @@ def generate_page1(
     try:
         print("  生成指标分析表格...")
         h = row_heights["indicator"] * 1.5
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "指标分析")
         fig8 = plot_indicator_analysis_table(
             data=safe_get("indicator_analysis"),
@@ -799,7 +814,7 @@ def generate_page1(
     try:
         print("  生成动态回撤图表和表格...")
         h = row_heights["drawdown"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "动态回撤")
         # 左图占 70%，右表占 30%
         left_w = usable_width * 0.7
@@ -827,7 +842,7 @@ def generate_page1(
     try:
         print("  生成大类持仓时序图表...")
         h = row_heights["asset_allocation"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "大类持仓时序")
         fig11 = plot_asset_allocation_chart(
             data=safe_get("asset_allocation_series"),
@@ -844,7 +859,7 @@ def generate_page1(
     try:
         print("  生成期末持仓表格...")
         h = row_heights["holdings"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "期末持仓")
         # end_holdings.holdings_table 包含 summary, assets, liabilities
         fig12 = plot_end_period_holdings_table(
@@ -863,7 +878,7 @@ def generate_page1(
     try:
         print("  生成股票仓位时序图表...")
         h = row_heights["stock_position"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "股票仓位时序")
         fig13 = plot_stock_position_chart(
             data=safe_get("asset_allocation_series"),
@@ -880,7 +895,7 @@ def generate_page1(
     try:
         print("  生成流动性资产时序图表...")
         h = row_heights["liquidity_asset"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "流动性资产时序")
         fig14 = plot_liquidity_asset_chart(
             data=safe_get("asset_allocation_series"),
@@ -949,7 +964,7 @@ def generate_page1(
     try:
         print("  生成持股行业占比时序图表...")
         h = row_heights["industry_timeseries"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "持股行业占比时序")
         # industry_timeseries.timeseries 才是图表期望的列表数据
         timeseries_data = safe_get("industry_timeseries.timeseries")
@@ -979,7 +994,7 @@ def generate_page1(
     try:
         print("  生成持股行业偏离度时序图表...")
         h = row_heights["industry_deviation"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "持股行业偏离度时序")
         # industry_timeseries.deviation_series 用于偏离度图表
         fig19 = plot_industry_deviation_timeseries(
@@ -997,7 +1012,7 @@ def generate_page1(
     try:
         print("  生成大类资产绩效归因表格...")
         h = row_heights["asset_performance"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "大类资产绩效归因")
         fig20 = plot_asset_performance_attribution_table(
             data=safe_get("asset_class_attribution"),
@@ -1100,7 +1115,7 @@ def generate_page1(
         y_cursor -= h + 30
 
         # 第二行：亏损额排名前十（表格在左，图表在右）
-        ensure_space(h + 10)
+        ensure_space(h + 20)
         # 左侧：亏损额表格
         fig25_table = plot_industry_attribution_loss_table(
             data=safe_get("industry_attribution.industry_profit"),
@@ -1167,7 +1182,7 @@ def generate_page1(
         y_cursor -= h + 30
 
         # 第二行：亏损前十（表格在左，图表在右）
-        ensure_space(h + 10)
+        ensure_space(h + 20)
         # 左侧：亏损前十表格
         fig27_table = plot_stock_loss_table(
             data=safe_get("end_holdings.stock_performance"),
@@ -1203,7 +1218,7 @@ def generate_page1(
             row_heights["stock_holding_nodes_table"],
             row_heights["stock_holding_nodes_chart"],
         )
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "个股持仓节点")
 
         # 左侧图表占50%，右侧表格占50%
@@ -1236,7 +1251,7 @@ def generate_page1(
     try:
         print("  生成换手率 (年化) 表格...")
         h = row_heights["turnover_rate_table"]
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "换手率 (年化)")
 
         # 绘制表格（不显示标题，因为已有主标题）
@@ -1259,7 +1274,7 @@ def generate_page1(
             row_heights["period_transaction_table"],
             row_heights["period_transaction_chart"],
         )
-        ensure_space(h + 22 + 10)
+        ensure_space(h + 52 + 20)
         y_cursor = draw_section_title(y_cursor, "期间交易")
 
         # 左侧表格占48%，右侧图表占52%，使图表有更多展示空间

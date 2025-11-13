@@ -324,18 +324,18 @@ def plot_industry_proportion_timeseries(
         legend_handles = [plt.Rectangle((0,0),1,1, facecolor=color, edgecolor='white', linewidth=1.0)
                          for color in legend_colors]
         legend = ax.legend(legend_handles, legend_industries,
-                 loc='upper center', bbox_to_anchor=(0.5, -0.12),
-                 ncol=5, frameon=True, fontsize=6,  # 统一字体大小
-                 title='主要行业分布', title_fontsize=8,  # 统一标题字体大小
+                 loc='upper center', bbox_to_anchor=(0.5, -0.25),  # 大幅向下移动，避免遮挡日期
+                 ncol=5, frameon=True, fontsize=6,  # 进一步缩小字体，避免遮挡日期
+                 title='主要行业分布', title_fontsize=8,  # 进一步缩小标题字体
                  framealpha=0.98, edgecolor='#c0c0c0',
                  facecolor='#f8f8f8',
-                 columnspacing=1.5, handletextpad=0.8,
-                 handlelength=1.5, borderpad=0.8)
-        # 手动设置标题字体粗细（兼容旧版本matplotlib）
+                 columnspacing=1.3, handletextpad=0.7,  # 稍微减少间距，让图例更紧凑
+                 handlelength=1.4, borderpad=0.7)  # 稍微减少尺寸
+        # 手动设置标题字体粗细和颜色（兼容旧版本matplotlib）
         if legend.get_title():
             legend.get_title().set_fontweight('bold')
             legend.get_title().set_color('#1a1a1a')
-            legend.get_title().set_fontsize(8)
+            # 不再手动覆盖字体大小，使用创建时的设置
     else:
         # 行业数量不多，显示所有
         legend_colors = [colors[industry_names.index(ind)] if ind in industry_names 
@@ -344,23 +344,23 @@ def plot_industry_proportion_timeseries(
                          for color in legend_colors]
         n_legend_cols = min(len(active_industries_sorted), 5)  # 最多5列
         legend = ax.legend(legend_handles, active_industries_sorted,
-                 loc='upper center', bbox_to_anchor=(0.5, -0.12),
-                 ncol=n_legend_cols, frameon=True, fontsize=6,  # 统一字体大小
-                 title='行业分布', title_fontsize=8,  # 统一标题字体大小
+                 loc='upper center', bbox_to_anchor=(0.5, -0.25),  # 大幅向下移动，避免遮挡日期
+                 ncol=n_legend_cols, frameon=True, fontsize=6,  # 进一步缩小字体，避免遮挡日期
+                 title='行业分布', title_fontsize=8,  # 进一步缩小标题字体
                  framealpha=0.98, edgecolor='#c0c0c0',
                  facecolor='#f8f8f8',
-                 columnspacing=1.5, handletextpad=0.8,
-                 handlelength=1.5, borderpad=0.8)
-        # 手动设置标题字体粗细（兼容旧版本matplotlib）
+                 columnspacing=1.3, handletextpad=0.7,  # 稍微减少间距，让图例更紧凑
+                 handlelength=1.4, borderpad=0.7)  # 稍微减少尺寸
+        # 手动设置标题字体粗细和颜色（兼容旧版本matplotlib）
         if legend.get_title():
             legend.get_title().set_fontweight('bold')
             legend.get_title().set_color('#1a1a1a')
-            legend.get_title().set_fontsize(8)
+            # 不再手动覆盖字体大小，使用创建时的设置
     
-    # 设置图例文字颜色
+    # 设置图例文字颜色（不再手动覆盖字体大小）
     for text in legend.get_texts():
         text.set_color('#2c3e50')
-        text.set_fontsize(6)
+        # 不再手动覆盖字体大小，使用创建时的设置
     
     # # 添加脚注
     # ax.text(0, -0.08, '☆行业因子筛选自申万一级行业', transform=ax.transAxes,
@@ -375,7 +375,9 @@ def plot_industry_proportion_timeseries(
     ax.spines['bottom'].set_linewidth(1)
     
     # 调整布局，为底部图例留出更多空间
-    plt.tight_layout(rect=[0, 0.15, 1, 0.98])
+    # 图例大幅向下移动后，需要大幅增加底部预留空间，确保图例完整显示且不遮挡日期
+    # 注意：只增加底部空间，不压缩图表主体
+    plt.tight_layout(rect=[0, 0.30, 1, 0.98])
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:

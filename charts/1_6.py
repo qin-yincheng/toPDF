@@ -239,16 +239,14 @@ def plot_indicator_analysis_table(
             if indicator in data and period in data[indicator]:
                 value = data[indicator][period]
                 if isinstance(value, (int, float)):
-                    raw_val = value
                     if '胜率' in indicator:
-                        raw_val = value * 100
-                        cell_text = f'{raw_val:.2f}%'
+                        cell_text = f'{value:.2f}%'
                     elif any(keyword in indicator for keyword in percentage_keywords):
                         cell_text = f'{value:.2f}%'
                     else:
                         cell_text = f'{value:.2f}'
                     row_display.append(cell_text)
-                    row_raw.append(raw_val if '胜率' in indicator else value)
+                    row_raw.append(value)
                 else:
                     row_display.append(str(value).replace('\n', ' '))
                     row_raw.append(None)

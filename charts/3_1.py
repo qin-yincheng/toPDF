@@ -96,46 +96,25 @@ def plot_market_value_pie_chart(
     n_colors = len(PROFESSIONAL_COLORS)
     colors = [PROFESSIONAL_COLORS[i % n_colors] for i in range(len(industries))]
     
-    # 只显示较大切片的百分比（避免小切片文字拥挤）
-    # 设置阈值：只显示占比大于2.5%的切片，提高可读性
-    autopct_func = lambda pct: f'{pct:.1f}%' if pct >= 2.5 else ''
-    
+    # 不显示饼图切片上的百分比数字（用户要求删除）
     # 绘制饼图 - 使用更专业的样式
     # 不使用explode，保持圆形不变形，通过颜色和边框突出显示
     wedges, texts, autotexts = ax.pie(
         proportions,
         labels=None,  # 不显示外部标签
-        autopct=autopct_func,  # 只显示较大切片的百分比
+        autopct='',  # 不显示百分比数字
         startangle=90,
         colors=colors,
         explode=None,  # 不使用explode，保持完美圆形
-        pctdistance=0.75,  # 百分比距离圆心的距离（稍微调近，更清晰）
         shadow=False,  # 不使用阴影，保持简洁
         wedgeprops=dict(
             edgecolor='white', 
             linewidth=3.0,  # 更粗的边框，增加清晰度和层次感
             alpha=1.0  # 完全不透明，颜色更鲜艳
-        ),
-        textprops={
-            'fontsize': 12,  # 增大字体，提高可读性
-            'fontweight': 'bold',
-            'color': '#ffffff'  # 默认白色，后面会根据背景调整
-        }
+        )
     )
     
-    # 优化百分比文字颜色和样式 - 确保可读性
-    for i, (autotext, prop) in enumerate(zip(autotexts, proportions)):
-        if prop >= 2.5:  # 只处理显示的百分比
-            # 根据背景颜色亮度调整文字颜色
-            bg_color = mcolors.to_rgb(colors[i])
-            # 使用感知亮度公式（更准确）
-            brightness = 0.299 * bg_color[0] + 0.587 * bg_color[1] + 0.114 * bg_color[2]
-            if brightness > 0.5:
-                autotext.set_color('#1a1a1a')  # 深色文字
-            else:
-                autotext.set_color('#ffffff')  # 白色文字
-            autotext.set_fontweight('bold')
-            autotext.set_fontsize(12)  # 增大字体，提高可读性
+    # 不再需要优化百分比文字，因为已删除百分比数字
     
     # 关键修复：确保饼图绘图区域严格保持正方形
     # 先设置标题和图例，然后手动调整布局确保饼图区域是正方形
@@ -169,33 +148,33 @@ def plot_market_value_pie_chart(
         legend_items.append(other_patch)
         legend_labels_list.append(f"其他 ({other_prop:.1f}%)")
     
-    # 图例布局 - 使用更合理的列数，增大字体
+    # 图例布局 - 使用更合理的列数，缩小字体确保显示完整
     n_legend_cols = min(len(legend_items), 3)  # 最多3列，更清晰
     legend = ax.legend(legend_items, legend_labels_list,
               title="行业分布",
               loc="upper center",
-              bbox_to_anchor=(0.5, -0.10),
+              bbox_to_anchor=(0.5, -0.08),  # 调整位置，稍微靠近图表，减少负值
               ncol=n_legend_cols,
               frameon=True,
-              fontsize=6,  # 统一字体大小
-              title_fontsize=8,  # 统一标题字体大小
+              fontsize=7,  # 缩小一号字体，确保显示完整
+              title_fontsize=9,  # 缩小一号标题字体
               framealpha=0.98,
               edgecolor='#d0d0d0',
               facecolor='#fafafa',
-              columnspacing=2.0,
-              handletextpad=1.2,
-              handlelength=1.8,
-              borderpad=1.0)
-    # 手动设置标题字体粗细（兼容旧版本matplotlib）
+              columnspacing=1.8,  # 稍微减少列间距，让图例更紧凑
+              handletextpad=1.0,  # 稍微减少间距
+              handlelength=1.6,  # 稍微减少长度
+              borderpad=0.8)  # 稍微减少内边距
+    # 手动设置标题字体粗细和颜色（兼容旧版本matplotlib）
     if legend.get_title():
         legend.get_title().set_fontweight('bold')
         legend.get_title().set_color('#1a1a1a')
-        legend.get_title().set_fontsize(15)
+        # 不再手动覆盖字体大小，使用创建时的设置
     
-    # 设置图例文字颜色和大小
+    # 设置图例文字颜色（不再手动覆盖字体大小）
     for text in legend.get_texts():
         text.set_color('#2c3e50')
-        text.set_fontsize(12)
+        # 不再手动覆盖字体大小，使用创建时的设置
     
     # 关键修复：手动调整布局，确保饼图绘图区域严格保持正方形
     # 不使用tight_layout，因为它会改变宽高比
@@ -205,7 +184,8 @@ def plot_market_value_pie_chart(
     # 为标题预留空间（顶部，单位：figure高度的分数）
     top_space = 0.15 if show_title else 0.05
     # 为图例预留空间（底部，单位：figure高度的分数）
-    bottom_space = 0.22
+    # 字体稍微放大后，需要大幅增加底部空间，确保图例完整显示
+    bottom_space = 0.32
     
     # 计算可用的绘图区域（单位：figure的分数）
     available_height = 1.0 - top_space - bottom_space
