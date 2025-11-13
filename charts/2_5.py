@@ -13,9 +13,7 @@ if str(project_root) not in sys.path:
 from typing import List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 from charts.font_config import setup_chinese_font
-import matplotlib.dates as mdates
 from datetime import datetime, timedelta
-import numpy as np
 from charts.utils import calculate_xlim, calculate_date_tick_params
 from calc.utils import is_trading_day
 
@@ -24,7 +22,7 @@ from calc.utils import is_trading_day
 def plot_liquidity_asset_chart(
     data: Optional[List[Dict[str, Any]]] = None,
     save_path: Optional[str] = None,
-    figsize: tuple = (16, 8),
+    figsize: tuple = (14, 6),
     return_figure: bool = False,
     show_title: bool = True
 ):
@@ -76,6 +74,20 @@ def plot_liquidity_asset_chart(
     # 创建图表和双Y轴
     fig, ax1 = plt.subplots(figsize=figsize)
     ax2 = ax1.twinx()
+    fig.patch.set_facecolor('white')
+    ax1.set_facecolor('#f7f9fc')
+    
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+    ax1.spines['left'].set_color('#d0d5dd')
+    ax1.spines['bottom'].set_color('#d0d5dd')
+    ax1.tick_params(axis='x', colors='#606266', labelsize=9, pad=6, length=0)
+    ax1.tick_params(axis='y', colors='#606266', labelsize=9, pad=6, length=0)
+    
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    ax2.spines['right'].set_color('#d0d5dd')
+    ax2.tick_params(axis='y', colors='#606266', labelsize=9, pad=6, length=0)
     
     # 设置X轴：使用索引位置，但显示日期标签
     # 这样非交易日之间的间隔会相等（比如星期五到星期一和星期一到星期二的距离相同）
@@ -83,24 +95,23 @@ def plot_liquidity_asset_chart(
     x_indices = list(range(n_points))
     
     # 绘制流动性资产比例面积图（左Y轴，蓝色填充，带圆形标记）
-    ax1.fill_between(x_indices, liquidity_ratios, 0, alpha=1, color='#526895', label='流动性资产比例')
-    ax1.plot(x_indices, liquidity_ratios, color='#082868', marker='', 
-             markersize=4, linewidth=1.5, alpha=1,markerfacecolor='white', markeredgecolor='#082868',
-                     markeredgewidth=1.5)
-    ax1.set_ylabel('占比(%)', fontsize=11)
+    ax1.fill_between(x_indices, liquidity_ratios, 0, alpha=0.72, color='#5b7daa', label='流动性资产比例')
+    ax1.plot(x_indices, liquidity_ratios, color='#304a6e', marker='', 
+             linewidth=1.6, alpha=1.0)
+    ax1.set_ylabel('资产比例（%）', fontsize=12, color='#303133')
     ax1.set_ylim(0.13, 100)
     ax1.set_yticks([0.13, 20, 40, 60, 80, 100])
     ax1.set_yticklabels(['0.13%', '20%', '40%', '60%', '80%', '100%'])
     # 网格线：水平虚线，灰色
-    ax1.grid(True, alpha=0.5, linestyle='--', linewidth=1, axis='y')
-    ax1.set_xlabel('日期', fontsize=11)
+    ax1.grid(True, alpha=0.6, linestyle='-', linewidth=0.6, axis='y', color='#e5e7ef')
+    ax1.set_xlabel('日期', fontsize=11, color='#303133')
     
     # 绘制沪深300折线图（右Y轴，灰色，带圆形标记）
-    ax2.plot(x_indices, csi300_values, color='#afb0b2', marker='', 
-             markersize=4, linewidth=1.5, label='沪深300',
-             markerfacecolor='white', markeredgecolor='#afb0b2',
-            markeredgewidth=1.5)
-    ax2.set_ylabel('沪深300', fontsize=11)
+    ax2.plot(x_indices, csi300_values, color='#9aa0a6', marker='o', 
+             markersize=3.5, linewidth=1.5, label='沪深300',
+             markerfacecolor='white', markeredgecolor='#9aa0a6',
+            markeredgewidth=1.0)
+    ax2.set_ylabel('沪深300 指数', fontsize=12, color='#303133')
     
     # 动态计算右Y轴范围（基准净值）
     if csi300_values:
@@ -137,18 +148,29 @@ def plot_liquidity_asset_chart(
     # 合并图例
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2,
-               loc='upper center', bbox_to_anchor=(0.5, 1.12),
-               ncol=2, frameon=True)
+    legend = ax1.legend(
+        lines1 + lines2,
+        labels1 + labels2,
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.08),
+        ncol=2,
+        frameon=True,
+        borderaxespad=0.3,
+        columnspacing=1.4,
+        handlelength=1.8
+    )
+    legend.get_frame().set_facecolor('white')
+    legend.get_frame().set_edgecolor('#d0d5dd')
+    legend.get_frame().set_alpha(0.95)
 
     ax1.spines['top'].set_visible(False)
     ax2.spines['top'].set_visible(False)
     # 添加标题（如果启用，但这里不显示，由 pages.py 统一绘制）
-    # if show_title:
-    #     plt.title('流动性资产时序*', fontsize=16, fontweight='bold', pad=20, loc='left')
+    if show_title:
+        ax1.set_title('流动性资产时序', fontsize=16, fontweight='bold', color='#162447', loc='left', pad=18)
     
     # 调整布局
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout(rect=[0.02, 0.06, 0.98, 0.92])
     
     # 如果只需要返回 figure 对象，不保存
     if return_figure:
